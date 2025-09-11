@@ -287,14 +287,24 @@ if ($type == 'sharedstudent') {
     // Read all categories.
     $categories = block_exaport_get_all_categories_for_user($USER->id);
 
-    foreach ($categories as $category) {
-        $category->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $courseid . '&categoryid=' . $category->id;
-        $category->icon = block_exaport_get_category_icon($category);
+    // Get course folders for drive-like experience
+    $coursefolders = block_exaport_get_user_course_folders($USER->id);
+    
+    // Merge course folders with categories
+    $allcategories = array_merge($categories, $coursefolders);
+
+    foreach ($allcategories as $category) {
+        if (!isset($category->url)) {
+            $category->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $courseid . '&categoryid=' . $category->id;
+        }
+        if (!isset($category->icon)) {
+            $category->icon = block_exaport_get_category_icon($category);
+        }
     }
 
     // Build a tree according to parent.
     $categoriesbyparent = array();
-    foreach ($categories as $category) {
+    foreach ($allcategories as $category) {
         if (!isset($categoriesbyparent[$category->pid])) {
             $categoriesbyparent[$category->pid] = array();
         }
@@ -303,17 +313,26 @@ if ($type == 'sharedstudent') {
 
     // The main root category.
     $rootcategory = block_exaport_get_root_category();
-    $categories[0] = $rootcategory;
+    $allcategories[0] = $rootcategory;
 
-    if (isset($categories[$categoryid])) {
-        $currentcategory = $categories[$categoryid];
+    // Handle course folder selection
+    $currentcategory = null;
+    if (strpos($categoryid, 'course_') === 0) {
+        // This is a course folder
+        $courseid_from_category = str_replace('course_', '', $categoryid);
+        if (isset($coursefolders[$categoryid])) {
+            $currentcategory = $coursefolders[$categoryid];
+            $currentcategory->name = get_string('course_folder', 'block_exaport') . ': ' . $currentcategory->name;
+        }
+    } else if (isset($allcategories[$categoryid])) {
+        $currentcategory = $allcategories[$categoryid];
     } else {
         $currentcategory = $rootcategory;
     }
 
     // What's the parent category?.
-    if ($currentcategory->id && isset($categories[$currentcategory->pid])) {
-        $parentcategory = $categories[$currentcategory->pid];
+    if ($currentcategory->id && isset($allcategories[$currentcategory->pid])) {
+        $parentcategory = $allcategories[$currentcategory->pid];
     } else {
         $parentcategory = null;
     }
@@ -321,7 +340,12 @@ if ($type == 'sharedstudent') {
     $subcategories = !empty($categoriesbyparent[$currentcategory->id]) ? $categoriesbyparent[$currentcategory->id] : [];
 
     // Common items.
-    $items = block_exaport_get_items_by_category_and_user($USER->id, $currentcategory->id, $sqlsort, true);
+    if (strpos($currentcategory->id, 'course_') === 0) {
+        // For course folders, get items related to that course (for now, empty)
+        $items = array(); // TODO: In the future, get course-related artifacts
+    } else {
+        $items = block_exaport_get_items_by_category_and_user($USER->id, $currentcategory->id, $sqlsort, true);
+    }
 }
 
 $PAGE->set_url($currentcategory->url);
@@ -546,10 +570,18 @@ if ($layout == 'details') {
         // Checking for shared items. If userid is null - show users, if userid > 0 - need to show items from user.
         $itemind++;
         $table->data[$itemind] = array();
-        //        $table->data[$itemind]['type'] = '<img src="'.(@$category->icon ?: 'pix/folder_32_user.png').'" style="max-width:32px">';
-        $table->data[$itemind]['type'] = block_exaport_fontawesome_icon('folder-open', 'regular', 2, [], [], [], '', [], [], [], ['exaport-items-category-middle']);
+        
+        // Different icon for course folders
+        if (isset($category->type) && $category->type === 'course_folder') {
+            $table->data[$itemind]['type'] = '<span class="course-folder-icon">' . 
+                block_exaport_fontawesome_icon('graduation-cap', 'solid', 1) . '</span>';
+            $categoryclass = 'exaport-course-folder';
+        } else {
+            $table->data[$itemind]['type'] = block_exaport_fontawesome_icon('folder-open', 'regular', 2, [], [], [], '', [], [], [], ['exaport-items-category-middle']);
+            $categoryclass = '';
+        }
 
-        $table->data[$itemind]['name'] = '<a href="' . $category->url . '">' . $category->name . '</a>';
+        $table->data[$itemind]['name'] = '<a href="' . $category->url . '" class="' . $categoryclass . '">' . $category->name . '</a>';
 
         $table->data[$itemind][] = null;
 
@@ -1039,9 +1071,15 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
     global $CFG;
     $categoryContent = '';
 
+    // Add special CSS class for course folders
+    $cardClasses = 'card h-100 excomdos_tile excomdos_tile_category id-' . $category->id;
+    if (isset($category->type) && $category->type === 'course_folder') {
+        $cardClasses .= ' exaport-course-folder-card';
+    }
+
     $categoryContent .= '
     <div class="col mb-4">
-				<div class="card h-100 excomdos_tile excomdos_tile_category id-' . $category->id . ' ">
+				<div class="' . $cardClasses . ' ">
 					<div class="card-header excomdos_tilehead d-flex justify-content-between">
 						<span class="excomdos_tileinfo">
 							';
@@ -1085,7 +1123,14 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
     } else {
         $categoryThumbUrl = $category->url;
         $categoryName = $category->name;
-        if ($category->icon) {
+        
+        // Special handling for course folders
+        if (isset($category->type) && $category->type === 'course_folder') {
+            $categoryIcon = '<div class="course-folder-icon-large">' . 
+                           block_exaport_fontawesome_icon('graduation-cap', 'solid', '6', [], [], [], '', [], [], [], ['exaport-course-folder-icon']) . 
+                           '</div>';
+            $categoryName = $category->name; // Full course name
+        } else if ($category->icon) {
             if ($category->iconmerge) {
                 // icon merge (also look JS - exaport.js - block_exaport_check_fontawesome_icon_merging()):
                 $categoryIcon = block_exaport_fontawesome_icon('folder-open', 'regular', '6', ['icon-for-merging'], [], ['data-categoryId' => $category->id], '', [], [], [], ['exaport-items-category-big']);
@@ -1099,6 +1144,13 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
             $categoryIcon = block_exaport_fontawesome_icon('folder-open', 'regular', '6', [], [], [], '', [], [], [], ['exaport-items-category-big']);
         }
     }
+    
+    // Add special CSS class for course folders
+    $cardClasses = 'card h-100 excomdos_tile excomdos_tile_category id-' . $category->id;
+    if (isset($category->type) && $category->type === 'course_folder') {
+        $cardClasses .= ' exaport-course-folder-card';
+    }
+    
     $categoryContent .= '
                     </div>
 					<div class="card-body excomdos_tileimage d-flex justify-content-center align-items-center">

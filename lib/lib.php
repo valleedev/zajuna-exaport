@@ -2669,3 +2669,48 @@ function block_exaport_used_layout() {
     //    return @$CFG->block_exaport_used_layout ?: 'clean_old';
     return @$CFG->block_exaport_used_layout ?: 'moodle_bootstrap';
 }
+
+/**
+ * Get courses for the current user to display as course folders in view_items
+ * Only enrolled courses for all users (including admins)
+ * 
+ * @param int $userid User ID (optional, defaults to current user)
+ * @return array Array of course objects formatted as folder structure
+ */
+function block_exaport_get_user_course_folders($userid = null) {
+    global $DB, $USER, $CFG;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    // Get only enrolled courses for the user
+    $enrolledcourses = $DB->get_records_sql("
+        SELECT c.id, c.fullname, c.shortname, c.visible, c.startdate, c.enddate,
+               0 as item_cnt
+        FROM {course} c
+        INNER JOIN {enrol} e ON e.courseid = c.id
+        INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+        WHERE ue.userid = ? AND c.id > 1 AND c.visible = 1
+        ORDER BY c.fullname ASC
+    ", array($userid));
+    
+    // Format courses as folder objects similar to categories
+    $coursefolders = array();
+    foreach ($enrolledcourses as $course) {
+        $folder = new stdClass();
+        $folder->id = 'course_' . $course->id; // Prefix to distinguish from categories
+        $folder->courseid = $course->id;
+        $folder->name = $course->fullname;
+        $folder->shortname = $course->shortname;
+        $folder->pid = 0; // Course folders are always at root level
+        $folder->item_cnt = 0; // Will be updated later if needed
+        $folder->type = 'course_folder';
+        $folder->icon = 'fa-graduation-cap'; // Course icon
+        $folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $course->id . 
+                      '&categoryid=course_' . $course->id;
+        $coursefolders[$folder->id] = $folder;
+    }
+    
+    return $coursefolders;
+}

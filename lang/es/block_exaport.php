@@ -61,6 +61,7 @@ $string['categoryhead'] = 'Nombre de Categoría ';
 $string['categorysaved'] = 'Categoría agregada.';
 $string['categoryedited'] = 'Categoría guardada.';
 $string['categorydeleted'] = 'Categoria borrada.';
+$string['course_folder'] = 'Carpeta de Curso';
 $string['date'] = 'Fecha';
 $string['dontincludeurl'] = 'Marque esta casilla para disasociar el marcador con la URL';
 $string['duplicatedurl'] = 'Usted ya tiene la siguiente dirección marcada.';

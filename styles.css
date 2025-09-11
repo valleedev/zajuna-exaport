@@ -20,6 +20,37 @@
     font-size: 10px;
 }
 
+/* ===== Exaport Aside Navigation Maintenance ===== */
+/* Smooth transitions for aside navigation */
+[data-region="drawer"] {
+    transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+#nav-drawer {
+    transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+#navwrap {
+    transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+/* Ensure aside is properly positioned during page loads */
+.exaport-loading [data-region="drawer"] {
+    opacity: 0.8;
+}
+
+/* Add visual feedback for exaport navigation links */
+.block_exaport a:hover,
+#exaport a:hover {
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* Maintain consistent spacing when aside is toggled */
+.content-container {
+    transition: margin-left 0.3s ease-in-out;
+}
+
+/* ===== Original Exaport Styles ===== */
 #exaport .block_eportfolio_center {
     text-align: center;
 }

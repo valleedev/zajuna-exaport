@@ -168,6 +168,133 @@ function block_exaport_require_login($courseid) {
             print_error("loginasmode", "block_exaport");
         }
     }
+    
+    // Add JavaScript to maintain aside navigation state
+    block_exaport_add_aside_maintenance_js();
+}
+
+/**
+ * Add JavaScript to maintain aside navigation state across exaport pages
+ */
+function block_exaport_add_aside_maintenance_js() {
+    global $PAGE;
+    
+    $PAGE->requires->js_init_code('
+    (function() {
+        var ExaportAsideMaintainer = {
+            storeAsideState: function() {
+                try {
+                    var drawer = document.querySelector("[data-region=drawer]");
+                    if (drawer) {
+                        var isOpen = drawer.classList.contains("show") || 
+                                    drawer.classList.contains("drawer-open") ||
+                                    drawer.getAttribute("aria-expanded") === "true" ||
+                                    drawer.getAttribute("aria-hidden") === "false";
+                        sessionStorage.setItem("exaport_aside_open", isOpen ? "true" : "false");
+                    }
+                    
+                    var navDrawer = document.querySelector("#nav-drawer");
+                    if (navDrawer) {
+                        var navIsOpen = navDrawer.classList.contains("show") || 
+                                       navDrawer.getAttribute("data-show") === "true" ||
+                                       !navDrawer.classList.contains("closed");
+                        sessionStorage.setItem("exaport_nav_drawer_open", navIsOpen ? "true" : "false");
+                    }
+                    
+                    var adaptableNav = document.querySelector("#navwrap");
+                    if (adaptableNav) {
+                        var adaptableIsOpen = adaptableNav.style.display !== "none" && 
+                                             !adaptableNav.classList.contains("hidden");
+                        sessionStorage.setItem("exaport_adaptable_nav_open", adaptableIsOpen ? "true" : "false");
+                    }
+                } catch(e) {
+                    console.log("Error storing aside state:", e);
+                }
+            },
+            
+            restoreAsideState: function() {
+                try {
+                    var self = this;
+                    setTimeout(function() {
+                        var asideWasOpen = sessionStorage.getItem("exaport_aside_open") === "true";
+                        var navDrawerWasOpen = sessionStorage.getItem("exaport_nav_drawer_open") === "true";
+                        var adaptableNavWasOpen = sessionStorage.getItem("exaport_adaptable_nav_open") === "true";
+
+                        if (asideWasOpen) {
+                            var drawer = document.querySelector("[data-region=drawer]");
+                            if (drawer && !drawer.classList.contains("show")) {
+                                var toggleBtn = document.querySelector("[data-action=toggle-drawer]");
+                                if (toggleBtn) {
+                                    toggleBtn.click();
+                                }
+                            }
+                        }
+
+                        if (navDrawerWasOpen) {
+                            var navDrawer = document.querySelector("#nav-drawer");
+                            if (navDrawer && !navDrawer.classList.contains("show")) {
+                                var navToggle = document.querySelector("[data-action=toggle-nav-drawer]");
+                                if (navToggle) {
+                                    navToggle.click();
+                                }
+                            }
+                        }
+                        
+                        if (adaptableNavWasOpen) {
+                            var adaptableToggle = document.querySelector("#navtoggle");
+                            if (adaptableToggle) {
+                                var navwrap = document.querySelector("#navwrap");
+                                if (navwrap && navwrap.style.display === "none") {
+                                    adaptableToggle.click();
+                                }
+                            }
+                        }
+                    }, 400);
+                } catch(e) {
+                    console.log("Error restoring aside state:", e);
+                }
+            },
+            
+            setupEventListeners: function() {
+                var self = this;
+                
+                document.addEventListener("click", function(e) {
+                    var target = e.target.closest("a");
+                    if (target && target.href) {
+                        if (target.href.indexOf("/blocks/exaport/") !== -1 || 
+                            target.classList.contains("exaport-nav") ||
+                            target.closest(".block_exaport")) {
+                            self.storeAsideState();
+                        }
+                    }
+                });
+                
+                document.addEventListener("click", function(e) {
+                    if (e.target.matches("[data-action=toggle-drawer], [data-action=toggle-nav-drawer], #navtoggle")) {
+                        setTimeout(function() {
+                            self.storeAsideState();
+                        }, 200);
+                    }
+                });
+            },
+            
+            init: function() {
+                var self = this;
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", function() {
+                        self.restoreAsideState();
+                        self.setupEventListeners();
+                    });
+                } else {
+                    self.restoreAsideState();
+                    self.setupEventListeners();
+                }
+            }
+        };
+        
+        ExaportAsideMaintainer.init();
+    })();
+    ');
 }
 
 function block_exaport_shareall_enabled() {

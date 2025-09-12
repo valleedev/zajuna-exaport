@@ -21,16 +21,17 @@ if (!$COURSE) {
     require_once __DIR__ . '/../../config.php';
 }
 
-// TODO: check if this is needed
-if (empty($USER->id)) {
+// Only require login if we're in a web request context and not during plugin loading
+if (!defined('CLI_SCRIPT') && isset($_SERVER['REQUEST_METHOD']) && !empty($USER) && empty($USER->id)) {
     require_login();
 }
 
-// force clean theme.
-$PAGE->set_pagelayout('standard');
-
-$PAGE->requires->jquery();
-$PAGE->requires->jquery_plugin('ui');
+// Only set page layout if PAGE is available and we're not in CLI
+if (!defined('CLI_SCRIPT') && isset($PAGE) && is_object($PAGE)) {
+    $PAGE->set_pagelayout('standard');
+    $PAGE->requires->jquery();
+    $PAGE->requires->jquery_plugin('ui');
+}
 
 // Get rid 'warning' messages for ajax request (regardless moodle configuration)
 if (

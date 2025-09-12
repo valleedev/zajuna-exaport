@@ -21,7 +21,7 @@ use block_exaport\globals as g;
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $sort = optional_param('sort', '', PARAM_RAW);
-$categoryid = optional_param('categoryid', 0, PARAM_INT);
+$categoryid = optional_param('categoryid', '', PARAM_RAW); // Changed to RAW to support course_123 format
 $userid = optional_param('userid', 0, PARAM_INT);
 $type = optional_param('type', '', PARAM_TEXT);
 $layout = optional_param('layout', '', PARAM_TEXT);
@@ -144,23 +144,31 @@ if ($type == 'sharedstudent') {
             ];
         }
 
-        $subcategories = !empty($categoriesbyparent[$currentcategory->id]) ? $categoriesbyparent[$currentcategory->id] : [];
+        // Only look for subcategories if this is a numeric ID (traditional category)
+        $subcategories = (is_numeric($currentcategory->id) && !empty($categoriesbyparent[$currentcategory->id])) 
+            ? $categoriesbyparent[$currentcategory->id] : [];
 
         // Common items.
-        $items = $DB->get_records_sql("
-            SELECT DISTINCT i.*, COUNT(com.id) As comments
-            FROM {block_exaportitem} i
-            LEFT JOIN {block_exaportitemcomm} com on com.itemid = i.id
-            WHERE i.userid = ?
-                AND i.categoryid=?
-                AND " . block_exaport_get_item_where() .
-            " GROUP BY i.id, i.userid, i.type, i.categoryid, i.name, i.url, i.intro,
-            i.attachment, i.timemodified, i.courseid, i.shareall, i.externaccess,
-            i.externcomment, i.sortorder, i.isoez, i.fileurl, i.beispiel_url,
-            i.exampid, i.langid, i.beispiel_angabe, i.source, i.sourceid,
-            i.iseditable, i.example_url, i.parentid
-            $sqlsort
-        ", [$selecteduser->id, $currentcategory->id]);
+        // Only get items for traditional numeric categories, not course folders
+        if (is_numeric($currentcategory->id)) {
+            $items = $DB->get_records_sql("
+                SELECT DISTINCT i.*, COUNT(com.id) As comments
+                FROM {block_exaportitem} i
+                LEFT JOIN {block_exaportitemcomm} com on com.itemid = i.id
+                WHERE i.userid = ?
+                    AND i.categoryid=?
+                    AND " . block_exaport_get_item_where() .
+                " GROUP BY i.id, i.userid, i.type, i.categoryid, i.name, i.url, i.intro,
+                i.attachment, i.timemodified, i.courseid, i.shareall, i.externaccess,
+                i.externcomment, i.sortorder, i.isoez, i.fileurl, i.beispiel_url,
+                i.exampid, i.langid, i.beispiel_angabe, i.source, i.sourceid,
+                i.iseditable, i.example_url, i.parentid
+                $sqlsort
+            ", [$selecteduser->id, $currentcategory->id]);
+        } else {
+            // For course folders and sections, no traditional items yet
+            $items = array();
+        }
     }
 
 } else if ($type == 'shared') {
@@ -245,7 +253,9 @@ if ($type == 'sharedstudent') {
         }
 
         $currentcategory = $categories[$categoryid];
-        $subcategories = !empty($categoriesbyparent[$currentcategory->id]) ? $categoriesbyparent[$currentcategory->id] : [];
+        // Only look for subcategories if this is a numeric ID (traditional category)
+        $subcategories = (is_numeric($currentcategory->id) && !empty($categoriesbyparent[$currentcategory->id])) 
+            ? $categoriesbyparent[$currentcategory->id] : [];
         if (isset($categories[$currentcategory->pid]) &&
             category_allowed($selecteduser, $categories, $categories[$currentcategory->pid])
         ) {
@@ -267,20 +277,26 @@ if ($type == 'sharedstudent') {
             $usercondition = ' i.userid > 0 ';
         }
 
-        $items = $DB->get_records_sql("
-            SELECT DISTINCT i.*, COUNT(com.id) As comments
-            FROM {block_exaportitem} i
-            LEFT JOIN {block_exaportitemcomm} com on com.itemid = i.id
-            WHERE i.categoryid = ?
-                AND " . $usercondition . "
-                AND " . block_exaport_get_item_where() .
-            " GROUP BY i.id, i.userid, i.type, i.categoryid, i.name, i.url, i.intro,
-            i.attachment, i.timemodified, i.courseid, i.shareall, i.externaccess,
-            i.externcomment, i.sortorder, i.isoez, i.fileurl, i.beispiel_url,
-            i.exampid, i.langid, i.beispiel_angabe, i.source, i.sourceid,
-            i.iseditable, i.example_url, i.parentid
-            $sqlsort
-        ", [$currentcategory->id]);
+        // Only get items for traditional numeric categories, not course folders
+        if (is_numeric($currentcategory->id)) {
+            $items = $DB->get_records_sql("
+                SELECT DISTINCT i.*, COUNT(com.id) As comments
+                FROM {block_exaportitem} i
+                LEFT JOIN {block_exaportitemcomm} com on com.itemid = i.id
+                WHERE i.categoryid = ?
+                    AND " . $usercondition . "
+                    AND " . block_exaport_get_item_where() .
+                " GROUP BY i.id, i.userid, i.type, i.categoryid, i.name, i.url, i.intro,
+                i.attachment, i.timemodified, i.courseid, i.shareall, i.externaccess,
+                i.externcomment, i.sortorder, i.isoez, i.fileurl, i.beispiel_url,
+                i.exampid, i.langid, i.beispiel_angabe, i.source, i.sourceid,
+                i.iseditable, i.example_url, i.parentid
+                $sqlsort
+            ", [$currentcategory->id]);
+        } else {
+            // For course folders and sections, no traditional items yet
+            $items = array();
+        }
     }
 
 } else {
@@ -290,8 +306,17 @@ if ($type == 'sharedstudent') {
     // Get course folders for drive-like experience
     $coursefolders = block_exaport_get_user_course_folders($USER->id);
     
-    // Merge course folders with categories
-    $allcategories = array_merge($categories, $coursefolders);
+    // Get course sections if we're looking at a specific course
+    $coursesections = array();
+    $viewing_course_id = null;
+    if (strpos($categoryid, 'course_') === 0 && strpos($categoryid, 'section_') !== 0) {
+        // Extract course ID from category ID (format: course_123)
+        $viewing_course_id = str_replace('course_', '', $categoryid);
+        $coursesections = block_exaport_get_course_sections_as_folders($viewing_course_id, $courseid, $USER->id);
+    }
+    
+    // Merge course folders, sections, and categories
+    $allcategories = array_merge($categories, $coursefolders, $coursesections);
 
     foreach ($allcategories as $category) {
         if (!isset($category->url)) {
@@ -315,9 +340,21 @@ if ($type == 'sharedstudent') {
     $rootcategory = block_exaport_get_root_category();
     $allcategories[0] = $rootcategory;
 
-    // Handle course folder selection
+    // Handle course folder and section selection
     $currentcategory = null;
-    if (strpos($categoryid, 'course_') === 0) {
+    
+    // Convert empty categoryid to 0 for backward compatibility
+    if (empty($categoryid)) {
+        $categoryid = 0;
+    }
+    
+    if (strpos($categoryid, 'section_') === 0) {
+        // This is a course section
+        if (isset($coursesections[$categoryid])) {
+            $currentcategory = $coursesections[$categoryid];
+            $currentcategory->name = get_string('course_section', 'block_exaport') . ': ' . $currentcategory->name;
+        }
+    } else if (strpos($categoryid, 'course_') === 0) {
         // This is a course folder
         $courseid_from_category = str_replace('course_', '', $categoryid);
         if (isset($coursefolders[$categoryid])) {
@@ -331,20 +368,28 @@ if ($type == 'sharedstudent') {
     }
 
     // What's the parent category?.
-    if ($currentcategory->id && isset($allcategories[$currentcategory->pid])) {
+    if (!empty($currentcategory->id) && $currentcategory->id !== 0 && isset($allcategories[$currentcategory->pid])) {
         $parentcategory = $allcategories[$currentcategory->pid];
     } else {
         $parentcategory = null;
     }
 
-    $subcategories = !empty($categoriesbyparent[$currentcategory->id]) ? $categoriesbyparent[$currentcategory->id] : [];
+    // Only look for subcategories if this is a numeric ID (traditional category)
+    $subcategories = (is_numeric($currentcategory->id) && !empty($categoriesbyparent[$currentcategory->id])) 
+        ? $categoriesbyparent[$currentcategory->id] : [];
 
     // Common items.
-    if (strpos($currentcategory->id, 'course_') === 0) {
+    if (strpos($currentcategory->id, 'section_') === 0) {
+        // For course sections, get items related to that section (for now, empty)
+        $items = array(); // TODO: In the future, get section-related artifacts
+    } else if (strpos($currentcategory->id, 'course_') === 0) {
         // For course folders, get items related to that course (for now, empty)
         $items = array(); // TODO: In the future, get course-related artifacts
     } else {
-        $items = block_exaport_get_items_by_category_and_user($USER->id, $currentcategory->id, $sqlsort, true);
+        // For regular categories, get items normally
+        // Make sure we have a numeric category ID
+        $numeric_category_id = is_numeric($currentcategory->id) ? $currentcategory->id : 0;
+        $items = block_exaport_get_items_by_category_and_user($USER->id, $numeric_category_id, $sqlsort, true);
     }
 }
 
@@ -485,19 +530,19 @@ if (($type == 'shared' || $type == 'sharedstudent') && $selecteduser) {
 echo $currentcategory->name;
 echo '</b> ';*/
 
-if ($type == 'mine' && $currentcategory->id > 0) {
-    if (@$currentcategory->internshare && (count(exaport_get_category_shared_users($currentcategory->id)) > 0 ||
-            count(exaport_get_category_shared_groups($currentcategory->id)) > 0 || $currentcategory->shareall == 1)
+if ($type == 'mine' && $numeric_category_id > 0) {
+    if (@$currentcategory->internshare && (count(exaport_get_category_shared_users($numeric_category_id)) > 0 ||
+            count(exaport_get_category_shared_groups($numeric_category_id)) > 0 || $currentcategory->shareall == 1)
     ) {
         $currentcategoryPathItemButtons .= block_exaport_fontawesome_icon('handshake', 'regular', 1);
         //        $currentcategoryPathItemButtons .= ' <img src="pix/noteitshared.gif" alt="file" title="shared to other users">';
     }
-    $currentcategoryPathItemButtons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $currentcategory->id .
+    $currentcategoryPathItemButtons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $numeric_category_id .
         '&action=edit&back=same">'
         . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
         //            .'<img src="pix/edit.png" alt="'.get_string("edit").'" />'
         . '</a>';
-    $currentcategoryPathItemButtons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $currentcategory->id .
+    $currentcategoryPathItemButtons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $numeric_category_id .
         '&action=delete&back=same">'
         . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
         //            .'<img src="pix/del.png" alt="'.get_string("delete").'"/>'
@@ -1071,10 +1116,12 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
     global $CFG;
     $categoryContent = '';
 
-    // Add special CSS class for course folders
+    // Add special CSS class for course folders and sections
     $cardClasses = 'card h-100 excomdos_tile excomdos_tile_category id-' . $category->id;
     if (isset($category->type) && $category->type === 'course_folder') {
         $cardClasses .= ' exaport-course-folder-card';
+    } else if (isset($category->type) && $category->type === 'course_section') {
+        $cardClasses .= ' exaport-course-section-card';
     }
 
     $categoryContent .= '
@@ -1124,12 +1171,17 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
         $categoryThumbUrl = $category->url;
         $categoryName = $category->name;
         
-        // Special handling for course folders
+        // Special handling for course folders and sections
         if (isset($category->type) && $category->type === 'course_folder') {
             $categoryIcon = '<div class="course-folder-icon-large">' . 
                            block_exaport_fontawesome_icon('graduation-cap', 'solid', '6', [], [], [], '', [], [], [], ['exaport-course-folder-icon']) . 
                            '</div>';
             $categoryName = $category->name; // Full course name
+        } else if (isset($category->type) && $category->type === 'course_section') {
+            $categoryIcon = '<div class="course-section-icon-large">' . 
+                           block_exaport_fontawesome_icon('list-ul', 'solid', '6', [], [], [], '', [], [], [], ['exaport-course-section-icon']) . 
+                           '</div>';
+            $categoryName = $category->name; // Section name
         } else if ($category->icon) {
             if ($category->iconmerge) {
                 // icon merge (also look JS - exaport.js - block_exaport_check_fontawesome_icon_merging()):

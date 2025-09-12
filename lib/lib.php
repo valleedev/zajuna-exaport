@@ -2707,10 +2707,85 @@ function block_exaport_get_user_course_folders($userid = null) {
         $folder->item_cnt = 0; // Will be updated later if needed
         $folder->type = 'course_folder';
         $folder->icon = 'fa-graduation-cap'; // Course icon
-        $folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $course->id . 
+        $folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $courseid . 
                       '&categoryid=course_' . $course->id;
         $coursefolders[$folder->id] = $folder;
     }
     
     return $coursefolders;
+}
+
+/**
+ * Get course sections to display as subfolders when inside a course folder
+ * 
+ * @param int $target_courseid Course ID to get sections from
+ * @param int $context_courseid Current course context for URLs
+ * @param int $userid User ID (optional, defaults to current user)
+ * @return array Array of section objects formatted as folder structure
+ */
+function block_exaport_get_course_sections_as_folders($target_courseid, $context_courseid = null, $userid = null) {
+    global $DB, $USER, $CFG;
+    
+    if (!$target_courseid || $target_courseid <= 1) {
+        return array();
+    }
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    if (!$context_courseid) {
+        $context_courseid = $target_courseid;
+    }
+    
+    // Check if user is enrolled in the course
+    $context = context_course::instance($target_courseid);
+    if (!is_enrolled($context, $userid)) {
+        return array();
+    }
+    
+    // Get course sections
+    $course = get_course($target_courseid);
+    $modinfo = get_fast_modinfo($course, $userid);
+    $sections = $modinfo->get_section_info_all();
+    
+    $sectionfolders = array();
+    
+    foreach ($sections as $sectionnum => $section) {
+        // Skip section 0 (general section) unless it has a custom name
+        if ($sectionnum == 0 && empty($section->name)) {
+            continue;
+        }
+        
+        // Check if section is visible to user
+        if (!$section->uservisible) {
+            continue;
+        }
+        
+        $folder = new stdClass();
+        $folder->id = 'section_' . $target_courseid . '_' . $sectionnum;
+        $folder->courseid = $target_courseid;
+        $folder->sectionnum = $sectionnum;
+        $folder->section_id = $section->id;
+        
+        // Get section name
+        if (!empty($section->name)) {
+            $folder->name = $section->name;
+        } else {
+            // Use format-specific section name (e.g., "Topic 1", "Week 1")
+            $folder->name = get_section_name($course, $section);
+        }
+        
+        $folder->summary = $section->summary;
+        $folder->pid = 'course_' . $target_courseid; // Parent is the course folder
+        $folder->item_cnt = count($section->modinfo->sections[$sectionnum] ?? []);
+        $folder->type = 'course_section';
+        $folder->icon = 'fa-folder'; // Section icon
+        $folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $context_courseid . 
+                      '&categoryid=section_' . $target_courseid . '_' . $sectionnum;
+        
+        $sectionfolders[$folder->id] = $folder;
+    }
+    
+    return $sectionfolders;
 }

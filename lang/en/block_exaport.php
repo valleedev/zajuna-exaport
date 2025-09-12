@@ -53,6 +53,7 @@ $string['categorysaved'] = 'Category added.';
 $string['categoryedited'] = 'Category saved.';
 $string['categorydeleted'] = 'Category deleted.';
 $string['course_folder'] = 'Course Folder';
+$string['course_section'] = 'Course Section';
 $string['date'] = 'Date';
 $string['dontincludeurl'] = 'Check this box to unassociate the bookmark with the URL';
 $string['duplicatedurl'] = 'You already have this URL bookmarked.';

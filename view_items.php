@@ -377,6 +377,16 @@ if ($type == 'sharedstudent') {
     // Only look for subcategories if this is a numeric ID (traditional category)
     $subcategories = (is_numeric($currentcategory->id) && !empty($categoriesbyparent[$currentcategory->id])) 
         ? $categoriesbyparent[$currentcategory->id] : [];
+    
+    // If we're in a course folder, add course sections as subcategories
+    if (strpos($currentcategory->id, 'course_') === 0) {
+        $course_id = str_replace('course_', '', $currentcategory->id);
+        if (is_numeric($course_id)) {
+            $course_sections = block_exaport_get_course_sections_as_folders($course_id);
+            // Convert associative array to indexed array and merge with subcategories
+            $subcategories = array_merge($subcategories, array_values($course_sections));
+        }
+    }
 
     // Common items.
     if (strpos($currentcategory->id, 'section_') === 0) {
@@ -616,11 +626,15 @@ if ($layout == 'details') {
         $itemind++;
         $table->data[$itemind] = array();
         
-        // Different icon for course folders
+        // Different icon for course folders and sections
         if (isset($category->type) && $category->type === 'course_folder') {
             $table->data[$itemind]['type'] = '<span class="course-folder-icon">' . 
                 block_exaport_fontawesome_icon('graduation-cap', 'solid', 1) . '</span>';
             $categoryclass = 'exaport-course-folder';
+        } else if (isset($category->type) && $category->type === 'course_section') {
+            $table->data[$itemind]['type'] = '<span class="course-section-icon">' . 
+                block_exaport_fontawesome_icon('folder', 'regular', 1) . '</span>';
+            $categoryclass = 'exaport-course-section';
         } else {
             $table->data[$itemind]['type'] = block_exaport_fontawesome_icon('folder-open', 'regular', 2, [], [], [], '', [], [], [], ['exaport-items-category-middle']);
             $categoryclass = '';
@@ -630,31 +644,39 @@ if ($layout == 'details') {
 
         $table->data[$itemind][] = null;
 
-        if ($type == 'mine' && $category->id > 0) {
-            $table->data[$itemind]['icons'] = '<span class="excomdos_listicons">';
-            if ((isset($category->internshare) && $category->internshare == 1) &&
-                (count(exaport_get_category_shared_users($category->id)) > 0 ||
-                    count(exaport_get_category_shared_groups($category->id)) > 0 ||
-                    (isset($category->shareall) && $category->shareall == 1))
-            ) {
-                $table->data[$itemind]['icons'] .= block_exaport_fontawesome_icon('handshake', 'regular', 1);
-                //                $table->data[$itemind]['icons'] .= '<img src="pix/noteitshared.gif" alt="file" title="shared to other users">';
-            };
-            if (@$category->structure_share) {
-                $table->data[$itemind]['icons'] .= ' <img src="pix/sharedfolder.png" title="shared to other users as a structure">';
-            }
+        if ($type == 'mine' && ((is_numeric($category->id) && $category->id > 0) || 
+                                (isset($category->type) && ($category->type === 'course_folder' || $category->type === 'course_section')))) {
+            
+            // Only show edit/delete icons for traditional categories, not course folders/sections
+            if (is_numeric($category->id) && $category->id > 0) {
+                $table->data[$itemind]['icons'] = '<span class="excomdos_listicons">';
+                if ((isset($category->internshare) && $category->internshare == 1) &&
+                    (count(exaport_get_category_shared_users($category->id)) > 0 ||
+                        count(exaport_get_category_shared_groups($category->id)) > 0 ||
+                        (isset($category->shareall) && $category->shareall == 1))
+                ) {
+                    $table->data[$itemind]['icons'] .= block_exaport_fontawesome_icon('handshake', 'regular', 1);
+                    //                $table->data[$itemind]['icons'] .= '<img src="pix/noteitshared.gif" alt="file" title="shared to other users">';
+                };
+                if (@$category->structure_share) {
+                    $table->data[$itemind]['icons'] .= ' <img src="pix/sharedfolder.png" title="shared to other users as a structure">';
+                }
 
-            $table->data[$itemind]['icons'] .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid .
-                '&id=' . $category->id . '&action=edit">'
-                . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
-                //                    .'<img src="pix/edit.png" alt="'.get_string("edit").'" />'
-                . '</a>' .
-                ' <a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id .
-                '&action=delete">'
-                . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
-                //                    .'<img src="pix/del.png" alt="'.get_string("delete").'"/>'
-                . '</a>' .
-                '</span>';
+                $table->data[$itemind]['icons'] .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid .
+                    '&id=' . $category->id . '&action=edit">'
+                    . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
+                    //                    .'<img src="pix/edit.png" alt="'.get_string("edit").'" />'
+                    . '</a>' .
+                    ' <a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id .
+                    '&action=delete">'
+                    . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
+                    //                    .'<img src="pix/del.png" alt="'.get_string("delete").'"/>'
+                    . '</a>' .
+                    '</span>';
+            } else {
+                // For course folders and sections, no edit/delete icons
+                $table->data[$itemind]['icons'] = '';
+            }
         } else { // Category with shared items.
             $table->data[$itemind]['icons'] = '';
         }

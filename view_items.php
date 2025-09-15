@@ -1014,14 +1014,17 @@ function block_exaport_category_template_tile($category, $courseid, $type, $curr
             if (@$category->structure_share) {
                 $categoryContent .= ' <img src="pix/sharedfolder.png" title="shared to other users as a structure">';
             };
-            $categoryContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'
-                . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
-                //                            .'<img src="pix/edit.png" alt="file"></a>'
-                . '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=delete' . '">'
-                . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
-                //                            .'<img src="pix/del.png" alt="file">'
-                . '</a>
+            // Only show edit/delete buttons if user is not a student
+            if (!block_exaport_user_is_student()) {
+                $categoryContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'
+                    . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
+                    //                            .'<img src="pix/edit.png" alt="file"></a>'
+                    . '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=delete' . '">'
+                    . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
+                    //                            .'<img src="pix/del.png" alt="file">'
+                    . '</a>
         ';
+            }
         }
         $categoryContent .= '</span>';
     }
@@ -1231,15 +1234,18 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
             /*if (@$category->structure_share) {
                 $categoryContent .= ' <img src="pix/sharedfolder.png" title="shared to other users as a structure">';
             };*/
-            $categoryContent .= '
+            // Only show edit/delete buttons if user is not a student
+            if (!block_exaport_user_is_student()) {
+                $categoryContent .= '
 						<span class="excomdos_tileedit">
 							<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'
-                . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
-                . '</a>
+                    . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
+                    . '</a>
 							<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=delete' . '">'
-                . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
-                . '</a>
+                    . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
+                    . '</a>
 						</span>';
+            }
         }
     }
     if ($parentcategory) {

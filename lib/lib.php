@@ -2877,22 +2877,36 @@ function block_exaport_get_section_files($section_id, $context_courseid = null, 
                 continue;
             }
             
-            // Handle different module types that contain files
-            if ($cm->modname == 'resource') {
-                $file_item = block_exaport_get_resource_file($cm, $target_courseid, $context_courseid);
-                if ($file_item) {
-                    $files[] = $file_item;
-                }
-            } else if ($cm->modname == 'folder') {
-                $folder_files = block_exaport_get_folder_files($cm, $target_courseid, $context_courseid);
-                $files = array_merge($files, $folder_files);
-            } else if ($cm->modname == 'url') {
-                $url_item = block_exaport_get_url_link($cm, $target_courseid, $context_courseid);
-                if ($url_item) {
-                    $files[] = $url_item;
-                }
+            // Handle different module types
+            switch ($cm->modname) {
+                case 'resource':
+                    $item = block_exaport_get_resource_file($cm, $target_courseid, $context_courseid);
+                    break;
+                case 'folder':
+                    $folder_files = block_exaport_get_folder_files($cm, $target_courseid, $context_courseid);
+                    $files = array_merge($files, $folder_files);
+                    continue 2; // Skip the individual item adding since we added multiple
+                case 'url':
+                    $item = block_exaport_get_url_link($cm, $target_courseid, $context_courseid);
+                    break;
+                case 'assign':
+                    $item = block_exaport_get_assignment($cm, $target_courseid, $context_courseid);
+                    break;
+                case 'quiz':
+                    $item = block_exaport_get_quiz($cm, $target_courseid, $context_courseid);
+                    break;
+                case 'forum':
+                    $item = block_exaport_get_forum($cm, $target_courseid, $context_courseid);
+                    break;
+                default:
+                    // Generic handler for all other module types
+                    $item = block_exaport_get_generic_activity($cm, $target_courseid, $context_courseid);
+                    break;
             }
-            // Add more module types as needed (book, page, etc.)
+            
+            if ($item) {
+                $files[] = $item;
+            }
         }
     }
     
@@ -3106,14 +3120,223 @@ function block_exaport_get_url_link($cm, $target_courseid, $context_courseid) {
 }
 
 /**
- * Get file icon based on mimetype for course files
+ * Get assignment activity
+ */
+function block_exaport_get_assignment($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $item = new stdClass();
+        $item->id = 'assign_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link'; // Treat as link to assignment
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0;
+        $item->categoryid = 0;
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $CFG->wwwroot . '/mod/assign/view.php?id=' . $cm->id;
+        $item->fileurl = $item->url;
+        $item->attachment = '';
+        $item->is_course_file = true;
+        $item->activity_type = 'assign';
+        $item->icon = 'fa-tasks';
+        
+        return $item;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Get quiz activity
+ */
+function block_exaport_get_quiz($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $item = new stdClass();
+        $item->id = 'quiz_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link';
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0;
+        $item->categoryid = 0;
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $CFG->wwwroot . '/mod/quiz/view.php?id=' . $cm->id;
+        $item->fileurl = $item->url;
+        $item->attachment = '';
+        $item->is_course_file = true;
+        $item->activity_type = 'quiz';
+        $item->icon = 'fa-question-circle';
+        
+        return $item;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Get forum activity
+ */
+function block_exaport_get_forum($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $item = new stdClass();
+        $item->id = 'forum_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link';
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0;
+        $item->categoryid = 0;
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $CFG->wwwroot . '/mod/forum/view.php?id=' . $cm->id;
+        $item->fileurl = $item->url;
+        $item->attachment = '';
+        $item->is_course_file = true;
+        $item->activity_type = 'forum';
+        $item->icon = 'fa-comments';
+        
+        return $item;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Get generic activity for any module type
+ */
+function block_exaport_get_generic_activity($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $item = new stdClass();
+        $item->id = $cm->modname . '_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link';
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0;
+        $item->categoryid = 0;
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $CFG->wwwroot . '/mod/' . $cm->modname . '/view.php?id=' . $cm->id;
+        $item->fileurl = $item->url;
+        $item->attachment = '';
+        $item->is_course_file = true;
+        $item->activity_type = $cm->modname;
+        
+        // Set icon based on activity type
+        $item->icon = block_exaport_get_activity_icon($cm->modname);
+        
+        return $item;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Get appropriate icon for different activity types
+ */
+function block_exaport_get_activity_icon($modname) {
+    $icons = array(
+        'assign' => 'fa-tasks',
+        'quiz' => 'fa-question-circle',
+        'forum' => 'fa-comments',
+        'chat' => 'fa-comment',
+        'choice' => 'fa-check-square',
+        'data' => 'fa-database',
+        'feedback' => 'fa-star',
+        'glossary' => 'fa-book',
+        'lesson' => 'fa-graduation-cap',
+        'page' => 'fa-file-alt',
+        'book' => 'fa-book-open',
+        'wiki' => 'fa-edit',
+        'workshop' => 'fa-users',
+        'scorm' => 'fa-play-circle',
+        'survey' => 'fa-chart-bar',
+        'h5pactivity' => 'fa-puzzle-piece',
+        'lti' => 'fa-external-link-alt',
+        'bigbluebuttonbn' => 'fa-video',
+        'label' => 'fa-tag',
+        'imscp' => 'fa-archive',
+        'folder' => 'fa-folder',
+        'resource' => 'fa-file',
+        'url' => 'fa-link'
+    );
+    
+    return isset($icons[$modname]) ? $icons[$modname] : 'fa-puzzle-piece';
+}
+
+/**
+ * Get file icon based on mimetype for course files or activity type
  */
 function block_exaport_get_file_icon($item) {
     global $OUTPUT;
     
+    $iconsize = '48px';
+    $iconcolor = '#666';
+    
+    // Check if this is an activity (not a file)
+    if (isset($item->activity_type) && $item->activity_type) {
+        $icon_class = block_exaport_get_activity_icon($item->activity_type);
+        
+        // Define colors for different activity types
+        $activity_colors = array(
+            'fa-tasks' => '#2196F3',        // assign - blue
+            'fa-question-circle' => '#4CAF50',  // quiz - green
+            'fa-comments' => '#FF9800',     // forum - orange
+            'fa-comment' => '#9C27B0',      // chat - purple
+            'fa-check-square' => '#607D8B', // choice - blue grey
+            'fa-database' => '#795548',     // data - brown
+            'fa-star' => '#FFC107',         // feedback - amber
+            'fa-book' => '#3F51B5',         // glossary - indigo
+            'fa-graduation-cap' => '#E91E63', // lesson - pink
+            'fa-file-alt' => '#009688',     // page - teal
+            'fa-book-open' => '#8BC34A',    // book - light green
+            'fa-edit' => '#FF5722',         // wiki - deep orange
+            'fa-users' => '#673AB7',        // workshop - deep purple
+            'fa-play-circle' => '#F44336',  // scorm - red
+            'fa-chart-bar' => '#00BCD4',    // survey - cyan
+            'fa-puzzle-piece' => '#CDDC39', // h5p - lime
+            'fa-external-link-alt' => '#9E9E9E', // lti - grey
+            'fa-video' => '#2196F3',        // bigbluebutton - blue
+        );
+        
+        $color = isset($activity_colors[$icon_class]) ? $activity_colors[$icon_class] : $iconcolor;
+        return '<i class="fa ' . str_replace('fa-', '', $icon_class) . '" style="font-size: ' . $iconsize . '; color: ' . $color . ';"></i>';
+    }
+    
+    // Handle file types (original logic)
     if (!isset($item->mimetype)) {
         // Default file icon
-        return '<i class="fa fa-file" style="font-size: 48px; color: #666;"></i>';
+        return '<i class="fa fa-file" style="font-size: ' . $iconsize . '; color: ' . $iconcolor . ';"></i>';
     }
     
     $iconhtml = '';

@@ -319,3 +319,9 @@ $string['height'] = 'Height';
 $string['width'] = 'Width';
 $string['media_allowed_notes'] = 'URLs from the following sites are allowed:';
 $string['i_shared'] = 'I shared an eportfolio view with you';
+
+// Course files and sections
+$string['course_section'] = 'Sección del Curso';
+$string['course_folder'] = 'Curso';
+$string['course_file'] = 'Archivo del Curso';
+$string['section_files'] = 'Archivos de la Sección';

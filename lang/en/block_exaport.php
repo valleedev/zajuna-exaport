@@ -837,3 +837,9 @@ $string['block_exaport_used_layout'] = 'Used layout';
 $string['block_exaport_used_layout_body'] = 'Change the layout if you have some appearance problems. Right now it is used only for artefact list.';
 $string['block_exaport_used_layout_moodle_bootstrap'] = 'Cards layout';
 $string['block_exaport_used_layout_clean_old'] = 'Tiles layout (Old - ended of support from v4.6.7)';
+
+// Course files and sections
+$string['course_section'] = 'Course Section';
+$string['course_folder'] = 'Course';
+$string['course_file'] = 'Course File';
+$string['section_files'] = 'Section Files';

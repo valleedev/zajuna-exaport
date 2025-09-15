@@ -304,15 +304,22 @@ if ($type == 'sharedstudent') {
     $categories = block_exaport_get_all_categories_for_user($USER->id);
 
     // Get course folders for drive-like experience
-    $coursefolders = block_exaport_get_user_course_folders($USER->id);
+    $coursefolders = block_exaport_get_user_course_folders($USER->id, $courseid);
     
-    // Get course sections if we're looking at a specific course
+    // Get course sections if we're looking at a specific course OR if we're in a section
     $coursesections = array();
     $viewing_course_id = null;
     if (strpos($categoryid, 'course_') === 0 && strpos($categoryid, 'section_') !== 0) {
         // Extract course ID from category ID (format: course_123)
         $viewing_course_id = str_replace('course_', '', $categoryid);
         $coursesections = block_exaport_get_course_sections_as_folders($viewing_course_id, $courseid, $USER->id);
+    } else if (strpos($categoryid, 'section_') === 0) {
+        // If we're in a section, we also need to load sections to find the current one
+        $parts = explode('_', $categoryid);
+        if (count($parts) >= 3) {
+            $viewing_course_id = $parts[1]; // Extract course ID from section_courseid_sectionnum
+            $coursesections = block_exaport_get_course_sections_as_folders($viewing_course_id, $courseid, $USER->id);
+        }
     }
     
     // Merge course folders, sections, and categories
@@ -353,6 +360,39 @@ if ($type == 'sharedstudent') {
         if (isset($coursesections[$categoryid])) {
             $currentcategory = $coursesections[$categoryid];
             $currentcategory->name = get_string('course_section', 'block_exaport') . ': ' . $currentcategory->name;
+        } else {
+            // Section not found in coursesections, try to build it manually
+            $parts = explode('_', $categoryid);
+            if (count($parts) >= 3) {
+                $section_courseid = $parts[1];
+                $section_number = $parts[2];
+                
+                // Try to get the section information directly
+                try {
+                    $course = get_course($section_courseid);
+                    $modinfo = get_fast_modinfo($course, $USER->id);
+                    $section = $modinfo->get_section_info($section_number);
+                    
+                    if ($section && $section->uservisible) {
+                        $currentcategory = new stdClass();
+                        $currentcategory->id = $categoryid;
+                        $currentcategory->courseid = $section_courseid;
+                        $currentcategory->sectionnum = $section_number;
+                        $currentcategory->section_id = $section->id;
+                        $currentcategory->pid = 'course_' . $section_courseid;
+                        $currentcategory->type = 'course_section';
+                        $currentcategory->icon = 'fa-folder';
+                        
+                        if (!empty($section->name)) {
+                            $currentcategory->name = get_string('course_section', 'block_exaport') . ': ' . $section->name;
+                        } else {
+                            $currentcategory->name = get_string('course_section', 'block_exaport') . ': ' . get_section_name($course, $section);
+                        }
+                    }
+                } catch (Exception $e) {
+                    // If we can't get the section, it will fall back to root
+                }
+            }
         }
     } else if (strpos($categoryid, 'course_') === 0) {
         // This is a course folder
@@ -363,23 +403,27 @@ if ($type == 'sharedstudent') {
         }
     } else if (isset($allcategories[$categoryid])) {
         $currentcategory = $allcategories[$categoryid];
-    } else {
+    } 
+    
+    // Fallback to root category if current category is not found
+    if ($currentcategory === null) {
         $currentcategory = $rootcategory;
+        $categoryid = 0; // Reset to root
     }
 
     // What's the parent category?.
-    if (!empty($currentcategory->id) && $currentcategory->id !== 0 && isset($allcategories[$currentcategory->pid])) {
+    if ($currentcategory && !empty($currentcategory->id) && $currentcategory->id !== 0 && isset($allcategories[$currentcategory->pid])) {
         $parentcategory = $allcategories[$currentcategory->pid];
     } else {
         $parentcategory = null;
     }
 
     // Only look for subcategories if this is a numeric ID (traditional category)
-    $subcategories = (is_numeric($currentcategory->id) && !empty($categoriesbyparent[$currentcategory->id])) 
+    $subcategories = ($currentcategory && is_numeric($currentcategory->id) && !empty($categoriesbyparent[$currentcategory->id])) 
         ? $categoriesbyparent[$currentcategory->id] : [];
     
     // If we're in a course folder, add course sections as subcategories
-    if (strpos($currentcategory->id, 'course_') === 0) {
+    if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'course_') === 0) {
         $course_id = str_replace('course_', '', $currentcategory->id);
         if (is_numeric($course_id)) {
             $course_sections = block_exaport_get_course_sections_as_folders($course_id);
@@ -389,21 +433,28 @@ if ($type == 'sharedstudent') {
     }
 
     // Common items.
-    if (strpos($currentcategory->id, 'section_') === 0) {
-        // For course sections, get items related to that section (for now, empty)
-        $items = array(); // TODO: In the future, get section-related artifacts
-    } else if (strpos($currentcategory->id, 'course_') === 0) {
+    // Define numeric_category_id for backward compatibility
+    $numeric_category_id = ($currentcategory && is_numeric($currentcategory->id)) ? $currentcategory->id : 0;
+    
+    if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'section_') === 0) {
+        // For course sections, get files related to that section
+        $items = block_exaport_get_section_files($currentcategory->id, $courseid, $USER->id);
+    } else if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'course_') === 0) {
         // For course folders, get items related to that course (for now, empty)
         $items = array(); // TODO: In the future, get course-related artifacts
     } else {
         // For regular categories, get items normally
-        // Make sure we have a numeric category ID
-        $numeric_category_id = is_numeric($currentcategory->id) ? $currentcategory->id : 0;
         $items = block_exaport_get_items_by_category_and_user($USER->id, $numeric_category_id, $sqlsort, true);
     }
 }
 
-$PAGE->set_url($currentcategory->url);
+// Set page URL - ensure it's a local URL
+$page_url = '/blocks/exaport/view_items.php';
+$url_params = array('courseid' => $courseid);
+if (!empty($categoryid)) {
+    $url_params['categoryid'] = $categoryid;
+}
+$PAGE->set_url(new moodle_url($page_url, $url_params));
 $PAGE->set_context(context_system::instance());
 
 block_exaport_add_iconpack();
@@ -1248,7 +1299,13 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
     global $CFG, $USER, $DB;
 
     $iconTypeProps = block_exaport_item_icon_type_options($item->type);
-    $url = $CFG->wwwroot . '/blocks/exaport/shared_item.php?courseid=' . $courseid . '&access=portfolio/id/' . $item->userid . '&itemid=' . $item->id;
+    
+    // Special handling for course files - use direct file URL instead of shared_item.php
+    if (isset($item->is_course_file) && $item->is_course_file) {
+        $url = $item->url; // Use the direct file URL
+    } else {
+        $url = $CFG->wwwroot . '/blocks/exaport/shared_item.php?courseid=' . $courseid . '&access=portfolio/id/' . $item->userid . '&itemid=' . $item->id;
+    }
 
     $itemContent = '
         <div class="col mb-4">
@@ -1267,15 +1324,18 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
             sesskey() . '&action=copytoself' . '"><img src="pix/import.png" title="' .
             get_string('make_it_yours', "block_exaport") . '"></a>';
     } else {
-        if ($item->comments > 0) {
-            $itemContent .= ' <span class="excomdos_listcomments">' . $item->comments
-                . block_exaport_fontawesome_icon('comment', 'regular', 1, [], [], [], '', [], [], [], [])
-                . '</span>';
+        // Don't show comments and edit buttons for course files
+        if (!isset($item->is_course_file) || !$item->is_course_file) {
+            if ($item->comments > 0) {
+                $itemContent .= ' <span class="excomdos_listcomments">' . $item->comments
+                    . block_exaport_fontawesome_icon('comment', 'regular', 1, [], [], [], '', [], [], [], [])
+                    . '</span>';
+            }
+            $itemContent .= block_exaport_get_item_project_icon($item);
+            $itemContent .= block_exaport_get_item_comp_icon($item);
         }
-        $itemContent .= block_exaport_get_item_project_icon($item);
-        $itemContent .= block_exaport_get_item_comp_icon($item);
 
-        if (in_array($type, ['mine', 'shared'])) {
+        if (in_array($type, ['mine', 'shared']) && (!isset($item->is_course_file) || !$item->is_course_file)) {
             $cattype = '';
             if ($type == 'shared') {
                 $cattype = '&cattype=shared';
@@ -1309,9 +1369,18 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
     $itemContent .= '</div>
 					</div>
 					<div class="card-body excomdos_tileimage d-flex justify-content-center align-items-center">
-					    <a href="' . $url . '">
-					        <img height="75" alt="' . $item->name . '" title="' . $item->name . '" src="' . $CFG->wwwroot . '/blocks/exaport/item_thumb.php?item_id=' . $item->id . '"/>
-                        </a>
+					    <a href="' . $url . '">';
+    
+    // Special handling for course files - show file type icon instead of thumbnail
+    if (isset($item->is_course_file) && $item->is_course_file) {
+        // Use file type icon based on mimetype
+        $fileicon = block_exaport_get_file_icon($item);
+        $itemContent .= $fileicon;
+    } else {
+        $itemContent .= '<img height="75" alt="' . $item->name . '" title="' . $item->name . '" src="' . $CFG->wwwroot . '/blocks/exaport/item_thumb.php?item_id=' . $item->id . '"/>';
+    }
+    
+    $itemContent .= '</a>
 					</div>
 					<div class="card-extitle exomdos_tiletitle">
 						<a href="' . $url . '">' . $item->name . '</a>

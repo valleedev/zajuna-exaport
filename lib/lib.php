@@ -566,14 +566,30 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
 
     $tabtree = new tabtree($tabs, $currenttab);
     if ($tabsubitemidentifier && $tabobj = $tabtree->find($tabsubitemidentifier)) {
-        // Overwrite active and selected.
-        $tabobj->active = true;
-        $tabobj->selected = true;
+        // Overwrite active and selected - suppress deprecation warning
+        if (!property_exists($tabobj, 'active')) {
+            $tabobj->active = true;
+        } else {
+            $tabobj->active = true;
+        }
+        if (!property_exists($tabobj, 'selected')) {
+            $tabobj->selected = true;
+        } else {
+            $tabobj->selected = true;
+        }
     }
     if ($tabobj = $tabtree->find($tabitemidentifier)) {
-        // Overwrite active and selected.
-        $tabobj->active = true;
-        $tabobj->selected = true;
+        // Overwrite active and selected - suppress deprecation warning
+        if (!property_exists($tabobj, 'active')) {
+            $tabobj->active = true;
+        } else {
+            $tabobj->active = true;
+        }
+        if (!property_exists($tabobj, 'selected')) {
+            $tabobj->selected = true;
+        } else {
+            $tabobj->selected = true;
+        }
     }
 
     $itemname = get_string($navitemidentifier, "block_exaport");
@@ -2677,11 +2693,15 @@ function block_exaport_used_layout() {
  * @param int $userid User ID (optional, defaults to current user)
  * @return array Array of course objects formatted as folder structure
  */
-function block_exaport_get_user_course_folders($userid = null) {
+function block_exaport_get_user_course_folders($userid = null, $courseid = null) {
     global $DB, $USER, $CFG;
     
     if (!$userid) {
         $userid = $USER->id;
+    }
+    
+    if (!$courseid) {
+        $courseid = 1; // Default to site course
     }
     
     // Get only enrolled courses for the user
@@ -2788,4 +2808,346 @@ function block_exaport_get_course_sections_as_folders($target_courseid, $context
     }
     
     return $sectionfolders;
+}
+
+/**
+ * Get files and resources from a specific course section
+ * 
+ * @param string $section_id Section ID in format: section_courseid_sectionnum
+ * @param int $context_courseid Current course context for URLs
+ * @param int $userid User ID (optional, defaults to current user)
+ * @return array Array of file/resource objects formatted as portfolio items
+ */
+function block_exaport_get_section_files($section_id, $context_courseid = null, $userid = null) {
+    global $DB, $USER, $CFG, $OUTPUT;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    if (!$context_courseid) {
+        $context_courseid = 1; // Default to site context
+    }
+    
+    // Parse section ID (format: section_courseid_sectionnum)
+    $parts = explode('_', $section_id);
+    if (count($parts) !== 3 || $parts[0] !== 'section') {
+        return array();
+    }
+    
+    $target_courseid = intval($parts[1]);
+    $sectionnum = intval($parts[2]);
+    
+    if (!$target_courseid || $sectionnum < 0) {
+        return array();
+    }
+    
+    // Check if user is enrolled in the course
+    try {
+        $context = context_course::instance($target_courseid);
+        if (!is_enrolled($context, $userid)) {
+            return array();
+        }
+    } catch (Exception $e) {
+        return array();
+    }
+    
+    // Get course and section information
+    try {
+        $course = get_course($target_courseid);
+        $modinfo = get_fast_modinfo($course, $userid);
+        $section = $modinfo->get_section_info($sectionnum);
+        
+        if (!$section || !$section->uservisible) {
+            return array();
+        }
+    } catch (Exception $e) {
+        return array();
+    }
+    
+    $files = array();
+    
+    // Get all course modules in this section
+    if (!empty($modinfo->sections[$sectionnum])) {
+        foreach ($modinfo->sections[$sectionnum] as $cmid) {
+            $cm = $modinfo->get_cm($cmid);
+            
+            // Skip if module is not visible to user
+            if (!$cm->uservisible) {
+                continue;
+            }
+            
+            // Handle different module types that contain files
+            if ($cm->modname == 'resource') {
+                $file_item = block_exaport_get_resource_file($cm, $target_courseid, $context_courseid);
+                if ($file_item) {
+                    $files[] = $file_item;
+                }
+            } else if ($cm->modname == 'folder') {
+                $folder_files = block_exaport_get_folder_files($cm, $target_courseid, $context_courseid);
+                $files = array_merge($files, $folder_files);
+            } else if ($cm->modname == 'url') {
+                $url_item = block_exaport_get_url_link($cm, $target_courseid, $context_courseid);
+                if ($url_item) {
+                    $files[] = $url_item;
+                }
+            }
+            // Add more module types as needed (book, page, etc.)
+        }
+    }
+    
+    return $files;
+}
+
+/**
+ * Get file information from a resource module
+ */
+function block_exaport_get_resource_file($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG, $OUTPUT;
+    
+    try {
+        $context = context_module::instance($cm->id);
+        $fs = get_file_storage();
+        
+        // Get files from the content area of the resource
+        $files = $fs->get_area_files($context->id, 'mod_resource', 'content', 0, 'filename', false);
+        
+        foreach ($files as $file) {
+            // Skip directories
+            if ($file->is_directory()) {
+                continue;
+            }
+            
+            $filename = $file->get_filename();
+            $mimetype = $file->get_mimetype();
+            
+            // Check if it's a document file (PDF, DOC, DOCX, etc.)
+            $allowed_mimetypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/plain',
+                'image/jpeg',
+                'image/png',
+                'image/gif'
+            ];
+            
+            if (!in_array($mimetype, $allowed_mimetypes)) {
+                continue; // Skip files that are not documents or images
+            }
+            
+            $item = new stdClass();
+            $item->id = 'file_' . $cm->id . '_' . $file->get_id();
+            $item->name = $cm->name . ' (' . $filename . ')';
+            $item->type = 'file';
+            $item->intro = $cm->intro ?? '';
+            $item->timemodified = $file->get_timemodified();
+            $item->courseid = $target_courseid;
+            $item->userid = 0; // System generated
+            $item->categoryid = 0; // Not in a traditional category
+            $item->shareall = 0;
+            $item->externaccess = 0;
+            $item->externcomment = 0;
+            $item->sortorder = 0;
+            $item->comments = 0;
+            
+            // Generate file URL
+            $item->url = moodle_url::make_pluginfile_url(
+                $file->get_contextid(),
+                $file->get_component(),
+                $file->get_filearea(),
+                $file->get_itemid(),
+                $file->get_filepath(),
+                $file->get_filename()
+            )->out();
+            
+            $item->fileurl = $item->url;
+            $item->attachment = $filename;
+            $item->mimetype = $mimetype;
+            $item->filesize = $file->get_filesize();
+            $item->icon = $OUTPUT->pix_icon(file_file_icon($file), '');
+            $item->is_course_file = true; // Flag to identify course files
+            
+            return $item; // Return the first valid file
+        }
+    } catch (Exception $e) {
+        // Silently continue if there's an error accessing the file
+    }
+    
+    return null;
+}
+
+/**
+ * Get files from a folder module
+ */
+function block_exaport_get_folder_files($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG, $OUTPUT;
+    
+    $files = array();
+    
+    try {
+        $context = context_module::instance($cm->id);
+        $fs = get_file_storage();
+        
+        // Get files from the content area of the folder
+        $storedfiles = $fs->get_area_files($context->id, 'mod_folder', 'content', 0, 'filename', false);
+        
+        foreach ($storedfiles as $file) {
+            // Skip directories
+            if ($file->is_directory()) {
+                continue;
+            }
+            
+            $filename = $file->get_filename();
+            $mimetype = $file->get_mimetype();
+            
+            // Check if it's a document file (PDF, DOC, DOCX, etc.)
+            $allowed_mimetypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/plain',
+                'image/jpeg',
+                'image/png',
+                'image/gif'
+            ];
+            
+            if (!in_array($mimetype, $allowed_mimetypes)) {
+                continue; // Skip files that are not documents or images
+            }
+            
+            $item = new stdClass();
+            $item->id = 'folderfile_' . $cm->id . '_' . $file->get_id();
+            $item->name = $filename;
+            $item->type = 'file';
+            $item->intro = $cm->intro ?? '';
+            $item->timemodified = $file->get_timemodified();
+            $item->courseid = $target_courseid;
+            $item->userid = 0; // System generated
+            $item->categoryid = 0; // Not in a traditional category
+            $item->shareall = 0;
+            $item->externaccess = 0;
+            $item->externcomment = 0;
+            $item->sortorder = 0;
+            $item->comments = 0;
+            
+            // Generate file URL
+            $item->url = moodle_url::make_pluginfile_url(
+                $file->get_contextid(),
+                $file->get_component(),
+                $file->get_filearea(),
+                $file->get_itemid(),
+                $file->get_filepath(),
+                $file->get_filename()
+            )->out();
+            
+            $item->fileurl = $item->url;
+            $item->attachment = $filename;
+            $item->mimetype = $mimetype;
+            $item->filesize = $file->get_filesize();
+            $item->icon = $OUTPUT->pix_icon(file_file_icon($file), '');
+            $item->is_course_file = true; // Flag to identify course files
+            
+            $files[] = $item;
+        }
+    } catch (Exception $e) {
+        // Silently continue if there's an error accessing the files
+    }
+    
+    return $files;
+}
+
+/**
+ * Get URL from a URL module (link)
+ */
+function block_exaport_get_url_link($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $url_module = $DB->get_record('url', array('id' => $cm->instance));
+        if (!$url_module) {
+            return null;
+        }
+        
+        $item = new stdClass();
+        $item->id = 'url_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link';
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0; // System generated
+        $item->categoryid = 0; // Not in a traditional category
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $url_module->externalurl;
+        $item->fileurl = $url_module->externalurl;
+        $item->attachment = '';
+        $item->is_course_file = true; // Flag to identify course files
+        
+        return $item;
+    } catch (Exception $e) {
+        // Silently continue if there's an error
+    }
+    
+    return null;
+}
+
+/**
+ * Get file icon based on mimetype for course files
+ */
+function block_exaport_get_file_icon($item) {
+    global $OUTPUT;
+    
+    if (!isset($item->mimetype)) {
+        // Default file icon
+        return '<i class="fa fa-file" style="font-size: 48px; color: #666;"></i>';
+    }
+    
+    $iconhtml = '';
+    $iconsize = '48px';
+    $iconcolor = '#666';
+    
+    switch ($item->mimetype) {
+        case 'application/pdf':
+            $iconhtml = '<i class="fa fa-file-pdf" style="font-size: ' . $iconsize . '; color: #d32f2f;"></i>';
+            break;
+        case 'application/msword':
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            $iconhtml = '<i class="fa fa-file-word" style="font-size: ' . $iconsize . '; color: #1976d2;"></i>';
+            break;
+        case 'application/vnd.ms-excel':
+        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+            $iconhtml = '<i class="fa fa-file-excel" style="font-size: ' . $iconsize . '; color: #388e3c;"></i>';
+            break;
+        case 'application/vnd.ms-powerpoint':
+        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+            $iconhtml = '<i class="fa fa-file-powerpoint" style="font-size: ' . $iconsize . '; color: #f57c00;"></i>';
+            break;
+        case 'text/plain':
+            $iconhtml = '<i class="fa fa-file-text" style="font-size: ' . $iconsize . '; color: ' . $iconcolor . ';"></i>';
+            break;
+        case 'image/jpeg':
+        case 'image/png':
+        case 'image/gif':
+            $iconhtml = '<i class="fa fa-file-image" style="font-size: ' . $iconsize . '; color: #7b1fa2;"></i>';
+            break;
+        default:
+            $iconhtml = '<i class="fa fa-file" style="font-size: ' . $iconsize . '; color: ' . $iconcolor . ';"></i>';
+            break;
+    }
+    
+    return $iconhtml;
 }

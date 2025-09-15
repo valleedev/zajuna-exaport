@@ -786,8 +786,6 @@ $string['privacy:metadata:block_exaportresume:skillspersonal'] = 'Persönliche F
 $string['privacy:metadata:block_exaportresume:skillsacademic'] = 'akademische Fähigkeiten';
 $string['privacy:metadata:block_exaportresume:skillscareers'] = 'Karriere Fähigkeiten';
 $string['privacy:metadata:core_files'] = 'Exabis ePortfolio speichert Dateien, die vom Benutzer hochgeladen wurden, um Teil von Artefakten, Lebenslaufeinträgen und Kommentaren zu werden.';
-$string['whyEportfolio'] = 'Warum ein ePortfolio?';
-$string['whyEportfolio_description'] = '<h4>Lass deine harte Arbeit nicht verschwinden: Erstelle dein digitales Portfolio</h4>
 				<br>
 				<p>Stell dir vor, all die Mühe, die du in Aufgaben, Präsentationen und Projekte steckst. Hast du jemals das Gefühl, dass es nach der Abgabe einfach in einer Schublade verschwindet?</p>
 				<p>Aber hier ist die gute Nachricht: Diese Projekte sind <strong>Beweise für deine Fähigkeiten und dein Wissen</strong>, und du kannst sie nutzen, um potenzielle Arbeitgeber oder Kunden zu beeindrucken!</p>

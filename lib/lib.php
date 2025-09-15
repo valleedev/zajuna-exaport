@@ -509,10 +509,6 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
             get_string("back_to_desp", "block_exaport"), '', true);
     }
 
-    if (get_string("whyEportfolio_description", "block_exaport") !== '[[whyEportfolio_description]]') { // only for translated description
-        $tabs['whyEportfolio'] = new tabobject('whyEportfolio', $CFG->wwwroot . '/blocks/exaport/whyeportfolio.php?courseid=' . $COURSE->id,
-            get_string("whyEportfolio", "block_exaport"), '', true);
-    }
     $tabs['resume_my'] = new tabobject('resume_my', $CFG->wwwroot . '/blocks/exaport/resume.php?courseid=' . $COURSE->id,
         get_string("resume_my", "block_exaport"), '', true);
     $tabs['myportfolio'] = new tabobject('myportfolio', $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id,

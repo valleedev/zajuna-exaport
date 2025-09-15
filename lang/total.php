@@ -2761,67 +2761,6 @@ return [
         'Exabis ePortfolio speichert Dateien, die vom Benutzer hochgeladen wurden, um Teil von Artefakten, Lebenslaufeinträgen und Kommentaren zu werden.',
         'Exabis ePortfolio stores files which have been uploaded by the user to form part of artefacts, resume entries and comments.',
     ],
-    'whyEportfolio' => [
-        'Warum ein ePortfolio?',
-        'Why ePortfolio',
-    ],
-    'whyEportfolio_description' => [
-        '<h4>Lass deine harte Arbeit nicht verschwinden: Erstelle dein digitales Portfolio</h4>
-				<br>
-				<p>Stell dir vor, all die Mühe, die du in Aufgaben, Präsentationen und Projekte steckst. Hast du jemals das Gefühl, dass es nach der Abgabe einfach in einer Schublade verschwindet?</p>
-				<p>Aber hier ist die gute Nachricht: Diese Projekte sind <strong>Beweise für deine Fähigkeiten und dein Wissen</strong>, und du kannst sie nutzen, um potenzielle Arbeitgeber oder Kunden zu beeindrucken!</p>
-				<p><strong>Erstelle dein digitales Portfolio</strong> und präsentiere deine besten Arbeiten, von Präsentationen, Aufgaben und Projekten bis hin zu Videos. Es ist einfacher, als du denkst!</p>
-				<br>
-				<h4>Was ist ein ePortfolio?</h4>
-				<br>
-				<p>Ein <strong>ePortfolio</strong> (elektronisches Portfolio) ist eine <strong>digitale Sammlung</strong>, die deine <strong>Fähigkeiten, dein Wissen und deine Erfahrungen</strong> präsentiert.
-					Während dein Lebenslauf sich auf deine Ausbildung und Berufserfahrung konzentriert, geht dein ePortfolio darüber hinaus und bietet <strong>Beweise und Kontext</strong> für deine Fähigkeiten.
-					Es ermöglicht dir, Arbeitsproben zu zeigen und dein <strong>Talent schnell und effektiv zu demonstrieren</strong>.
-					Letztendlich ist dein ePortfolio ein mächtiges Werkzeug, um deine <strong>Qualifikationen hervorzuheben</strong> und dich abzuheben.
-				</p>
-				<p><strong>Denke daran, dass verschiedene Rollen unterschiedliche Arten von ePortfolios erfordern können.</strong>
-					Einige Schlüsselelemente bleiben jedoch konstant.
-					Mit <strong>Exabis ePortfolio</strong> kannst du <strong>mehrere Ansichten erstellen</strong>, die auf bestimmte Positionen, Jobchancen oder andere Zwecke zugeschnitten sind.
-				</p>
-				<br>
-				<h4>Wie erstelle ich mein ePortfolio?</h4>
-				<br>
-				<ol>
-					<li><strong>Sammle deine Arbeiten</strong>: Beginne damit, alle deine Projekte, Präsentationen und Aufgaben zu überprüfen.</li>
-					<li><strong>Wähle deine besten Arbeiten aus</strong>: Wähle die Stücke aus, die deine stärksten Fähigkeiten zeigen und die positives Feedback erhalten haben.</li>
-					<li><strong>Reflektiere und beschreibe</strong>: Überlege, welche Fähigkeiten und Kompetenzen jedes Stück demonstriert. Schreibe eine kurze Beschreibung, um Kontext zu bieten.</li>
-					<li><strong>Erstelle und iteriere</strong>: Scheue dich nicht davor, zu experimentieren und dein ePortfolio im Laufe der Zeit zu verfeinern, während du lernst und wächst.</li>
-				</ol>
-				<p><strong>Exabis ePortfolio</strong> kann dich durch jeden Schritt führen und den Prozess der Erstellung deines ePortfolios reibungslos und effizient gestalten.</p>',
-        '   <h4>Don\'t Let Your Hard Work Disappear: Build Your Digital Portfolio</h4>
-                <br>
-                <p>Imagine all the effort you put into assignments, presentations, and projects. Do you ever feel like it just gets buried in a drawer after it\'s submitted?</p>
-                <p>But here\'s the good news: those projects are <strong>proof of your skills and knowledge</strong>, and you can use them to impress potential employers or clients!</p>
-                <p><strong>Build your digital portfolio</strong> and showcase your best work, from presentations, assignments, and projects to videos. It\'s easier than you think!</p>
-                <br>
-                <h4>What is an ePortfolio?</h4>
-                <br>
-                <p>An <strong>ePortfolio</strong> (electronic portfolio) is a <strong>digital collection</strong> that showcases your <strong>skills, knowledge, and experiences</strong>.
-                    While your CV focuses on your education and work history, your ePortfolio goes beyond that, providing <strong>proof and context</strong> for your skills.
-                    It lets you showcase your work samples and <strong>demonstrate your talent</strong> quickly and effectively.
-                    Ultimately, your ePortfolio is a powerful tool to <strong>highlight your qualifications</strong> and set you apart.
-                </p>
-                <p><strong>Remember, different roles may require different types of ePortfolios.</strong>
-                    However, some key elements remain constant.
-                    <strong>Exabis ePortfolio</strong> allows you to <strong>create multiple views</strong> tailored to specific positions, job opportunities, or other purposes.
-                </p>
-                <br>
-                <h4>How to Build Your ePortfolio</h4>
-                <br>
-                <ol>
-                    <li><strong>Gather your work</strong>: Start by reviewing all your projects, presentations, and assignments.</li>
-                    <li><strong>Choose your best work</strong>: Select the pieces that showcase your strongest skills and those that have received positive feedback.</li>
-                    <li><strong>Reflect and describe</strong>: Think about the skills and competencies each piece demonstrates. Write a brief description to provide context.</li>
-                    <li><strong>Build and iterate</strong>: Don\'t be afraid to experiment and refine your ePortfolio as you learn and grow.</li>
-                </ol>
-                <p><strong>Exabis ePortfolio</strong> can guide you through each step, making the process of building your ePortfolio smooth and efficient.</p>
-',
-    ],
     'cofigureblock_cvinfo_help' => [
         'Du wirst den aktuellen Status der ausgewählten Elemente in deinem Lebenslauf sehen. Der Blockinhalt wird aktualisiert, wenn du später Änderungen an irgendwelchen Elementen in deinem Lebenslauf vornimmst.',
         'You will see the current status of the selected items in your CV. The block content will be updated if you make changes to any items in your CV later.',

@@ -789,35 +789,6 @@ $string['privacy:metadata:block_exaportresume:skillspersonal'] = 'personal skill
 $string['privacy:metadata:block_exaportresume:skillsacademic'] = 'academic skills';
 $string['privacy:metadata:block_exaportresume:skillscareers'] = 'careers skills';
 $string['privacy:metadata:core_files'] = 'Exabis ePortfolio stores files which have been uploaded by the user to form part of artefacts, resume entries and comments.';
-$string['whyEportfolio'] = 'Why ePortfolio';
-$string['whyEportfolio_description'] = '   <h4>Don\'t Let Your Hard Work Disappear: Build Your Digital Portfolio</h4>
-                <br>
-                <p>Imagine all the effort you put into assignments, presentations, and projects. Do you ever feel like it just gets buried in a drawer after it\'s submitted?</p>
-                <p>But here\'s the good news: those projects are <strong>proof of your skills and knowledge</strong>, and you can use them to impress potential employers or clients!</p>
-                <p><strong>Build your digital portfolio</strong> and showcase your best work, from presentations, assignments, and projects to videos. It\'s easier than you think!</p>
-                <br>
-                <h4>What is an ePortfolio?</h4>
-                <br>
-                <p>An <strong>ePortfolio</strong> (electronic portfolio) is a <strong>digital collection</strong> that showcases your <strong>skills, knowledge, and experiences</strong>.
-                    While your CV focuses on your education and work history, your ePortfolio goes beyond that, providing <strong>proof and context</strong> for your skills.
-                    It lets you showcase your work samples and <strong>demonstrate your talent</strong> quickly and effectively.
-                    Ultimately, your ePortfolio is a powerful tool to <strong>highlight your qualifications</strong> and set you apart.
-                </p>
-                <p><strong>Remember, different roles may require different types of ePortfolios.</strong>
-                    However, some key elements remain constant.
-                    <strong>Exabis ePortfolio</strong> allows you to <strong>create multiple views</strong> tailored to specific positions, job opportunities, or other purposes.
-                </p>
-                <br>
-                <h4>How to Build Your ePortfolio</h4>
-                <br>
-                <ol>
-                    <li><strong>Gather your work</strong>: Start by reviewing all your projects, presentations, and assignments.</li>
-                    <li><strong>Choose your best work</strong>: Select the pieces that showcase your strongest skills and those that have received positive feedback.</li>
-                    <li><strong>Reflect and describe</strong>: Think about the skills and competencies each piece demonstrates. Write a brief description to provide context.</li>
-                    <li><strong>Build and iterate</strong>: Don\'t be afraid to experiment and refine your ePortfolio as you learn and grow.</li>
-                </ol>
-                <p><strong>Exabis ePortfolio</strong> can guide you through each step, making the process of building your ePortfolio smooth and efficient.</p>
-';
 $string['cofigureblock_cvinfo_help'] = 'You will see the current status of the selected items in your CV. The block content will be updated if you make changes to any items in your CV later.';
 $string['cofigureblock_cvinfo_cover'] = 'About me';
 $string['cofigureblock_cvinfo_cover_actual'] = 'add actual CV "About me" content';

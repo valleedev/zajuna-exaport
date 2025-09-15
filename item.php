@@ -48,8 +48,9 @@ if ($CFG->branch < 31) {
     include($CFG->dirroot . '/tag/lib.php');
 }
 
-// Check if user can create/edit items - students are not allowed
+// Check if user can create/edit items
 if (block_exaport_user_is_student()) {
+    // Students are not allowed
     // Allow viewing shared items but not creating/editing
     if ($action == 'copytoself') {
         // Allow copying shared items to own portfolio
@@ -59,6 +60,12 @@ if (block_exaport_user_is_student()) {
     } else if (!empty($id) && ($action == 'edit' || $action == 'delete')) {
         // Block editing/deleting existing items
         print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+    }
+} else if (!block_exaport_user_is_student()) {
+    // For instructors, check if they're trying to create in root category
+    if ($action == 'add' && block_exaport_is_root_category($categoryid)) {
+        // Instructors cannot create items in root
+        print_error('nopermissions', 'error', '', get_string('norootitemcreate', 'block_exaport'));
     }
 }
 

@@ -178,7 +178,8 @@ function get_form_items($id, $blockdata = array()) {
         ' onsubmit="exaportViewEdit.addItem(' . $id . '); return false;">';
     $content .= '<input type="hidden" name="item_id" value="' . $id . '">';
     $content .= '<table style="width: 100%;">';
-    // Add new artefact button - only for non-students
+    // Add new artefact button - only if instructor can create
+    // Note: In blocks.json.php we can't easily get the current categoryid, so we'll assume non-root
     if (!block_exaport_user_is_student()) {
         $content .= '<tr><td>';
         $content .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=1&action=add&type=mixed" target="_blank" class="exaport_add_artefact"><img src="pix/mixed_new_32.png" width="24"/>&nbsp;' . get_string("add_mixed", "block_exaport") . '</a><br>';

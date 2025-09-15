@@ -1575,6 +1575,31 @@ function block_exaport_user_is_student($userid = null) {
     return false;
 }
 
+/**
+ * Check if we are in the root category (categoryid = 0 or empty)
+ * @param mixed $categoryid The category ID to check
+ * @return bool True if we are in root category
+ */
+function block_exaport_is_root_category($categoryid) {
+    return ($categoryid === 0 || $categoryid === '0' || empty($categoryid));
+}
+
+/**
+ * Check if instructor can create items in the current category
+ * Instructors cannot create in root category but can in subcategories
+ * @param mixed $categoryid The category ID to check
+ * @return bool True if instructor can create items
+ */
+function block_exaport_instructor_can_create_in_category($categoryid) {
+    // Students cannot create anywhere
+    if (block_exaport_user_is_student()) {
+        return false;
+    }
+    
+    // Instructors can create in subcategories but not in root
+    return !block_exaport_is_root_category($categoryid);
+}
+
 function block_exaport_get_students_for_teacher($userid = null, $courseid = 0) {
     global $DB, $USER;
     if ($userid === null) {

@@ -523,15 +523,15 @@ if (in_array($type, ['mine', 'shared'])) {
     }
     echo '<div class="excomdos_additem_content">';
     if ($type == 'mine') {
-        // Only show category creation option if user is not a student
-        if (!block_exaport_user_is_student()) {
+        // Only show category creation option if instructor can create in this category
+        if (block_exaport_instructor_can_create_in_category($categoryid)) {
             echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=add&courseid=' . $courseid . '&pid=' . $categoryid . '">'
                 . block_exaport_fontawesome_icon('folder', 'solid', 2, [], ['color' => '#7a7a7a'], [], 'add') . '<br />'
                 . get_string("category", "block_exaport") . "</a></span>";
         }
     }
-    // Add "Mixed" artefact - only for non-students
-    if (!block_exaport_user_is_student()) {
+    // Add "Mixed" artefact - only if instructor can create in this category
+    if (block_exaport_instructor_can_create_in_category($categoryid)) {
         echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?action=add&courseid=' . $courseid . '&categoryid=' . $categoryid . $cattype
             . '&type=mixed">'
             . block_exaport_fontawesome_icon('clone', 'solid', 2, [], [], ['data-fa-transform' => 'flip-h flip-v'],
@@ -557,7 +557,7 @@ if (in_array($type, ['mine', 'shared'])) {
     // Anzeigen wenn kategorien vorhanden zum importieren aus sprachfile.
     if ($type == 'mine') {
         $categories = trim(get_string("lang_categories", "block_exaport"));
-        if ($categories && !block_exaport_user_is_student()) {
+        if ($categories && block_exaport_instructor_can_create_in_category($categoryid)) {
             echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=addstdcat&courseid=' . $courseid . '">' .
                 '<img src="pix/folder_new_32.png" /><br />' . get_string("addstdcat", "block_exaport") . "</a></span>";
         }
@@ -815,8 +815,8 @@ if ($layout == 'details') {
         }
 
         if ($type == 'mine') {
-            // Only show edit/delete buttons if user is not a student
-            if (!block_exaport_user_is_student()) {
+            // Only show edit/delete buttons if instructor can create in this category
+            if (block_exaport_instructor_can_create_in_category($categoryid)) {
                 $icons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit">'
                     . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
                     //                    .'<img src="pix/edit.png" alt="'.get_string("edit").'" />'
@@ -1019,8 +1019,8 @@ function block_exaport_category_template_tile($category, $courseid, $type, $curr
             if (@$category->structure_share) {
                 $categoryContent .= ' <img src="pix/sharedfolder.png" title="shared to other users as a structure">';
             };
-            // Only show edit/delete buttons if user is not a student
-            if (!block_exaport_user_is_student()) {
+            // Only show edit/delete buttons if instructor can create in this category
+            if (block_exaport_instructor_can_create_in_category($categoryid)) {
                 $categoryContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'
                     . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
                     //                            .'<img src="pix/edit.png" alt="file"></a>'
@@ -1239,8 +1239,8 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
             /*if (@$category->structure_share) {
                 $categoryContent .= ' <img src="pix/sharedfolder.png" title="shared to other users as a structure">';
             };*/
-            // Only show edit/delete buttons if user is not a student
-            if (!block_exaport_user_is_student()) {
+            // Only show edit/delete buttons if instructor can create in this category
+            if (block_exaport_instructor_can_create_in_category($categoryid)) {
                 $categoryContent .= '
 						<span class="excomdos_tileedit">
 							<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'
@@ -1357,8 +1357,8 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
             if ($type == 'shared') {
                 $cattype = '&cattype=shared';
             }
-            // Only show edit/delete buttons if user is not a student
-            if (!block_exaport_user_is_student()) {
+            // Only show edit/delete buttons if instructor can create in this category
+            if (block_exaport_instructor_can_create_in_category($categoryid)) {
                 if ($item->userid == $USER->id) { // only for self!
                     $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit' . $cattype . '">'
                         . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)

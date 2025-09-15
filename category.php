@@ -20,18 +20,25 @@ $courseid = optional_param('courseid', 0, PARAM_INT);
 
 require_login($courseid);
 
-// Check if user can create categories - students are not allowed
+// Check if user can create/edit categories
+$action = optional_param('action', '', PARAM_ALPHA);
+$id = optional_param('id', 0, PARAM_INT);
+$pid = optional_param('pid', 0, PARAM_INT);
+
 if (block_exaport_user_is_student()) {
     // Students are not allowed to create, edit, delete or move categories
-    $action = optional_param('action', '', PARAM_ALPHA);
-    $id = optional_param('id', 0, PARAM_INT);
-    
     // Only allow viewing actions for students
     if (empty($action) || $action == 'userlist' || $action == 'grouplist') {
         // These actions are for viewing/sharing, allow them
     } else {
         // All other actions (add, edit, delete, move, addstdcat) are not allowed for students
         print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+    }
+} else if (!block_exaport_user_is_student()) {
+    // For instructors, check if they're trying to create in root category
+    if (($action == 'add' || $action == 'addstdcat') && block_exaport_is_root_category($pid)) {
+        // Instructors cannot create categories in root
+        print_error('nopermissions', 'error', '', get_string('norootcategorycreate', 'block_exaport'));
     }
 }
 
@@ -301,8 +308,12 @@ if ($mform->is_cancelled()) {
     require_sesskey();
     
     // Additional check: Students cannot create or edit categories
+    // Instructors cannot create categories in root
     if (block_exaport_user_is_student()) {
         print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+    } else if (empty($newentry->id) && block_exaport_is_root_category($newentry->pid)) {
+        // This is creating a new category in root - not allowed for instructors
+        print_error('nopermissions', 'error', '', get_string('norootcategorycreate', 'block_exaport'));
     }
     
     $newentry->userid = $USER->id;

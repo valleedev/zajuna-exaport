@@ -461,6 +461,8 @@ block_exaport_add_iconpack();
 
 block_exaport_print_header($type == 'shared' || $type == 'sharedstudent' ? 'shared_categories' : "myportfolio");
 
+// Información explicativa del portafolio comentada - ocultar texto informativo
+/*
 echo "<div class='box generalbox'>";
 if (block_exaport_course_has_desp()) {
     $pref = "desp_";
@@ -473,6 +475,7 @@ $infobox .= '<div id="more_artefacts_info" style="display: none;">' . get_string
 echo $OUTPUT->box($infobox, "center");
 
 echo "</div>";
+*/
 
 // Save user preferences.
 block_exaport_set_user_preferences(array('itemsort' => $sort, 'view_items_layout' => $layout));

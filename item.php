@@ -48,6 +48,20 @@ if ($CFG->branch < 31) {
     include($CFG->dirroot . '/tag/lib.php');
 }
 
+// Check if user can create/edit items - students are not allowed
+if (block_exaport_user_is_student()) {
+    // Allow viewing shared items but not creating/editing
+    if ($action == 'copytoself') {
+        // Allow copying shared items to own portfolio
+    } else if ($action == 'add' || (empty($id) && $action != 'copytoself')) {
+        // Block creating new items
+        print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+    } else if (!empty($id) && ($action == 'edit' || $action == 'delete')) {
+        // Block editing/deleting existing items
+        print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+    }
+}
+
 $allowedit = block_exaport_item_is_editable($id);
 $allowresubmission = block_exaport_item_is_resubmitable($id);
 

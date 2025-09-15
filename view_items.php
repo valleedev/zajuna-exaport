@@ -530,12 +530,14 @@ if (in_array($type, ['mine', 'shared'])) {
                 . get_string("category", "block_exaport") . "</a></span>";
         }
     }
-    // Add "Mixed" artefact
-    echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?action=add&courseid=' . $courseid . '&categoryid=' . $categoryid . $cattype
-        . '&type=mixed">'
-        . block_exaport_fontawesome_icon('clone', 'solid', 2, [], [], ['data-fa-transform' => 'flip-h flip-v'],
-            'add', [], [], ['data-fa-transform' => 'shrink-7 down-4 right-8'])
-        . '<br />' . get_string("add_mixed", "block_exaport") . "</a></span>";
+    // Add "Mixed" artefact - only for non-students
+    if (!block_exaport_user_is_student()) {
+        echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?action=add&courseid=' . $courseid . '&categoryid=' . $categoryid . $cattype
+            . '&type=mixed">'
+            . block_exaport_fontawesome_icon('clone', 'solid', 2, [], [], ['data-fa-transform' => 'flip-h flip-v'],
+                'add', [], [], ['data-fa-transform' => 'shrink-7 down-4 right-8'])
+            . '<br />' . get_string("add_mixed", "block_exaport") . "</a></span>";
+    }
     // Next types are disabled after adding 'mixed' type. Real artefact type will be changed after filling fields.
     // These types are hidden only in this view. All other functions are working with types as before.
     /*
@@ -813,18 +815,21 @@ if ($layout == 'details') {
         }
 
         if ($type == 'mine') {
-            $icons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit">'
-                . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
-                //                    .'<img src="pix/edit.png" alt="'.get_string("edit").'" />'
-                . '</a>';
-            if ($allowedit = block_exaport_item_is_editable($item->id)) {
-                $icons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id .
-                    '&action=delete&categoryid=' . $categoryid . '">'
-                    . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
-                    //                        .'<img src="pix/del.png" alt="'.get_string("delete").'"/>'
+            // Only show edit/delete buttons if user is not a student
+            if (!block_exaport_user_is_student()) {
+                $icons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit">'
+                    . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
+                    //                    .'<img src="pix/edit.png" alt="'.get_string("edit").'" />'
                     . '</a>';
-            } else {
-                $icons .= '<img src="pix/deleteview.png" alt="' . get_string("delete") . '">';
+                if ($allowedit = block_exaport_item_is_editable($item->id)) {
+                    $icons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id .
+                        '&action=delete&categoryid=' . $categoryid . '">'
+                        . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
+                        //                        .'<img src="pix/del.png" alt="'.get_string("delete").'"/>'
+                        . '</a>';
+                } else {
+                    $icons .= '<img src="pix/deleteview.png" alt="' . get_string("delete") . '">';
+                }
             }
         }
 
@@ -1352,20 +1357,23 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
             if ($type == 'shared') {
                 $cattype = '&cattype=shared';
             }
-            if ($item->userid == $USER->id) { // only for self!
-                $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit' . $cattype . '">'
-                    . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
-                    . '</a>';
-            }
-            if (($type == 'mine' && $allowedit = block_exaport_item_is_editable($item->id)) // strange condition. If exacomp is not used - always allowed!
-                || $item->userid == $USER->id) {
-                if ($item->userid == $USER->id) {
-                    $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=delete&categoryid=' . $categoryid . $cattype . '" class="item_delete_icon">'
-                        . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
+            // Only show edit/delete buttons if user is not a student
+            if (!block_exaport_user_is_student()) {
+                if ($item->userid == $USER->id) { // only for self!
+                    $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit' . $cattype . '">'
+                        . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
                         . '</a>';
                 }
-            } else if (!$allowedit = block_exaport_item_is_editable($item->id)) {
-                $itemContent .= '<img src="pix/deleteview.png" alt="file">';
+                if (($type == 'mine' && $allowedit = block_exaport_item_is_editable($item->id)) // strange condition. If exacomp is not used - always allowed!
+                    || $item->userid == $USER->id) {
+                    if ($item->userid == $USER->id) {
+                        $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=delete&categoryid=' . $categoryid . $cattype . '" class="item_delete_icon">'
+                            . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
+                            . '</a>';
+                    }
+                } else if (!$allowedit = block_exaport_item_is_editable($item->id)) {
+                    $itemContent .= '<img src="pix/deleteview.png" alt="file">';
+                }
             }
             if ($item->userid != $USER->id) {
                 $itemuser = $DB->get_record('user', ['id' => $item->userid]);

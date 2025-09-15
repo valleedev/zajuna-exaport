@@ -20,6 +20,23 @@ $courseid = optional_param('courseid', 0, PARAM_INT);
 
 require_login($courseid);
 
+// Check if user can create categories - students are not allowed
+if (block_exaport_user_is_student()) {
+    // If it's a student, check if they're trying to create/edit categories
+    $action = optional_param('action', '', PARAM_ALPHA);
+    $id = optional_param('id', 0, PARAM_INT);
+    
+    // Allow viewing existing categories but not creating new ones or editing
+    if (empty($action) || $action == 'userlist' || $action == 'grouplist') {
+        // These actions are for viewing/sharing, allow them
+    } else if ($action == 'delete' || $action == 'movetocategory') {
+        // Allow delete and move operations for students
+    } else if ($id == 0) {
+        // This is creating a new category - not allowed for students
+        print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+    }
+}
+
 block_exaport_setup_default_categories();
 
 $url = '/blocks/exaport/category.php';
@@ -284,6 +301,12 @@ if ($mform->is_cancelled()) {
     redirect('view_items.php?courseid=' . $courseid . '&categoryid=' . ($same == 'same' ? $id : $pid));
 } else if ($newentry = $mform->get_data()) {
     require_sesskey();
+    
+    // Additional check: Students cannot create new categories
+    if (block_exaport_user_is_student() && empty($newentry->id)) {
+        print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+    }
+    
     $newentry->userid = $USER->id;
     $newentry->shareall = optional_param('shareall', 0, PARAM_INT);
     if (optional_param('internshare', 0, PARAM_INT) > 0) {

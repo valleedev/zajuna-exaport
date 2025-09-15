@@ -520,9 +520,12 @@ if (in_array($type, ['mine', 'shared'])) {
     }
     echo '<div class="excomdos_additem_content">';
     if ($type == 'mine') {
-        echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=add&courseid=' . $courseid . '&pid=' . $categoryid . '">'
-            . block_exaport_fontawesome_icon('folder', 'solid', 2, [], ['color' => '#7a7a7a'], [], 'add') . '<br />'
-            . get_string("category", "block_exaport") . "</a></span>";
+        // Only show category creation option if user is not a student
+        if (!block_exaport_user_is_student()) {
+            echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=add&courseid=' . $courseid . '&pid=' . $categoryid . '">'
+                . block_exaport_fontawesome_icon('folder', 'solid', 2, [], ['color' => '#7a7a7a'], [], 'add') . '<br />'
+                . get_string("category", "block_exaport") . "</a></span>";
+        }
     }
     // Add "Mixed" artefact
     echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?action=add&courseid=' . $courseid . '&categoryid=' . $categoryid . $cattype
@@ -549,7 +552,7 @@ if (in_array($type, ['mine', 'shared'])) {
     // Anzeigen wenn kategorien vorhanden zum importieren aus sprachfile.
     if ($type == 'mine') {
         $categories = trim(get_string("lang_categories", "block_exaport"));
-        if ($categories) {
+        if ($categories && !block_exaport_user_is_student()) {
             echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=addstdcat&courseid=' . $courseid . '">' .
                 '<img src="pix/folder_new_32.png" /><br />' . get_string("addstdcat", "block_exaport") . "</a></span>";
         }

@@ -1556,6 +1556,25 @@ function block_exaport_user_is_teacher($userid = null) {
     return false;
 }
 
+// Check if user is a student (role 5 = student)
+function block_exaport_user_is_student($userid = null) {
+    global $DB, $USER;
+    if ($userid === null) {
+        $userid = $USER->id;
+    }
+    // Role 5 = student
+    $query = "SELECT DISTINCT u.id as userid, u.id AS tmp
+      FROM {role_assignments} ra
+      JOIN {user} u ON ra.userid = u.id
+      JOIN {context} c ON c.id = ra.contextid
+      WHERE c.contextlevel = ? AND u.id = ? AND ra.roleid = '5' AND u.deleted = 0 ";
+    $roles = $DB->get_records_sql($query, [CONTEXT_COURSE, $userid]);
+    if (count($roles) > 0) {
+        return true;
+    }
+    return false;
+}
+
 function block_exaport_get_students_for_teacher($userid = null, $courseid = 0) {
     global $DB, $USER;
     if ($userid === null) {

@@ -93,7 +93,6 @@ $string['nobookmarksnote'] = '(bisher gibt es noch keine Notizen)';
 $string['noentry'] = 'Kein Eintrag';
 $string['note'] = 'Notiz';
 $string['notetitle'] = 'Notiz';
-$string['shared_views'] = 'Geteilte Views';
 $string['showall'] = 'auch andere Kurse anzeigen';
 $string['showcourse'] = 'nur diesen Kurs anzeigen';
 $string['showsummary'] = '(Gesamtaufstellung einblenden)';

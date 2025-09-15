@@ -97,7 +97,6 @@ $string['nobookmarksfile'] = '(Δεν έχουν προστεθεί ακόμα �
 $string['nobookmarksnote'] = '(Δεν έχουν προστεθεί ακόμα σημειώσεις)';
 $string['note'] = 'Σημείωση';
 $string['notetitle'] = 'Σημείωση';
-$string['shared_views'] = 'Διαμοιραζόμενα Portfolios';
 $string['showall'] = 'Εμφάνισε και τα υπόλοιπα Μαθήματα';
 $string['showcourse'] = 'Εμφάνισε μόνο αυτό το Μάθημα';
 $string['showsummary'] = '(Εμφάνιση περίληψης)';

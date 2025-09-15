@@ -390,7 +390,6 @@ $string['share'] = 'Поділіться';
 $string['share_to_other_users'] = 'Шукати користувачів';
 $string['shareallexceptthose'] = 'Доступ для <span class=\'block_eportfolio_bold\'>всіх</span> (навіть тих, кого немає в списку), крім наступних користувачів';
 $string['shared_categories'] = 'Спільні категорії';
-$string['shared_views'] = 'Спільні відображення';
 $string['sharedArtefacts'] = 'Доступні Вам групові портфоліо';
 $string['shareditems_category'] = 'Доступні Вам групові портфоліо';
 $string['sharedpersons'] = 'Користувачі зі спільними портфоліо';

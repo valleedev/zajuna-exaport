@@ -804,7 +804,6 @@ class externallib extends \external_api {
         $result->id = $view->id;
         $result->name = $view->name;
         $result->description = $view->description ?: '';
-        $result->advanced_url = (new \moodle_url('/blocks/exaport/views_mod.php', ['action' => 'edit', 'courseid' => 1, 'id' => $view->id]))->out(false);
         $result->externaccess = $view->externaccess;
         if ($view->externaccess) {
             $result->external_url = block_exaport_get_external_view_url($view);

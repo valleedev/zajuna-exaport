@@ -37,7 +37,6 @@ $PAGE->requires->jquery_plugin('ui');
 // Get rid 'warning' messages for ajax request (regardless moodle configuration)
 if (
     basename($_SERVER['SCRIPT_NAME']) == 'blocks.json.php' // ajax requests to work with blocks
-    || (basename($_SERVER['SCRIPT_NAME']) == 'views_mod.php' && optional_param('ajax', '0', PARAM_INT) === 1) // ajax requests in view editing
     || (basename($_SERVER['SCRIPT_NAME']) == 'item_thumb.php' && optional_param('item_id', '0', PARAM_INT) > 0) // item thumbnials
 ) {
     @$CFG->debug = 5;

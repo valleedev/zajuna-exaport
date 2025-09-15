@@ -77,7 +77,6 @@ block_exaport_print_header("shared_categories");
 function exaport_print_structures($categories, $parsedsort) {
     global $CFG, $courseid, $COURSE, $OUTPUT, $DB;
 
-    // $courses = exaport_get_shareable_courses_with_users('shared_views');
     $courses = exaport_get_shareable_courses_with_users('shared_categories');
     $sort = $parsedsort[0];
 

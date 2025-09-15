@@ -513,10 +513,6 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
         get_string("resume_my", "block_exaport"), '', true);
     $tabs['myportfolio'] = new tabobject('myportfolio', $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id,
         block_exaport_get_string("myportfolio"), '', true);
-    $tabs['views'] = new tabobject('views', $CFG->wwwroot . '/blocks/exaport/views_list.php?courseid=' . $COURSE->id,
-        get_string("views", "block_exaport"), '', true);
-    $tabs['shared_views'] = new tabobject('shared_views', $CFG->wwwroot . '/blocks/exaport/shared_views.php?courseid=' . $COURSE->id,
-        block_exaport_get_string("shared_views"), '', true);
     $tabs['shared_categories'] = new tabobject('shared_categories',
         $CFG->wwwroot . '/blocks/exaport/shared_categories.php?courseid=' . $COURSE->id,
         block_exaport_get_string("shared_categories"), '', true);
@@ -538,27 +534,6 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
     }
 
     // Kind of hacked here, find another solution.
-    if ($tabitemidentifier == 'views') {
-        $id = optional_param('id', 0, PARAM_INT);
-        if ($id > 0) {
-            $tabs['views']->subtree[] = new tabobject('title',
-                s($CFG->wwwroot . '/blocks/exaport/views_mod.php?courseid=' . $COURSE->id . '&id=' . $id . '&sesskey=' . sesskey() .
-                    '&type=title&action=edit'), get_string("viewtitle", "block_exaport"), '', true);
-            $tabs['views']->subtree[] = new tabobject('layout',
-                s($CFG->wwwroot . '/blocks/exaport/views_mod.php?courseid=' . $COURSE->id . '&id=' . $id . '&sesskey=' . sesskey() .
-                    '&type=layout&action=edit'), get_string("viewlayout", "block_exaport"), '', true);
-            $tabs['views']->subtree[] = new tabobject('content',
-                s($CFG->wwwroot . '/blocks/exaport/views_mod.php?courseid=' . $COURSE->id . '&id=' . $id . '&sesskey=' . sesskey() .
-                    '&action=edit'), get_string("viewcontent", "block_exaport"), '', true);
-            if (has_capability('block/exaport:shareextern', context_system::instance()) ||
-                has_capability('block/exaport:shareintern', context_system::instance())
-            ) {
-                $tabs['views']->subtree[] = new tabobject('share',
-                    s($CFG->wwwroot . '/blocks/exaport/views_mod.php?courseid=' . $COURSE->id . '&id=' . $id . '&sesskey=' . sesskey() .
-                        '&type=share&action=edit'), get_string("viewshare", "block_exaport"), '', true);
-            }
-        }
-    }
 
     $tabtree = new tabtree($tabs, $currenttab);
     if ($tabsubitemidentifier && $tabobj = $tabtree->find($tabsubitemidentifier)) {

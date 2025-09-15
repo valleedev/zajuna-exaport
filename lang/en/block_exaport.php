@@ -31,8 +31,6 @@ $string['exaport:myaddinstance'] = 'add Exabis ePortfolio on My home';
 $string['exaport:export'] = 'Export of SCORM-Files';
 $string['exaport:import'] = 'Import of SCORM-Files';
 $string['exaport:importfrommoodle'] = 'Import from Moodle';
-$string['exaport:shareintern'] = 'Internal sharing of views';
-$string['exaport:shareextern'] = 'External sharing of views';
 $string['exaport:allowposts'] = 'Allow posting';
 $string['exaport:competences'] = 'Allow competences';
 $string['exaport:viewartifactsfromstudents'] = 'Can see portfolio artefacts of own students';
@@ -95,7 +93,6 @@ $string['nobookmarksnote'] = '(no notes yet)';
 $string['noentry'] = 'No entry';
 $string['note'] = 'Note';
 $string['notetitle'] = 'Note';
-$string['shared_views'] = 'Shared Views';
 $string['showall'] = 'Show Other Courses Too';
 $string['showcourse'] = 'Show This Course Only';
 $string['showsummary'] = '(show summary)';
@@ -113,10 +110,7 @@ $string['internalaccessusers'] = 'Access only for the following users';
 $string['internalaccessgroups'] = 'Access only for the following groups';
 $string['externaccess'] = 'external ePortfolio-Link';
 $string['emailaccess'] = 'Share by Email';
-$string['emailaccessdescription'] = 'Input an email address per line<br />Each email will receive a unique link with access to this view. Deleting the email will remove access to this view.';
 $string['emailaccessmessagesubject'] = 'New shared View for you';
-$string['emailaccessmessage'] = 'Hello! {$a->sendername} has shared the view "{$a->viewname}" for you. You can view it here: {$a->url}';
-$string['emailaccessmessageHTML'] = 'Hello!<br />{$a->sendername} has shared the view "{$a->viewname}" for you.<br />You can view it <a href="{$a->url}">here</a>.';
 $string['showallusers'] = 'Show users of all my courses';
 $string['showcourseusers'] = 'Show only users of the course';
 $string['sharedpersons'] = 'Persons with shared Portfolios';
@@ -248,7 +242,6 @@ $string['export'] = 'Export SCORM-File';
 $string['export_short'] = 'Export';
 $string['exportepx'] = 'Export EPX-File';
 $string['createepxexport'] = 'Create EPX-File';
-$string['exportviewselect'] = 'To export all items of a specific view, please select it here';
 $string['export_directory'] = 'Export Directory-structure';
 $string['createexport_directory'] = 'Create Directory-structure';
 
@@ -266,10 +259,6 @@ $string['movetop'] = 'Move top';
 $string['movebottom'] = 'Move bottom';
 
 // === Views.
-$string['view'] = 'View';
-$string['views'] = 'My Views';
-$string['explainingviews'] = 'Manage your views.';
-$string['noviews'] = 'Please create a new View';
 $string['viewnotfound'] = 'View not found';
 $string['newview'] = 'Add View';
 $string['viewinformation'] = 'View Information';
@@ -292,14 +281,12 @@ $string['view_sharing_noaccess'] = 'No Access';
 $string['show'] = 'Show';
 $string['thiscourse'] = 'This course';
 $string['othercourses'] = 'other courses';
-$string['autofillview'] = 'Automatically add all available artefacts to this view';
 $string['sharetoteacher'] = 'Share to all teachers in this course';
 $string['createpage'] = 'Drag and drop content blocks from the tabs below to create your page.';
 $string['chooselayout'] = 'Select how you would like the columns in your page to be laid out.';
 $string['viewtitle'] = 'Title and description';
 $string['viewcontent'] = 'Content';
 $string['viewlayout'] = 'Layout';
-$string['viewshare'] = 'Share';
 $string['viewlayoutgroup1'] = '1 column';
 $string['viewlayoutgroup2'] = '2 columns';
 $string['viewlayoutgroup3'] = '3 columns';
@@ -395,7 +382,6 @@ $string['steckbrief'] = 'Profile';
 $string['desp_categories'] = '
     stories, roleplays, essays, collagen
     curriculum vitae
-    reviews of theatre productions, exhibitions
     project reports and reflections
     audio- and videoclips
     encounters with other nationalities
@@ -445,11 +431,8 @@ $string['settings_create_desp_categories_head'] = 'Create Desp Categories';
 $string['settings_create_desp_categories_body'] = '';
 $string['settings_disable_shareall_head'] = 'Disable sharing with all users';
 $string['settings_disable_shareall_body'] = 'Click <a href="{$a}">here</a>, to remove all global shares';
-$string['settings_disable_externaccess_head'] = 'Disable Sharing-Option "External Access" for views';
 $string['settings_disable_externaccess_body'] = '';
-$string['settings_disable_shareemails_head'] = 'Disable Sharing-Option "Share by Email" for views';
 $string['settings_disable_shareemails_body'] = '';
-$string['settings_disable_external_comments_head'] = 'Disable sharing of comments in external view';
 $string['settings_disable_external_comments_body'] = '';
 $string['block_exaport_app_externaleportfolio_head'] = 'Save files to mahara if checked, save to exaport if not checked';
 $string['block_exaport_app_externaleportfolio_body'] = 'For App';
@@ -461,7 +444,6 @@ $string['block_exaport_multiplefilesinitem'] = 'Multiple files in "File" artefac
 $string['block_exaport_multiplefilesinitem_body'] = 'limit: 10 files';
 $string['block_exaport_copytomyportfolio'] = 'Enable "Copy to my portfolio"';
 $string['block_exaport_copytomyportfolio_body'] = 'User will be able copy artefacts from shared category into own portfolio';
-$string['block_exaport_app_alloweditdelete_head'] = 'Students are allowed to edit and delete items after teacher reviews';
 $string['block_exaport_app_alloweditdelete_body'] = 'Only useful in combination with Exabis Competence Grid and dakora';
 $string['delete_all_shareall'] = 'Delete all shareall?';
 $string['block_exaport_teachercanseeartifactsofstudents_head'] = 'Teacher can see ALL artefacts of own students';
@@ -594,17 +576,13 @@ $string['lang_categories'] = '';
 $string['messageprovider:sharing'] = 'Sharing notifications';
 
 // === Not Used Anymore.
-$string['i_shared'] = 'I shared an eportfolio view with you';
 $string['addstdcat'] = 'import standard categories';
-$string['incompatible_video'] = 'To view this video please use the direct link: {$a->link}';
 $string['download_pdf'] = 'Download as Pdf';
 $string['pdf_settings'] = 'Pdf settings';
 $string['pdf_settings_description'] = 'If you use some special or uncommon language characters the generated pdf can have problems. So, you can try to use different font settings<br>
-            Your PDF settings will be saved for this view.<br>So, if your view is shared with other users - they will see the pdf with your settings.<br>
             Non-standard fonts can have some lost options like bold, italic, e.t.c.';
 $string['pdf_settings_fontfamily'] = 'Font family';
 $string['pdf_settings_fontsize'] = 'Basic font size';
-$string['pdf_settings_showmetadata'] = 'Add view meta data';
 $string['pdf_settings_showusername'] = 'user name';
 $string['pdf_settings_showuserpicture'] = 'user picture';
 $string['pdf_settings_showuseremail'] = 'user email';
@@ -619,17 +597,11 @@ $string['pdf_customfont_help'] = 'Your can upload own .ttf file. We will try to 
 $string['pdf_settings_fontfamily_fixedgroup'] = 'Predefined fonts';
 $string['pdf_settings_fontfamily_customgroup'] = 'Custom uploaded fonts';
 $string['settings_layout_settings_heading'] = 'Layout settings';
-$string['block_exaport_allowcustomlayout_head'] = 'Custom options for the view layout for view owners';
-$string['block_exaport_allowcustomlayout_body'] = 'Allows to use custom view layout settings (similar to options below) for regular owners of the views';
-$string['settings_layout_settings_description'] = 'Here you can change some view layout options or use own custom CSS rules to have the view as you want<br>These settings will be used as default settings <strong>for all views</strong>';
 $string['layout_settings'] = 'Layout settings';
-$string['layout_settings_description'] = 'Here you can change some view layout options or use own custom CSS rules to have the view as you want';
 $string['layout_settings_font_size'] = 'Font size';
 $string['layout_settings_border_width'] = 'Border width';
 $string['layout_settings_font_weight'] = 'Bold';
 $string['layout_settings_border_width_only_bottom'] = 'Only bottom border';
-$string['layout_settings_view_headers'] = 'Headers of view blocks';
-$string['layout_settings_view_content'] = 'Content of view blocks';
 $string['layout_settings_custom_css'] = 'Custom CSS';
 $string['layout_settings_custom_css_description'] = 'You can use own custom CSS rules here';
 $string['selected_competencies'] = 'Achieved Competency';
@@ -766,7 +738,6 @@ $string['privacy:metadata:block_exaportitemcomm:userid'] = 'author of comment';
 $string['privacy:metadata:block_exaportitemcomm:entry'] = 'comment';
 $string['privacy:metadata:block_exaportitemcomm:timemodified'] = 'last modified';
 $string['privacy:metadata:block_exaportview'] = 'comments for artefacts';
-$string['privacy:metadata:block_exaportview:userid'] = 'owner of view';
 $string['privacy:metadata:block_exaportview:name'] = 'name';
 $string['privacy:metadata:block_exaportview:description'] = 'description';
 $string['privacy:metadata:block_exaportview:timemodified'] = 'last modified';
@@ -774,7 +745,6 @@ $string['privacy:metadata:block_exaportview:shareall'] = 'shared for all?';
 $string['privacy:metadata:block_exaportview:externaccess'] = 'external access?';
 $string['privacy:metadata:block_exaportview:externcomment'] = 'comment from external?';
 $string['privacy:metadata:block_exaportview:langid'] = 'language id';
-$string['privacy:metadata:block_exaportview:layout'] = 'layout of the view';
 $string['privacy:metadata:block_exaportview:sharedemails'] = 'shared emails list';
 $string['privacy:metadata:block_exaportview:autofill_artefacts'] = 'enabled autofill by artefacts';
 $string['privacy:metadata:block_exaportresume'] = 'resume data';
@@ -803,7 +773,6 @@ $string['create_view_content_help_text'] = '<ul>
 $string['moreinfolink'] = 'Show more info ...';
 $string['badges_help'] = 'The block with badges granted to you<br><a href=\'{$a}\' target=\'_blank\' class=\'external-link\'>View your badges</a>';
 $string['view_preview_help_title'] = 'Preview';
-$string['view_preview_help'] = 'Preview of your view';
 $string['block_exaport_used_layout'] = 'Used layout';
 $string['block_exaport_used_layout_body'] = 'Change the layout if you have some appearance problems. Right now it is used only for artefact list.';
 $string['block_exaport_used_layout_moodle_bootstrap'] = 'Cards layout';

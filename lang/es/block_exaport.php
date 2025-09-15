@@ -96,7 +96,6 @@ $string['nobookmarksfile'] = '(no hay archivos)';
 $string['nobookmarksnote'] = '(no hay notas )';
 $string['note'] = 'Nota';
 $string['notetitle'] = 'Nota';
-$string['shared_views'] = ' Portafolios compartidos';
 $string['showall'] = 'Mostrar también otros cursos ';
 $string['showcourse'] = 'Mostrar este curso solamente';
 $string['showsummary'] = '(mostrar resumen)';

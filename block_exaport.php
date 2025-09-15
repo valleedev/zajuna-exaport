@@ -72,16 +72,6 @@ class block_exaport extends block_list {
             ' href="' . $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .
             $icon . block_exaport_get_string('myportfolio') . '</a>';
 
-        $icon = '<img src="' . $output->image_url('myviews', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('views') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/views_list.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .
-            $icon . block_exaport_get_string('views') . '</a>';
-
-        $icon = '<img src="' . $output->image_url('shared_views', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('shared_views') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/shared_views.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .
-            $icon . block_exaport_get_string('shared_views') . '</a>';
-
         $icon = '<img src="' . $output->image_url('shared_categories', 'block_exaport') . '" class="icon" alt="" />';
         $this->content->items[] = '<a title="' . block_exaport_get_string('shared_categories') . '" ' .
             ' href="' . $CFG->wwwroot . '/blocks/exaport/shared_categories.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .

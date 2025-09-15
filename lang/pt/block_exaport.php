@@ -94,7 +94,6 @@ $string['nobookmarksfile'] = '(ainda sem ficheiros)';
 $string['nobookmarksnote'] = '(ainda sem anota&ccedil;&otilde;es)';
 $string['note'] = 'Anota&ccedil;&atilde;o';
 $string['notetitle'] = 'Anota&ccedil;&atilde;o';
-$string['shared_views'] = 'Portef&oacute;lios partilhados';
 $string['showall'] = 'Mostre outros cursos tamb&eacute;m';
 $string['showcourse'] = 'Mostre somente este curso';
 $string['showsummary'] = '(mostrar resumo)';

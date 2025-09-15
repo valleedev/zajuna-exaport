@@ -70,11 +70,9 @@ return [
     ],
     'exaport:shareintern' => [
         'Internes Teilen von Views',
-        'Internal sharing of views',
     ],
     'exaport:shareextern' => [
         'Externes Teilen von Views',
-        'External sharing of views',
     ],
     'exaport:allowposts' => [
         'Kommentare erlauben',
@@ -306,7 +304,6 @@ return [
         'Notiz',
         'Note',
     ],
-    'shared_views' => [
         'Geteilte Views',
         'Shared Views',
     ],
@@ -380,7 +377,6 @@ return [
     ],
     'emailaccessdescription' => [
         'Gib eine Email Adresse pro Zeile ein<br />Jede Adresse erhält einen eindeutigen Link mit Zugriff auf diese View. Das Löschen der Adresse löscht den Zugriff auf diese View.',
-        'Input an email address per line<br />Each email will receive a unique link with access to this view. Deleting the email will remove access to this view.',
     ],
     'emailaccessmessagesubject' => [
         'Eine View wurde mit dir geteilt',
@@ -388,11 +384,9 @@ return [
     ],
     'emailaccessmessage' => [
         'Hallo! {$a->sendername} hat eine die View "{$a->viewname}" mit dir geteilt. Sie kann hier abgerufen werden: {$a->url}',
-        'Hello! {$a->sendername} has shared the view "{$a->viewname}" for you. You can view it here: {$a->url}',
     ],
     'emailaccessmessageHTML' => [
         'Hallo!<br />{$a->sendername} hat eine die View "{$a->viewname}" mit dir geteilt.<br />Sie ist kann <a href="{$a->url}">hier</a> aberufen werden',
-        'Hello!<br />{$a->sendername} has shared the view "{$a->viewname}" for you.<br />You can view it <a href="{$a->url}">here</a>.',
     ],
     'showallusers' => [
         'Zeige Benutzer aller meiner Kurse',
@@ -882,9 +876,7 @@ return [
         'EPX-Datei erstellen',
         'Create EPX-File',
     ],
-    'exportviewselect' => [
         'Um alle Einträge einer bestimmten View zu exportieren, bitte diese hier w&auml;hlen',
-        'To export all items of a specific view, please select it here',
     ],
     'export_directory' => [
         'Exportiere Ordnerstruktur',
@@ -936,19 +928,13 @@ return [
     ],
 
     // === Views.
-    'view' => [
         'View',
         'View',
     ],
-    'views' => [
         'Meine Views',
-        'My Views',
     ],
-    'explainingviews' => [
         'View verwalten',
-        'Manage your views.',
     ],
-    'noviews' => [
         'Bitte Views anlegen',
         'Please create a new View',
     ],
@@ -1042,7 +1028,6 @@ return [
     ],
     'autofillview' => [
         'Alle bestehenden Artefakte in diese View einfügen',
-        'Automatically add all available artefacts to this view',
     ],
     'sharetoteacher' => [
         'Sofort mit allen Kurs-Trainer/:innen teilen',
@@ -1068,7 +1053,6 @@ return [
         'Layout',
         'Layout',
     ],
-    'viewshare' => [
         'Teilen',
         'Share',
     ],
@@ -1464,7 +1448,6 @@ return [
         '
     stories, roleplays, essays, collagen
     curriculum vitae
-    reviews of theatre productions, exhibitions
     project reports and reflections
     audio- and videoclips
     encounters with other nationalities
@@ -1574,7 +1557,6 @@ return [
     ],
     'settings_disable_externaccess_head' => [
         'Teilen Option "Externer Zugriff" auf Portfolios deaktivieren.',
-        'Disable Sharing-Option "External Access" for views',
     ],
     'settings_disable_externaccess_body' => [
         '',
@@ -1582,7 +1564,6 @@ return [
     ],
     'settings_disable_shareemails_head' => [
         'Teilen Option "Per E-Mail teilen" von Portfolios deaktivieren.',
-        'Disable Sharing-Option "Share by Email" for views',
     ],
     'settings_disable_shareemails_body' => [
         '',
@@ -1590,7 +1571,6 @@ return [
     ],
     'settings_disable_external_comments_head' => [
         'Teilen von Kommentaren in externen Views deaktivieren',
-        'Disable sharing of comments in external view',
     ],
     'settings_disable_external_comments_body' => [
         '',
@@ -1638,7 +1618,6 @@ return [
     ],
     'block_exaport_app_alloweditdelete_head' => [
         'Schüler/:innen dürfen trotz Lehrerbeurteilungen ePortfolio Items editieren und löschen',
-        'Students are allowed to edit and delete items after teacher reviews',
     ],
     'block_exaport_app_alloweditdelete_body' => [
         'Nur in Kombination mit Exabis Competence Grid und Dakora sinnvoll',
@@ -2109,7 +2088,6 @@ return [
     // === Not Used Anymore.
     'i_shared' => [
         'Ich habe eine View mit Ihnen geteilt',
-        'I shared an eportfolio view with you',
     ],
     'addstdcat' => [
         'Standardkategorien importieren',
@@ -2117,7 +2095,6 @@ return [
     ],
     'incompatible_video' => [
         'Um dieses Video anzusehen, bitte den direkten Link benutzen: {$a->link}',
-        'To view this video please use the direct link: {$a->link}',
     ],
     'download_pdf' => [
         'Download as Pdf',
@@ -2132,7 +2109,6 @@ return [
 			Deine PDF-Einstellungen werden für diese Ansicht gespeichert.<br>Wenn deine Ansicht mit anderen Benutzern geteilt wird, sehen sie das PDF mit deinen Einstellungen.<br>
 			Nicht-standardisierte Schriftarten können einige Optionen wie Fett, Kursiv usw. verlieren.',
         'If you use some special or uncommon language characters the generated pdf can have problems. So, you can try to use different font settings<br>
-            Your PDF settings will be saved for this view.<br>So, if your view is shared with other users - they will see the pdf with your settings.<br>
             Non-standard fonts can have some lost options like bold, italic, e.t.c.',
     ],
     'pdf_settings_fontfamily' => [
@@ -2145,7 +2121,6 @@ return [
     ],
     'pdf_settings_showmetadata' => [
         'Metadaten zur Ansicht hinzufügen',
-        'Add view meta data',
     ],
     'pdf_settings_showusername' => [
         'Benutzername',
@@ -2205,15 +2180,12 @@ return [
     ],
     'block_exaport_allowcustomlayout_head' => [
         'Benutzerdefinierte Optionen für das Layout der Views für View-Eigentümer',
-        'Custom options for the view layout for view owners',
     ],
     'block_exaport_allowcustomlayout_body' => [
         'Ermöglicht die Verwendung benutzerdefinierter Layout-Einstellungen für Views (ähnlich den unten aufgeführten Optionen) für reguläre Besitzer der Views.',
-        'Allows to use custom view layout settings (similar to options below) for regular owners of the views',
     ],
     'settings_layout_settings_description' => [
         'Hier kannst du einige Layout-Optionen der View ändern oder eigene benutzerdefinierte CSS-Regeln verwenden, um die View nach deinen Wünschen zu gestalten.<br>Diese Einstellungen werden als Standardeinstellungen <strong>für alle Views</strong> verwendet.',
-        'Here you can change some view layout options or use own custom CSS rules to have the view as you want<br>These settings will be used as default settings <strong>for all views</strong>',
     ],
     'layout_settings' => [
         'Layout-Einstellungen',
@@ -2221,7 +2193,6 @@ return [
     ],
     'layout_settings_description' => [
         'Hier kannst du einige Layout-Optionen der View ändern oder eigene benutzerdefinierte CSS-Regeln verwenden, um die View nach deinen Wünschen zu gestalten.',
-        'Here you can change some view layout options or use own custom CSS rules to have the view as you want',
     ],
     'layout_settings_font_size' => [
         'Schriftgröße',
@@ -2241,11 +2212,9 @@ return [
     ],
     'layout_settings_view_headers' => [
         'Überschriften der View-Blöcke',
-        'Headers of view blocks',
     ],
     'layout_settings_view_content' => [
         'Inhalt der View-Blöcke',
-        'Content of view blocks',
     ],
     'layout_settings_custom_css' => [
         'benutzerdefinierte CSS-Regeln',
@@ -2670,7 +2639,6 @@ return [
     ],
     'privacy:metadata:block_exaportview:userid' => [
         'Besitzer der View',
-        'owner of view',
     ],
     'privacy:metadata:block_exaportview:name' => [
         'Name',
@@ -2702,7 +2670,6 @@ return [
     ],
     'privacy:metadata:block_exaportview:layout' => [
         'Layout der View',
-        'layout of the view',
     ],
     'privacy:metadata:block_exaportview:sharedemails' => [
         'Liste freigegebener E-Mails',
@@ -2806,7 +2773,6 @@ return [
     ],
     'view_preview_help' => [
         'Vorschau der View',
-        'Preview of your view',
     ],
     'block_exaport_used_layout' => [
         'Verwendetes Layout',

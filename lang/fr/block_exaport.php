@@ -84,7 +84,6 @@ $string['nobookmarksnote'] = '(il n\'y a pas encore de notes)';
 $string['noentry'] = 'Aucun enregistrement';
 $string['note'] = 'Note';
 $string['notetitle'] = 'Note';
-$string['shared_views'] = 'Collections partagées';
 $string['showall'] = 'Montrer aussi les autres cours';
 $string['showcourse'] = 'Montrer seulement ce cours';
 $string['showsummary'] = '(montrer le résumé)';

@@ -28,7 +28,6 @@ if (!$user = block_exaport_get_user_from_access($access)) {
 $userpreferences = block_exaport_get_user_preferences($user->id);
 
 if ($user->access->request == 'intern') {
-    block_exaport_print_header("shared_views");
 } else {
     print_header(get_string("externaccess", "block_exaport"),
         get_string("externaccess", "block_exaport") . " " . fullname($user, $user->id));

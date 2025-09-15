@@ -106,7 +106,6 @@ if ($item->access->page == 'view') {
     if ($item->access->request == 'intern') {
         block_exaport_print_header("views");
     } else {
-        block_exaport_print_header("shared_views");
     }
 } else if ($item->access->page == 'portfolio') {
     if ($item->userid == $USER->id) {

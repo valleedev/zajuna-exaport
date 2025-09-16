@@ -2822,6 +2822,21 @@ function block_exaport_get_course_sections_as_folders($target_courseid, $context
         $sectionfolders[$folder->id] = $folder;
     }
     
+    // Add "Evidencias" folder for this course
+    $evidencias_folder = new stdClass();
+    $evidencias_folder->id = 'evidencias_' . $target_courseid;
+    $evidencias_folder->courseid = $target_courseid;
+    $evidencias_folder->name = 'Evidencias';
+    $evidencias_folder->summary = 'Carpeta para evidencias del curso';
+    $evidencias_folder->pid = 'course_' . $target_courseid; // Parent is the course folder
+    $evidencias_folder->item_cnt = 0; // Could be calculated if needed
+    $evidencias_folder->type = 'evidencias_folder';
+    $evidencias_folder->icon = 'fa-folder-open'; // Evidencias folder icon
+    $evidencias_folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $context_courseid . 
+                              '&categoryid=evidencias_' . $target_courseid;
+    
+    $sectionfolders[$evidencias_folder->id] = $evidencias_folder;
+    
     return $sectionfolders;
 }
 

@@ -306,7 +306,7 @@ if ($type == 'sharedstudent') {
     // Get course folders for drive-like experience
     $coursefolders = block_exaport_get_user_course_folders($USER->id, $courseid);
     
-    // Get course sections if we're looking at a specific course OR if we're in a section
+    // Get course sections if we're looking at a specific course OR if we're in a section OR if we're in evidencias
     $coursesections = array();
     $viewing_course_id = null;
     if (strpos($categoryid, 'course_') === 0 && strpos($categoryid, 'section_') !== 0) {
@@ -318,6 +318,13 @@ if ($type == 'sharedstudent') {
         $parts = explode('_', $categoryid);
         if (count($parts) >= 3) {
             $viewing_course_id = $parts[1]; // Extract course ID from section_courseid_sectionnum
+            $coursesections = block_exaport_get_course_sections_as_folders($viewing_course_id, $courseid, $USER->id);
+        }
+    } else if (strpos($categoryid, 'evidencias_') === 0) {
+        // If we're in an evidencias folder, load sections for that course
+        $parts = explode('_', $categoryid);
+        if (count($parts) >= 2) {
+            $viewing_course_id = $parts[1]; // Extract course ID from evidencias_courseid
             $coursesections = block_exaport_get_course_sections_as_folders($viewing_course_id, $courseid, $USER->id);
         }
     }
@@ -401,19 +408,71 @@ if ($type == 'sharedstudent') {
             $currentcategory = $coursefolders[$categoryid];
             $currentcategory->name = get_string('course_folder', 'block_exaport') . ': ' . $currentcategory->name;
         }
+    } else if (strpos($categoryid, 'evidencias_') === 0) {
+        // This is an evidencias folder for a specific course
+        if (isset($coursesections[$categoryid])) {
+            $currentcategory = $coursesections[$categoryid];
+        } else {
+            // Try to build it manually if not found in coursesections
+            $parts = explode('_', $categoryid);
+            if (count($parts) >= 2 && $parts[0] === 'evidencias') {
+                $target_courseid = $parts[1];
+                if (is_numeric($target_courseid)) {
+                    // Create the evidencias folder manually
+                    $currentcategory = new stdClass();
+                    $currentcategory->id = $categoryid;
+                    $currentcategory->courseid = $target_courseid;
+                    $currentcategory->name = 'Evidencias';
+                    $currentcategory->summary = 'Carpeta para evidencias del curso';
+                    $currentcategory->pid = 'course_' . $target_courseid;
+                    $currentcategory->item_cnt = 0;
+                    $currentcategory->type = 'evidencias_folder';
+                    $currentcategory->icon = 'fa-folder-open';
+                }
+            }
+        }
     } else if (isset($allcategories[$categoryid])) {
         $currentcategory = $allcategories[$categoryid];
     } 
     
     // Fallback to root category if current category is not found
     if ($currentcategory === null) {
-        $currentcategory = $rootcategory;
-        $categoryid = 0; // Reset to root
+        // Last attempt: check if it's an evidencias folder that we need to create manually
+        if (strpos($categoryid, 'evidencias_') === 0) {
+            $parts = explode('_', $categoryid);
+            if (count($parts) >= 2 && $parts[0] === 'evidencias') {
+                $target_courseid = $parts[1];
+                if (is_numeric($target_courseid)) {
+                    // Create the evidencias folder manually as last resort
+                    $currentcategory = new stdClass();
+                    $currentcategory->id = $categoryid;
+                    $currentcategory->courseid = $target_courseid;
+                    $currentcategory->name = 'Evidencias';
+                    $currentcategory->summary = 'Carpeta para evidencias del curso';
+                    $currentcategory->pid = 'course_' . $target_courseid;
+                    $currentcategory->item_cnt = 0;
+                    $currentcategory->type = 'evidencias_folder';
+                    $currentcategory->icon = 'fa-folder-open';
+                }
+            }
+        }
+        
+        if ($currentcategory === null) {
+            $currentcategory = $rootcategory;
+            $categoryid = 0; // Reset to root
+        }
     }
 
     // What's the parent category?.
-    if ($currentcategory && !empty($currentcategory->id) && $currentcategory->id !== 0 && isset($allcategories[$currentcategory->pid])) {
-        $parentcategory = $allcategories[$currentcategory->pid];
+    if ($currentcategory && !empty($currentcategory->id) && $currentcategory->id !== 0) {
+        if (isset($allcategories[$currentcategory->pid])) {
+            $parentcategory = $allcategories[$currentcategory->pid];
+        } else if ($currentcategory->pid && strpos($currentcategory->pid, 'course_') === 0 && isset($coursefolders[$currentcategory->pid])) {
+            // Handle special case where parent is a course folder
+            $parentcategory = $coursefolders[$currentcategory->pid];
+        } else {
+            $parentcategory = null;
+        }
     } else {
         $parentcategory = null;
     }
@@ -442,6 +501,12 @@ if ($type == 'sharedstudent') {
     } else if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'course_') === 0) {
         // For course folders, get items related to that course (for now, empty)
         $items = array(); // TODO: In the future, get course-related artifacts
+    } else if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'evidencias_') === 0) {
+        // For evidencias folder, get all items from the user regardless of category 
+        // but you can filter by course if needed in the future
+        $items = block_exaport_get_items_by_category_and_user($USER->id, 0, $sqlsort, true);
+        // Extract course ID from evidencias folder if you want to filter by course later
+        // $course_id = str_replace('evidencias_', '', $currentcategory->id);
     } else {
         // For regular categories, get items normally
         $items = block_exaport_get_items_by_category_and_user($USER->id, $numeric_category_id, $sqlsort, true);

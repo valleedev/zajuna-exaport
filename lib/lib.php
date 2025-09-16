@@ -1685,9 +1685,17 @@ function block_exaport_is_root_category($categoryid) {
 function block_exaport_instructor_can_create_in_category($categoryid) {
     error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
     
-    // Students cannot create anywhere
+    // Check if students can write in evidencias categories
     if (block_exaport_user_is_student()) {
-        error_log("DEBUG INSTRUCTOR: User is student, denying");
+        error_log("DEBUG INSTRUCTOR: User is student, checking evidencias write permissions");
+        // Students can create in evidencias categories if they have write permissions
+        if (is_numeric($categoryid) && $categoryid > 0) {
+            if (block_exaport_student_can_write_in_evidencias($categoryid)) {
+                error_log("DEBUG INSTRUCTOR: Student has write permissions in evidencias category");
+                return true;
+            }
+        }
+        error_log("DEBUG INSTRUCTOR: Student has no write permissions, denying");
         return false;
     }
     
@@ -2461,17 +2469,30 @@ abstract class block_exaport_moodleform extends moodleform {
 function block_exaport_get_all_categories_for_user($userid) {
     global $DB;
     $categorycolumns = g::$DB->get_column_names_prefixed('block_exaportcate', 'c');
+    
+    // Include evidencias categories if the user is a student enrolled in the course
+    $evidencias_condition = '';
+    if (block_exaport_user_is_student()) {
+        // For students, also include evidencias categories from courses they're enrolled in
+        $evidencias_condition = ' OR (c.source > 0 AND c.source IN (
+            SELECT e.courseid 
+            FROM {enrol} en 
+            JOIN {user_enrolments} ue ON ue.enrolid = en.id 
+            WHERE ue.userid = ? AND en.status = 0 AND ue.status = 0
+        ))';
+    }
+    
     $categories = $DB->get_records_sql("
         SELECT
             {$categorycolumns}
             , COUNT(i.id) AS item_cnt
         FROM {block_exaportcate} c
         LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
-        WHERE c.userid = ? AND (c.source IS NULL OR c.source = 0)
+        WHERE c.userid = ? AND ((c.source IS NULL OR c.source = 0) {$evidencias_condition})
         GROUP BY
             {$categorycolumns}
         ORDER BY c.name ASC
-    ", array($userid));
+    ", block_exaport_user_is_student() ? array($userid, $userid) : array($userid));
     return $categories;
 }
 

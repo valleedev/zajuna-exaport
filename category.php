@@ -191,7 +191,7 @@ class simplehtml_form extends block_exaport_moodleform {
 
         $id = optional_param('id', 0, PARAM_INT);
         $category = $DB->get_record_sql('
-            SELECT c.id, c.name, c.pid, c.internshare, c.shareall, c.iconmerge
+            SELECT c.id, c.name, c.pid, c.internshare, c.shareall, c.iconmerge, c.source
             FROM {block_exaportcate} c
             WHERE c.userid = ? AND id = ?
             ', array($USER->id, $id));
@@ -200,6 +200,7 @@ class simplehtml_form extends block_exaport_moodleform {
             $category->shareall = 0;
             $category->id = 0;
             $category->iconmerge = 0;
+            $category->source = null;
         };
 
         // Don't forget the underscore!
@@ -224,9 +225,13 @@ class simplehtml_form extends block_exaport_moodleform {
         
         // Also check if we're editing a category that belongs to evidencias
         if (!$is_evidencias && $category->id > 0) {
-            $evidencias_category = $DB->get_record('block_exaportcate', array('userid' => $USER->id, 'id' => $category->id, 'source' => 'evidencias'));
-            $is_evidencias = !empty($evidencias_category);
+            // Check if this category has a source field set (indicating it's from evidencias)
+            // The source field contains the course ID for evidencias categories
+            $is_evidencias = !empty($category->source) && is_numeric($category->source);
+            error_log("DEBUG FORM: Editing category ID {$category->id}, source='{$category->source}', is_evidencias=" . ($is_evidencias ? 'true' : 'false'));
         }
+        
+        error_log("DEBUG FORM: Final is_evidencias=" . ($is_evidencias ? 'true' : 'false'));
         
         if (!$is_evidencias) {
             // Show full form for regular categories

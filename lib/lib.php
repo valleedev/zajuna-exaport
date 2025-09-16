@@ -1805,14 +1805,21 @@ function block_exaport_instructor_has_permission($action, $context_id = null) {
     
     // Students have special permissions for writing in evidencias
     if (block_exaport_user_is_student()) {
-        // Students can add items to evidencias categories with write permissions
+        // Students can add items AND categories to evidencias categories with write permissions
         if (in_array($action, ['add', 'addstdcat']) && $context_id) {
+            // Check if trying to create in an evidencias folder (evidencias_XX format)
+            if (strpos($context_id, 'evidencias_') === 0) {
+                // Extract course ID and check if student is enrolled
+                $courseid = intval(substr($context_id, 11));
+                $context = context_course::instance($courseid);
+                return is_enrolled($context, $USER->id, 'mod/assign:submit');
+            }
             // Check if trying to create in an evidencias category with write permissions
             if (is_numeric($context_id)) {
                 return block_exaport_student_can_write_in_evidencias($context_id);
             }
         }
-        // Students cannot edit or delete categories, only create items
+        // Students cannot edit or delete categories
         return false;
     }
     
@@ -1865,16 +1872,22 @@ function block_exaport_student_can_write_in_evidencias($categoryid, $userid = nu
         $userid = $USER->id;
     }
     
+    error_log("DEBUG WRITE PERMISSION: Checking write permissions for student {$userid} in category {$categoryid}");
+    
     // Only students need this check
     if (!block_exaport_user_is_student()) {
+        error_log("DEBUG WRITE PERMISSION: User is not a student");
         return false;
     }
     
     // Get the category
     $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
     if (!$category) {
+        error_log("DEBUG WRITE PERMISSION: Category {$categoryid} not found");
         return false;
     }
+    
+    error_log("DEBUG WRITE PERMISSION: Category data - source: {$category->source}, internshare: {$category->internshare}");
     
     // Check if this is an evidencias category with write permissions enabled
     // internshare = 2 means "student write permissions in evidencias"
@@ -1882,9 +1895,12 @@ function block_exaport_student_can_write_in_evidencias($categoryid, $userid = nu
         // Check if student is enrolled in the course
         $courseid = $category->source;
         $context = context_course::instance($courseid);
-        return is_enrolled($context, $userid, 'mod/assign:submit');
+        $enrolled = is_enrolled($context, $userid, 'mod/assign:submit');
+        error_log("DEBUG WRITE PERMISSION: Course {$courseid}, enrolled: " . ($enrolled ? 'true' : 'false'));
+        return $enrolled;
     }
     
+    error_log("DEBUG WRITE PERMISSION: No write permissions (not evidencias or internshare != 2)");
     return false;
 }
 
@@ -2478,34 +2494,19 @@ function block_exaport_get_all_categories_for_user($userid) {
     global $DB;
     $categorycolumns = g::$DB->get_column_names_prefixed('block_exaportcate', 'c');
     
-    if (block_exaport_user_is_student()) {
-        // For students: show only their own categories (non-evidencias)
-        // Evidencias categories will be shown within evidencias folders via block_exaport_get_evidencias_categories_for_course()
-        $categories = $DB->get_records_sql("
-            SELECT
-                {$categorycolumns}
-                , COUNT(i.id) AS item_cnt
-            FROM {block_exaportcate} c
-            LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
-            WHERE c.userid = ? AND (c.source IS NULL OR c.source = 0)
-            GROUP BY
-                {$categorycolumns}
-            ORDER BY c.name ASC
-        ", array($userid));
-    } else {
-        // For instructors: show all their categories (including evidencias)
-        $categories = $DB->get_records_sql("
-            SELECT
-                {$categorycolumns}
-                , COUNT(i.id) AS item_cnt
-            FROM {block_exaportcate} c
-            LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
-            WHERE c.userid = ?
-            GROUP BY
-                {$categorycolumns}
-            ORDER BY c.name ASC
-        ", array($userid));
-    }
+    // For all users: show only non-evidencias categories in the root level
+    // Evidencias categories will be shown within evidencias folders via block_exaport_get_evidencias_categories_for_course()
+    $categories = $DB->get_records_sql("
+        SELECT
+            {$categorycolumns}
+            , COUNT(i.id) AS item_cnt
+        FROM {block_exaportcate} c
+        LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
+        WHERE c.userid = ? AND (c.source IS NULL OR c.source = 0)
+        GROUP BY
+            {$categorycolumns}
+        ORDER BY c.name ASC
+    ", array($userid));
     
     return $categories;
 }

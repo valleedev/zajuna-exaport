@@ -458,8 +458,27 @@ if ($type == 'sharedstudent') {
         }
         
         if ($currentcategory === null) {
-            $currentcategory = $rootcategory;
-            $categoryid = 0; // Reset to root
+            // Last attempt: check if this is a numeric category ID that might be an evidencias category
+            if (is_numeric($categoryid) && $categoryid > 0) {
+                // Check if this category exists and is an evidencias category
+                $evidencias_category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+                if ($evidencias_category && !empty($evidencias_category->source) && is_numeric($evidencias_category->source)) {
+                    // This is an evidencias category, set it as current
+                    $currentcategory = $evidencias_category;
+                    $currentcategory->type = 'evidencias_category';
+                    $currentcategory->icon = 'fa-folder';
+                    $currentcategory->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $courseid . '&categoryid=' . $categoryid;
+                } else if (isset($allcategories[$categoryid])) {
+                    // This is a normal category
+                    $currentcategory = $allcategories[$categoryid];
+                }
+            }
+            
+            // If still null, fall back to root
+            if ($currentcategory === null) {
+                $currentcategory = $rootcategory;
+                $categoryid = 0; // Reset to root
+            }
         }
     }
 
@@ -470,6 +489,16 @@ if ($type == 'sharedstudent') {
         } else if ($currentcategory->pid && strpos($currentcategory->pid, 'course_') === 0 && isset($coursefolders[$currentcategory->pid])) {
             // Handle special case where parent is a course folder
             $parentcategory = $coursefolders[$currentcategory->pid];
+        } else if (isset($currentcategory->type) && $currentcategory->type === 'evidencias_category' && !empty($currentcategory->source)) {
+            // For evidencias categories, the parent should be the evidencias folder
+            $evidencias_folder_id = 'evidencias_' . $currentcategory->source;
+            // Create the parent evidencias folder object
+            $parentcategory = new stdClass();
+            $parentcategory->id = $evidencias_folder_id;
+            $parentcategory->name = 'Evidencias';
+            $parentcategory->type = 'evidencias_folder';
+            $parentcategory->icon = 'fa-folder';
+            $parentcategory->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $courseid . '&categoryid=' . $evidencias_folder_id;
         } else {
             $parentcategory = null;
         }
@@ -589,6 +618,7 @@ if ($type == 'mine') {
 }
 
 echo '<div class="excomdos_additem ' . ($useBootstrapLayout ? 'd-flex justify-content-between align-items-center flex-column flex-sm-row' : '') . '">';
+error_log("DEBUG UI: type=$type, categoryid=$categoryid, is_student=" . (block_exaport_user_is_student() ? 'true' : 'false'));
 if (in_array($type, ['mine', 'shared'])) {
     $cattype = '';
     if ($type == 'shared') {
@@ -596,11 +626,24 @@ if (in_array($type, ['mine', 'shared'])) {
     }
     echo '<div class="excomdos_additem_content">';
     if ($type == 'mine') {
-        // Only show category creation option if instructor can create in this category
+        // Show category creation option for instructors and students with write permissions
         if (block_exaport_instructor_can_create_in_category($categoryid)) {
+            error_log("DEBUG UI: Showing create category button for type=mine, categoryid=$categoryid");
             echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=add&courseid=' . $courseid . '&pid=' . $categoryid . '">'
                 . block_exaport_fontawesome_icon('folder', 'solid', 2, [], ['color' => '#7a7a7a'], [], 'add') . '<br />'
                 . get_string("category", "block_exaport") . "</a></span>";
+        } else {
+            error_log("DEBUG UI: NOT showing create category button for type=mine, categoryid=$categoryid (no permissions)");
+        }
+    } else if (block_exaport_user_is_student() && block_exaport_instructor_can_create_in_category($categoryid)) {
+        // Also show category creation for students with write permissions in evidencias
+        error_log("DEBUG UI: Showing create category button for student, categoryid=$categoryid");
+        echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=add&courseid=' . $courseid . '&pid=' . $categoryid . '">'
+            . block_exaport_fontawesome_icon('folder', 'solid', 2, [], ['color' => '#7a7a7a'], [], 'add') . '<br />'
+            . get_string("category", "block_exaport") . "</a></span>";
+    } else {
+        if (block_exaport_user_is_student()) {
+            error_log("DEBUG UI: NOT showing create category button for student, categoryid=$categoryid (no permissions)");
         }
     }
     // Add "Mixed" artefact - only if instructor can create in this category
@@ -1035,15 +1078,25 @@ function block_exaport_category_path($category, $courseid = 1, $currentcategoryP
     };
     $path = [];
     if ($category !== null) {
-        $currentId = $category->id;
+        // Special handling for evidencias categories
+        if (isset($category->type) && $category->type === 'evidencias_category' && !empty($category->source)) {
+            // Add the evidencias folder as parent
+            $evidencias_folder_id = 'evidencias_' . $category->source;
+            $path[] = $pathItem($evidencias_folder_id, 'Evidencias', $courseid, false, '');
+            // Add the current evidencias category
+            $path[] = $pathItem($category->id, $category->name, $courseid, true, $currentcategoryPathItemButtons);
+        } else {
+            // Traditional category path handling
+            $currentId = $category->id;
 
-        while ($currentId != NULL) {
-            $item = $DB->get_record('block_exaportcate', array('id' => $currentId));
-            if (!$item) {
-                break;
+            while ($currentId != NULL) {
+                $item = $DB->get_record('block_exaportcate', array('id' => $currentId));
+                if (!$item) {
+                    break;
+                }
+                array_unshift($path, $pathItem($item->id, $item->name, $courseid, (bool)($category->id == $item->id), $currentcategoryPathItemButtons));
+                $currentId = $item->pid;
             }
-            array_unshift($path, $pathItem($item->id, $item->name, $courseid, (bool)($category->id == $item->id), $currentcategoryPathItemButtons));
-            $currentId = $item->pid;
         }
     }
     // Add root.

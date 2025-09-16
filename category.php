@@ -367,12 +367,15 @@ if ($mform->is_cancelled()) {
     if (strpos($original_pid, 'evidencias_') === 0) {
         // For evidencias categories, use a special field to mark write permissions
         $allow_uploads = optional_param('allow_student_uploads', 0, PARAM_INT);
+        error_log("DEBUG CATEGORY SAVE: allow_student_uploads = $allow_uploads");
         // Store this permission in a special way - we'll use the internshare field
         // but with a special value to indicate "student write permissions"
         if ($allow_uploads) {
             $newentry->internshare = 2; // Special value: 2 = student write permissions in evidencias
+            error_log("DEBUG CATEGORY SAVE: Setting internshare = 2 (write permissions enabled)");
         } else {
             $newentry->internshare = 0; // No special permissions
+            error_log("DEBUG CATEGORY SAVE: Setting internshare = 0 (no write permissions)");
         }
         $newentry->shareall = 0; // Not using the shareall system for evidencias
     } else {

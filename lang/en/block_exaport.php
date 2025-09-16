@@ -41,6 +41,7 @@ $string['createcategory'] = 'Create category';
 $string['nocategorycreatepermission'] = 'Students are not allowed to create, edit or delete categories';
 $string['noitemcreatepermission'] = 'Students are not allowed to create, edit or delete artefacts';
 $string['norootcategorycreate'] = 'Cannot create categories in root folder. Please enter a folder first';
+$string['noevidenciascategorycreate'] = 'Instructors can only create categories within Evidencias folders';
 $string['norootitemcreate'] = 'Cannot create artefacts in root folder. Please enter a folder first';
 $string['attachment'] = 'attachment';
 $string['attachincluded'] = 'attachment?';

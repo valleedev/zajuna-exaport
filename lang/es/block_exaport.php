@@ -40,6 +40,7 @@ $string['createcategory'] = 'Crear categoría';
 $string['nocategorycreatepermission'] = 'Los estudiantes no pueden crear, editar o eliminar categorías';
 $string['noitemcreatepermission'] = 'Los estudiantes no pueden crear, editar o eliminar artefactos';
 $string['norootcategorycreate'] = 'No se pueden crear categorías en la carpeta raíz. Ingresa a una carpeta primero';
+$string['noevidenciascategorycreate'] = 'Los instructores solo pueden crear categorías dentro de las carpetas de Evidencias';
 $string['norootitemcreate'] = 'No se pueden crear artefactos en la carpeta raíz. Ingresa a una carpeta primero';
 $string['attachment'] = 'Adjunto';
 $string['attachincluded'] = 'Adjuntar?';

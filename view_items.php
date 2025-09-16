@@ -490,6 +490,12 @@ if ($type == 'sharedstudent') {
             $subcategories = array_merge($subcategories, array_values($course_sections));
         }
     }
+    
+    // If we're in an evidencias folder, add categories created within evidencias
+    if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'evidencias_') === 0) {
+        $evidencias_categories = block_exaport_get_evidencias_categories($USER->id);
+        $subcategories = array_merge($subcategories, $evidencias_categories);
+    }
 
     // Common items.
     // Define numeric_category_id for backward compatibility

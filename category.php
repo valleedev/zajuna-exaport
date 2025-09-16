@@ -35,10 +35,10 @@ if (block_exaport_user_is_student()) {
         print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
     }
 } else if (!block_exaport_user_is_student()) {
-    // For instructors, check if they're trying to create in root category
-    if (($action == 'add' || $action == 'addstdcat') && block_exaport_is_root_category($pid)) {
-        // Instructors cannot create categories in root
-        print_error('nopermissions', 'error', '', get_string('norootcategorycreate', 'block_exaport'));
+    // For instructors, check if they're trying to create in an allowed category
+    if (($action == 'add' || $action == 'addstdcat') && !block_exaport_instructor_can_create_in_category($pid)) {
+        // Instructors can only create categories in evidencias folders
+        print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
     }
 }
 
@@ -308,12 +308,18 @@ if ($mform->is_cancelled()) {
     require_sesskey();
     
     // Additional check: Students cannot create or edit categories
-    // Instructors cannot create categories in root
+    // Instructors can only create categories in evidencias folders
     if (block_exaport_user_is_student()) {
         print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
-    } else if (empty($newentry->id) && block_exaport_is_root_category($newentry->pid)) {
-        // This is creating a new category in root - not allowed for instructors
-        print_error('nopermissions', 'error', '', get_string('norootcategorycreate', 'block_exaport'));
+    } else if (empty($newentry->id) && !block_exaport_instructor_can_create_in_category($newentry->pid)) {
+        // This is creating a new category outside evidencias - not allowed for instructors
+        print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
+    }
+    
+    // Convert evidencias parent ID to root (0) since evidencias folders are virtual
+    $actual_pid = $newentry->pid;
+    if (strpos($newentry->pid, 'evidencias_') === 0) {
+        $actual_pid = 0; // Categories created in evidencias go to root but are marked with source=999
     }
     
     $newentry->userid = $USER->id;
@@ -323,6 +329,14 @@ if ($mform->is_cancelled()) {
     } else {
         $newentry->internshare = 0;
     }
+    
+    // Mark categories created in evidencias
+    if (strpos($newentry->pid, 'evidencias_') === 0) {
+        $newentry->source = 999; // Special marker for evidencias categories
+    }
+    
+    // Update the actual parent ID
+    $newentry->pid = $actual_pid;
 
     if ($newentry->id) {
         $DB->update_record("block_exaportcate", $newentry);

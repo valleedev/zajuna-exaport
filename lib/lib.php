@@ -1163,12 +1163,79 @@ function block_exaport_create_user_category($title, $userid, $parentid = 0, $cou
     global $DB;
 
     if (!$DB->record_exists('block_exaportcate', array('userid' => $userid, 'name' => $title, 'pid' => $parentid))) {
-        $id = $DB->insert_record('block_exaportcate', array('userid' => $userid, 'name' => $title, 'pid' => $parentid, 'courseid' => $courseid));
+        $new_category = array(
+            'userid' => $userid, 
+            'name' => $title, 
+            'pid' => $parentid, 
+            'courseid' => $courseid
+        );
+        
+        // Check if this category is being created within an evidencias folder
+        if (block_exaport_is_parent_evidencias_folder($parentid)) {
+            $new_category['source'] = 999; // Special value to indicate evidencias category
+        }
+        
+        $id = $DB->insert_record('block_exaportcate', $new_category);
 
         return $DB->get_record('block_exaportcate', array('id' => $id));
     }
 
     return false;
+}
+
+/**
+ * Check if a parent ID corresponds to an evidencias folder or is within one
+ * @param mixed $parentid The parent category ID
+ * @return bool True if parent is evidencias folder or within evidencias hierarchy
+ */
+function block_exaport_is_parent_evidencias_folder($parentid) {
+    global $DB, $USER;
+    
+    // Check if parent is directly an evidencias folder
+    if (strpos($parentid, 'evidencias_') === 0) {
+        return true;
+    }
+    
+    // Check if parent is a numeric category within evidencias hierarchy
+    if (is_numeric($parentid) && $parentid > 0) {
+        $parent_category = $DB->get_record('block_exaportcate', array('id' => $parentid, 'userid' => $USER->id));
+        if ($parent_category) {
+            return block_exaport_is_category_within_evidencias($parent_category);
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Get categories that belong to evidencias folders (marked with source=999)
+ * @param int $userid User ID
+ * @return array Array of category objects
+ */
+function block_exaport_get_evidencias_categories($userid) {
+    global $DB, $CFG;
+    
+    $categories = $DB->get_records_sql("
+        SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
+               COUNT(i.id) AS item_cnt
+        FROM {block_exaportcate} c
+        LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
+        WHERE c.userid = ? AND c.source = 999
+        GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
+        ORDER BY c.name ASC
+    ", array($userid));
+    
+    // Format categories for display
+    $formatted_categories = array();
+    foreach ($categories as $category) {
+        $category->type = 'evidencias_category';
+        $category->icon = 'fa-folder';
+        $category->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . g::$COURSE->id . 
+                        '&categoryid=' . $category->id;
+        $formatted_categories[] = $category;
+    }
+    
+    return $formatted_categories;
 }
 
 /**
@@ -1586,7 +1653,7 @@ function block_exaport_is_root_category($categoryid) {
 
 /**
  * Check if instructor can create items in the current category
- * Instructors cannot create in root category but can in subcategories
+ * Instructors can only create in "Evidencias" folders, not in root or other categories
  * @param mixed $categoryid The category ID to check
  * @return bool True if instructor can create items
  */
@@ -1596,8 +1663,84 @@ function block_exaport_instructor_can_create_in_category($categoryid) {
         return false;
     }
     
-    // Instructors can create in subcategories but not in root
-    return !block_exaport_is_root_category($categoryid);
+    // Instructors can only create in evidencias folders
+    if (strpos($categoryid, 'evidencias_') === 0) {
+        return true;
+    }
+    
+    // Check if this is a subcategory within an evidencias folder
+    global $DB, $USER;
+    if (is_numeric($categoryid) && $categoryid > 0) {
+        // Get the category to check its path
+        $category = $DB->get_record('block_exaportcate', array('id' => $categoryid, 'userid' => $USER->id));
+        if ($category) {
+            // Check if this category or any of its parents is within an evidencias folder
+            return block_exaport_is_category_within_evidencias($category);
+        }
+    }
+    
+    // Also allow creating inside evidencias - check the URL parameter for parentid
+    $parentid = optional_param('pid', 0, PARAM_RAW);
+    if ($parentid && strpos($parentid, 'evidencias_') === 0) {
+        return true;
+    }
+    
+    // Check if parentid is a numeric category within evidencias
+    if (is_numeric($parentid) && $parentid > 0) {
+        $parent_category = $DB->get_record('block_exaportcate', array('id' => $parentid, 'userid' => $USER->id));
+        if ($parent_category) {
+            return block_exaport_is_category_within_evidencias($parent_category);
+        }
+    }
+    
+    // Instructors cannot create in root or course folders
+    return false;
+}
+
+/**
+ * Check if a category is within an evidencias folder hierarchy
+ * @param object $category The category object to check
+ * @return bool True if the category is within an evidencias folder
+ */
+function block_exaport_is_category_within_evidencias($category) {
+    global $DB;
+    
+    if (!$category) {
+        return false;
+    }
+    
+    // Check if this category has a special marker indicating it's from evidencias
+    // We'll use a naming convention or special field to identify evidencias subcategories
+    // For now, let's check if the category name contains evidencias or if it was created in an evidencias context
+    
+    // Traverse up the category hierarchy to find if any parent is an evidencias folder
+    $current_category = $category;
+    $max_depth = 10; // Prevent infinite loops
+    $depth = 0;
+    
+    while ($current_category && $depth < $max_depth) {
+        // Check if current category name suggests it's from evidencias
+        if (stripos($current_category->name, 'evidencias') !== false) {
+            return true;
+        }
+        
+        // Check if this category has a special source field indicating it's from evidencias
+        if (isset($current_category->source) && $current_category->source === 999) {
+            return true;
+        }
+        
+        // Move to parent category
+        if ($current_category->pid && $current_category->pid > 0) {
+            $current_category = $DB->get_record('block_exaportcate', 
+                array('id' => $current_category->pid, 'userid' => $current_category->userid));
+        } else {
+            break;
+        }
+        
+        $depth++;
+    }
+    
+    return false;
 }
 
 function block_exaport_get_students_for_teacher($userid = null, $courseid = 0) {

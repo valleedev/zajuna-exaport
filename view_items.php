@@ -491,9 +491,11 @@ if ($type == 'sharedstudent') {
         }
     }
     
-    // If we're in an evidencias folder, add categories created within evidencias
+    // If we're in an evidencias folder, add categories created within evidencias for this specific course
     if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'evidencias_') === 0) {
-        $evidencias_categories = block_exaport_get_evidencias_categories($USER->id);
+        // Extract course ID from evidencias_XX format
+        $evidencias_courseid = intval(substr($currentcategory->id, 11));
+        $evidencias_categories = block_exaport_get_evidencias_categories_for_course($USER->id, $evidencias_courseid);
         $subcategories = array_merge($subcategories, $evidencias_categories);
     }
 

@@ -1228,6 +1228,31 @@ function block_exaport_get_evidencias_categories($userid) {
     // Format categories for display
     $formatted_categories = array();
     foreach ($categories as $category) {
+        $formatted_categories[$category->id] = $category;
+    }
+    
+    return $formatted_categories;
+}
+
+/**
+ * Get categories created specifically within evidencias for a particular course
+ */
+function block_exaport_get_evidencias_categories_for_course($userid, $courseid) {
+    global $DB, $CFG;
+    
+    $categories = $DB->get_records_sql("
+        SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
+               COUNT(i.id) AS item_cnt
+        FROM {block_exaportcate} c
+        LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
+        WHERE c.userid = ? AND c.source = ?
+        GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
+        ORDER BY c.name ASC
+    ", array($userid, $courseid));
+    
+    // Format categories for display
+    $formatted_categories = array();
+    foreach ($categories as $category) {
         $category->type = 'evidencias_category';
         $category->icon = 'fa-folder';
         $category->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . g::$COURSE->id . 
@@ -1658,15 +1683,21 @@ function block_exaport_is_root_category($categoryid) {
  * @return bool True if instructor can create items
  */
 function block_exaport_instructor_can_create_in_category($categoryid) {
+    error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
+    
     // Students cannot create anywhere
     if (block_exaport_user_is_student()) {
+        error_log("DEBUG INSTRUCTOR: User is student, denying");
         return false;
     }
     
     // Instructors can only create in evidencias folders
     if (strpos($categoryid, 'evidencias_') === 0) {
+        error_log("DEBUG INSTRUCTOR: categoryid starts with 'evidencias_', allowing");
         return true;
     }
+    
+    error_log("DEBUG INSTRUCTOR: categoryid does not start with 'evidencias_', checking other conditions");
     
     // Check if this is a subcategory within an evidencias folder
     global $DB, $USER;
@@ -1682,6 +1713,7 @@ function block_exaport_instructor_can_create_in_category($categoryid) {
     // Also allow creating inside evidencias - check the URL parameter for parentid
     $parentid = optional_param('pid', 0, PARAM_RAW);
     if ($parentid && strpos($parentid, 'evidencias_') === 0) {
+        error_log("DEBUG INSTRUCTOR: parentid from URL starts with 'evidencias_', allowing");
         return true;
     }
     
@@ -1694,6 +1726,7 @@ function block_exaport_instructor_can_create_in_category($categoryid) {
     }
     
     // Instructors cannot create in root or course folders
+    error_log("DEBUG INSTRUCTOR: No conditions met, denying");
     return false;
 }
 
@@ -1725,7 +1758,8 @@ function block_exaport_is_category_within_evidencias($category) {
         }
         
         // Check if this category has a special source field indicating it's from evidencias
-        if (isset($current_category->source) && $current_category->source === 999) {
+        // Categories created in evidencias have source = courseid (not 999)
+        if (isset($current_category->source) && $current_category->source > 0 && is_numeric($current_category->source)) {
             return true;
         }
         
@@ -2338,7 +2372,7 @@ function block_exaport_get_all_categories_for_user($userid) {
             , COUNT(i.id) AS item_cnt
         FROM {block_exaportcate} c
         LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
-        WHERE c.userid = ?
+        WHERE c.userid = ? AND (c.source IS NULL OR c.source = 0)
         GROUP BY
             {$categorycolumns}
         ORDER BY c.name ASC

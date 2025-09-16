@@ -23,7 +23,7 @@ require_login($courseid);
 // Check if user can create/edit categories
 $action = optional_param('action', '', PARAM_ALPHA);
 $id = optional_param('id', 0, PARAM_INT);
-$pid = optional_param('pid', 0, PARAM_INT);
+$pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123 format
 
 if (block_exaport_user_is_student()) {
     // Students are not allowed to create, edit, delete or move categories
@@ -201,7 +201,7 @@ class simplehtml_form extends block_exaport_moodleform {
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
         $mform->addElement('hidden', 'pid');
-        $mform->setType('pid', PARAM_INT);
+        $mform->setType('pid', PARAM_RAW); // Changed to RAW to support evidencias_123 format
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
         $mform->addElement('hidden', 'back');
@@ -302,24 +302,32 @@ $mform = new simplehtml_form(null, null, 'post', '', ['id' => 'categoryform']);
 if ($mform->is_cancelled()) {
     $same = optional_param('back', '', PARAM_TEXT);
     $id = optional_param('id', 0, PARAM_INT);
-    $pid = optional_param('pid', 0, PARAM_INT);
+    $pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123
     redirect('view_items.php?courseid=' . $courseid . '&categoryid=' . ($same == 'same' ? $id : $pid));
 } else if ($newentry = $mform->get_data()) {
     require_sesskey();
     
     // Additional check: Students cannot create or edit categories
     // Instructors can only create categories in evidencias folders
+    // IMPORTANT: Do this check BEFORE converting evidencias pid to 0
     if (block_exaport_user_is_student()) {
         print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
     } else if (empty($newentry->id) && !block_exaport_instructor_can_create_in_category($newentry->pid)) {
         // This is creating a new category outside evidencias - not allowed for instructors
+        error_log("DEBUG CATEGORY: Permission denied for pid='" . $newentry->pid . "' (type: " . gettype($newentry->pid) . ")");
         print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
     }
     
     // Convert evidencias parent ID to root (0) since evidencias folders are virtual
     $actual_pid = $newentry->pid;
+    $original_pid = $newentry->pid; // Save original pid for redirect
+    $courseid_for_evidencias = null;
+    
     if (strpos($newentry->pid, 'evidencias_') === 0) {
-        $actual_pid = 0; // Categories created in evidencias go to root but are marked with source=999
+        // Extract course ID from evidencias_XX format
+        $courseid_for_evidencias = intval(substr($newentry->pid, 11)); // Remove 'evidencias_' prefix
+        $actual_pid = 0; // Categories created in evidencias go to root but are marked with course source
+        error_log("DEBUG CATEGORY: Creating evidencias category for course " . $courseid_for_evidencias);
     }
     
     $newentry->userid = $USER->id;
@@ -330,9 +338,10 @@ if ($mform->is_cancelled()) {
         $newentry->internshare = 0;
     }
     
-    // Mark categories created in evidencias
-    if (strpos($newentry->pid, 'evidencias_') === 0) {
-        $newentry->source = 999; // Special marker for evidencias categories
+    // Mark categories created in evidencias with the course ID as source
+    if ($courseid_for_evidencias !== null) {
+        $newentry->source = $courseid_for_evidencias; // Mark with course ID so it only appears in that course's evidencias
+        error_log("DEBUG CATEGORY: Setting source=" . $courseid_for_evidencias . " for evidencias category");
     }
     
     // Update the actual parent ID
@@ -466,7 +475,7 @@ if ($mform->is_cancelled()) {
     };
 
     redirect('view_items.php?courseid=' . $courseid . '&categoryid=' .
-        ($newentry->back == 'same' ? $newentry->id : $newentry->pid));
+        ($newentry->back == 'same' ? $newentry->id : $original_pid));
 } else {
     block_exaport_print_header("myportfolio");
 
@@ -488,7 +497,8 @@ if ($mform->is_cancelled()) {
     }
     $category->back = optional_param('back', '', PARAM_TEXT);
     if (empty($category->pid)) {
-        $category->pid = optional_param('pid', 0, PARAM_INT);
+        $category->pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123
+        error_log("DEBUG CATEGORY: Set category->pid from URL param to: '" . $category->pid . "' (type: " . gettype($category->pid) . ")");
     }
 
     // Filemanager for editing icon picture.

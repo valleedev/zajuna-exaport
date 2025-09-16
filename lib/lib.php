@@ -1787,8 +1787,16 @@ function block_exaport_is_category_within_evidencias($category) {
 function block_exaport_instructor_has_permission($action, $context_id = null) {
     global $DB, $USER;
     
-    // Students have no permissions for these actions
+    // Students have special permissions for writing in evidencias
     if (block_exaport_user_is_student()) {
+        // Students can add items to evidencias categories with write permissions
+        if (in_array($action, ['add', 'addstdcat']) && $context_id) {
+            // Check if trying to create in an evidencias category with write permissions
+            if (is_numeric($context_id)) {
+                return block_exaport_student_can_write_in_evidencias($context_id);
+            }
+        }
+        // Students cannot edit or delete categories, only create items
         return false;
     }
     
@@ -1824,6 +1832,43 @@ function block_exaport_instructor_has_permission($action, $context_id = null) {
     }
     
     // Default: no permission
+    return false;
+}
+
+/**
+ * Check if a student has write permissions in an evidencias category
+ * Students can upload/create items in evidencias categories that have write permissions enabled
+ * @param int $categoryid The category ID to check
+ * @param int $userid The user ID to check (optional, uses current user if not provided)
+ * @return bool True if student has write permission in this evidencias category
+ */
+function block_exaport_student_can_write_in_evidencias($categoryid, $userid = null) {
+    global $DB, $USER;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    // Only students need this check
+    if (!block_exaport_user_is_student()) {
+        return false;
+    }
+    
+    // Get the category
+    $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+    if (!$category) {
+        return false;
+    }
+    
+    // Check if this is an evidencias category with write permissions enabled
+    // internshare = 2 means "student write permissions in evidencias"
+    if (isset($category->source) && $category->source > 0 && $category->internshare == 2) {
+        // Check if student is enrolled in the course
+        $courseid = $category->source;
+        $context = context_course::instance($courseid);
+        return is_enrolled($context, $userid, 'mod/assign:submit');
+    }
+    
     return false;
 }
 

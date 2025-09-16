@@ -218,78 +218,99 @@ class simplehtml_form extends block_exaport_moodleform {
         $mform->addRule('name', block_exaport_get_string('titlenotemtpy'), 'required', null, 'client');
         $mform->add_exaport_help_button('name', 'forms.category.name');
 
-        $mform->addElement('filemanager',
-            'iconfile',
-            get_string('iconfile', 'block_exaport'),
-            null,
-            array('subdirs' => false,
-                'maxfiles' => 1,
-                'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
-                'accepted_types' => array('image', 'web_image')));
-        $mform->add_exaport_help_button('iconfile', 'forms.category.iconfile');
+        // Check if we're creating in evidencias folder or editing an evidencias category - simplify form
+        $pid = optional_param('pid', '', PARAM_RAW);
+        $is_evidencias = (strpos($pid, 'evidencias_') === 0);
+        
+        // Also check if we're editing a category that belongs to evidencias
+        if (!$is_evidencias && $category->id > 0) {
+            $evidencias_category = $DB->get_record('block_exaportcate', array('userid' => $USER->id, 'id' => $category->id, 'source' => 'evidencias'));
+            $is_evidencias = !empty($evidencias_category);
+        }
+        
+        if (!$is_evidencias) {
+            // Show full form for regular categories
+            $mform->addElement('filemanager',
+                'iconfile',
+                get_string('iconfile', 'block_exaport'),
+                null,
+                array('subdirs' => false,
+                    'maxfiles' => 1,
+                    'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
+                    'accepted_types' => array('image', 'web_image')));
+            $mform->add_exaport_help_button('iconfile', 'forms.category.iconfile');
 
-        //        if (extension_loaded('gd') && function_exists('gd_info')) {
-        // changed into Fontawesome and Javascript
-        $mform->addElement('advcheckbox',
-            'iconmerge',
-            get_string('iconfile_merge', 'block_exaport'),
-            get_string('iconfile_merge_description', 'block_exaport'),
-            array('group' => 1),
-            array(0, 1));
-        $mform->add_exaport_help_button('iconmerge', 'forms.category.iconmerge');
+            //        if (extension_loaded('gd') && function_exists('gd_info')) {
+            // changed into Fontawesome and Javascript
+            $mform->addElement('advcheckbox',
+                'iconmerge',
+                get_string('iconfile_merge', 'block_exaport'),
+                get_string('iconfile_merge_description', 'block_exaport'),
+                array('group' => 1),
+                array(0, 1));
+            $mform->add_exaport_help_button('iconmerge', 'forms.category.iconmerge');
+        }
 
-
-        //        };
-
-        // Sharing.
+        // Sharing - simplified for evidencias, full for regular categories
         if (has_capability('block/exaport:shareintern', context_system::instance())) {
-            $mform->addElement('checkbox', 'internshare', get_string('share', 'block_exaport'));
-            $mform->setType('internshare', PARAM_INT);
-            $mform->add_exaport_help_button('internshare', 'forms.category.internshare');
-            $mform->addElement('html', '<div id="internaccess-settings" class="fitem"">' .
-                '<div class="fitemtitle"></div><div class="felement">');
-
-            $mform->addElement('html', '<div style="padding: 4px 0;"><table width=100%>');
-            // Share to all.
-            if (block_exaport_shareall_enabled()) {
-                $mform->addElement('html', '<tr><td>');
-                $mform->addElement('html', '<input type="radio" name="shareall" value="1"' .
-                    ($category->shareall == 1 ? ' checked="checked"' : '') . '/>');
-                $mform->addElement('html', '</td><td>' . get_string('internalaccessall', 'block_exaport') . '</td></tr>');
-                $mform->setType('shareall', PARAM_INT);
-                $mform->addElement('html', '</td></tr>');
+            if ($is_evidencias) {
+                // Simplified permissions for evidencias - checkbox for write permissions to students
+                $mform->addElement('checkbox', 'allow_student_uploads', 'Permitir subir archivos a aprendices', 'Los aprendices podrán crear elementos y subir archivos en esta carpeta');
+                $mform->setType('allow_student_uploads', PARAM_INT);
+                $mform->setDefault('allow_student_uploads', 1); // Default checked
+            } else {
+                // Full sharing options for regular categories
+                $mform->addElement('checkbox', 'internshare', get_string('share', 'block_exaport'));
+                $mform->setType('internshare', PARAM_INT);
+                $mform->add_exaport_help_button('internshare', 'forms.category.internshare');
             }
+            
+            if (!$is_evidencias) {
+                $mform->addElement('html', '<div id="internaccess-settings" class="fitem"">' .
+                    '<div class="fitemtitle"></div><div class="felement">');
 
-            // Share to users.
-            $mform->addElement('html', '<tr><td>');
-            $mform->addElement('html', '<input type="radio" name="shareall" value="0"' .
-                (!$category->shareall ? ' checked="checked"' : '') . '/>');
-            $mform->addElement('html', '</td><td>' . get_string('internalaccessusers', 'block_exaport') . '</td></tr>');
-            $mform->addElement('html', '</td></tr>');
-            if ($category->id > 0) {
-                $sharedusers = $DB->get_records_menu('block_exaportcatshar',
-                    array("catid" => $category->id),
-                    null,
-                    'userid, userid AS tmp');
-                $mform->addElement('html', '<script> var sharedusersarr = [];');
-                foreach ($sharedusers as $i => $user) {
-                    $mform->addElement('html', 'sharedusersarr[' . $i . '] = ' . $user . ';');
+                $mform->addElement('html', '<div style="padding: 4px 0;"><table width=100%>');
+                // Share to all.
+                if (block_exaport_shareall_enabled()) {
+                    $mform->addElement('html', '<tr><td>');
+                    $mform->addElement('html', '<input type="radio" name="shareall" value="1"' .
+                        ($category->shareall == 1 ? ' checked="checked"' : '') . '/>');
+                    $mform->addElement('html', '</td><td>' . get_string('internalaccessall', 'block_exaport') . '</td></tr>');
+                    $mform->setType('shareall', PARAM_INT);
+                    $mform->addElement('html', '</td></tr>');
                 }
-                $mform->addElement('html', '</script>');
-            }
-            $mform->addElement('html', '<tr id="internaccess-users"><td></td>' .
-                '<td><div id="sharing-userlist">userlist</div></td></tr>');
 
-            // Share to groups.
-            $mform->addElement('html', '<tr><td>');
-            $mform->addElement('html', '<input type="radio" name="shareall" value="2"' .
-                ($category->shareall == 2 ? ' checked="checked"' : '') . '/>');
-            $mform->addElement('html', '</td><td>' . get_string('internalaccessgroups', 'block_exaport') . '</td></tr>');
-            $mform->addElement('html', '</td></tr>');
-            $mform->addElement('html', '<tr id="internaccess-groups"><td></td>' .
-                '<td><div id="sharing-grouplist">grouplist</div></td></tr>');
-            $mform->addElement('html', '</table></div>');
-            $mform->addElement('html', '</div></div>');
+                // Share to users.
+                $mform->addElement('html', '<tr><td>');
+                $mform->addElement('html', '<input type="radio" name="shareall" value="0"' .
+                    (!$category->shareall ? ' checked="checked"' : '') . '/>');
+                $mform->addElement('html', '</td><td>' . get_string('internalaccessusers', 'block_exaport') . '</td></tr>');
+                $mform->addElement('html', '</td></tr>');
+                if ($category->id > 0) {
+                    $sharedusers = $DB->get_records_menu('block_exaportcatshar',
+                        array("catid" => $category->id),
+                        null,
+                        'userid, userid AS tmp');
+                    $mform->addElement('html', '<script> var sharedusersarr = [];');
+                    foreach ($sharedusers as $i => $user) {
+                        $mform->addElement('html', 'sharedusersarr[' . $i . '] = ' . $user . ';');
+                    }
+                    $mform->addElement('html', '</script>');
+                }
+                $mform->addElement('html', '<tr id="internaccess-users"><td></td>' .
+                    '<td><div id="sharing-userlist">userlist</div></td></tr>');
+
+                // Share to groups.
+                $mform->addElement('html', '<tr><td>');
+                $mform->addElement('html', '<input type="radio" name="shareall" value="2"' .
+                    ($category->shareall == 2 ? ' checked="checked"' : '') . '/>');
+                $mform->addElement('html', '</td><td>' . get_string('internalaccessgroups', 'block_exaport') . '</td></tr>');
+                $mform->addElement('html', '</td></tr>');
+                $mform->addElement('html', '<tr id="internaccess-groups"><td></td>' .
+                    '<td><div id="sharing-grouplist">grouplist</div></td></tr>');
+                $mform->addElement('html', '</table></div>');
+                $mform->addElement('html', '</div></div>');
+            }
         };
 
         $this->add_action_buttons();
@@ -336,11 +357,27 @@ if ($mform->is_cancelled()) {
     }
     
     $newentry->userid = $USER->id;
-    $newentry->shareall = optional_param('shareall', 0, PARAM_INT);
-    if (optional_param('internshare', 0, PARAM_INT) > 0) {
-        $newentry->internshare = optional_param('internshare', 0, PARAM_INT);
+    
+    // Handle sharing settings - simplified for evidencias
+    if (strpos($original_pid, 'evidencias_') === 0) {
+        // For evidencias categories, use a special field to mark write permissions
+        $allow_uploads = optional_param('allow_student_uploads', 0, PARAM_INT);
+        // Store this permission in a special way - we'll use the internshare field
+        // but with a special value to indicate "student write permissions"
+        if ($allow_uploads) {
+            $newentry->internshare = 2; // Special value: 2 = student write permissions in evidencias
+        } else {
+            $newentry->internshare = 0; // No special permissions
+        }
+        $newentry->shareall = 0; // Not using the shareall system for evidencias
     } else {
-        $newentry->internshare = 0;
+        // For regular categories, use full sharing options
+        $newentry->shareall = optional_param('shareall', 0, PARAM_INT);
+        if (optional_param('internshare', 0, PARAM_INT) > 0) {
+            $newentry->internshare = optional_param('internshare', 0, PARAM_INT);
+        } else {
+            $newentry->internshare = 0;
+        }
     }
     
     // Mark categories created in evidencias with the course ID as source
@@ -356,8 +393,9 @@ if ($mform->is_cancelled()) {
 
     // Delete all shared users.
     $DB->delete_records("block_exaportcatshar", array('catid' => $newentry->id));
-    // Add new shared users.
-    if ($newentry->internshare && !$newentry->shareall) {
+    // Add new shared users - only for regular categories, not evidencias
+    if ($newentry->internshare == 1 && !$newentry->shareall) {
+        // Regular sharing for non-evidencias categories
         $shareusers = \block_exaport\param::optional_array('shareusers', PARAM_INT);
         foreach ($shareusers as $shareuser) {
             $shareuser = clean_param($shareuser, PARAM_INT);
@@ -365,8 +403,10 @@ if ($mform->is_cancelled()) {
             $shareitem->catid = $newentry->id;
             $shareitem->userid = $shareuser;
             $DB->insert_record("block_exaportcatshar", $shareitem);
-        };
-    };
+        }
+    }
+    // Note: For evidencias with internshare=2, we don't use the sharing table
+    // Instead, we check permissions dynamically based on course enrollment
 
     // Delete all shared groups.
     $DB->delete_records("block_exaportcatgroupshar", array('catid' => $newentry->id));
@@ -512,6 +552,11 @@ if ($mform->is_cancelled()) {
         $category->id,
         array('subdirs' => false, 'maxfiles' => 1, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size));
     $category->iconfile = $draftitemid;
+
+    // For evidencias categories, set the allow_student_uploads field based on internshare value
+    if ($is_evidencias) {
+        $category->allow_student_uploads = ($category->internshare == 2) ? 1 : 1; // Default to 1 (checked) for evidencias
+    }
 
     $mform->set_data($category);
     $mform->display();

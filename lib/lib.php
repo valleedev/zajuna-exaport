@@ -1748,6 +1748,14 @@ function block_exaport_user_is_student($userid = null) {
 }
 
 /**
+ * Check if current user is a site administrator
+ * @return bool True if user is site administrator
+ */
+function block_exaport_user_is_admin() {
+    return is_siteadmin() || has_capability('moodle/site:config', context_system::instance());
+}
+
+/**
  * Check if we are in the root category (categoryid = 0 or empty)
  * @param mixed $categoryid The category ID to check
  * @return bool True if we are in root category
@@ -1764,6 +1772,12 @@ function block_exaport_is_root_category($categoryid) {
  */
 function block_exaport_instructor_can_create_in_category($categoryid) {
     error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
+    
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        error_log("DEBUG INSTRUCTOR: User is administrator, granting full permissions");
+        return true;
+    }
     
     // Check if students can write in evidencias categories
     if (block_exaport_user_is_student()) {
@@ -1881,6 +1895,12 @@ function block_exaport_is_category_within_evidencias($category) {
 function block_exaport_instructor_has_permission($action, $context_id = null) {
     global $DB, $USER;
     
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        error_log("PERMISSION DEBUG: Administrator has full permissions for action '$action'");
+        return true;
+    }
+    
     // Students have special permissions for writing in evidencias
     if (block_exaport_user_is_student()) {
         // Students can add items AND categories to evidencias categories with write permissions
@@ -1964,6 +1984,12 @@ function block_exaport_student_can_write_in_evidencias($categoryid, $userid = nu
     
     error_log("DEBUG WRITE PERMISSION: Checking write permissions for student {$userid} in category {$categoryid}");
     
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        error_log("DEBUG WRITE PERMISSION: User is administrator, granting full permissions");
+        return true;
+    }
+    
     // Only students need this check
     if (!block_exaport_user_is_student()) {
         error_log("DEBUG WRITE PERMISSION: User is not a student");
@@ -2005,6 +2031,11 @@ function block_exaport_student_can_edit_item($itemid) {
     
     if (!$itemid) {
         return false;
+    }
+    
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        return true;
     }
     
     // Get the item details
@@ -2162,6 +2193,11 @@ function block_exaport_is_valid_media_by_filename($filename) {
 function block_exaport_item_is_editable($itemid) {
     global $CFG, $DB, $USER;
 
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+
     if ($CFG->block_exaport_app_alloweditdelete) {
         return true;
     }
@@ -2205,6 +2241,11 @@ function block_exaport_item_is_editable($itemid) {
  */
 function block_exaport_item_is_resubmitable($itemid) {
     global $CFG, $DB, $USER, $COURSE;
+
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
 
     if ($CFG->block_exaport_app_alloweditdelete) {
         return true;

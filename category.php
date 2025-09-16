@@ -25,37 +25,40 @@ $action = optional_param('action', '', PARAM_ALPHA);
 $id = optional_param('id', 0, PARAM_INT);
 $pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123 format
 
-if (block_exaport_user_is_student()) {
-    // Students are limited in what they can do with categories
-    if (empty($action) || $action == 'userlist' || $action == 'grouplist') {
-        // These actions are for viewing/sharing, allow them
-    } else if ($action == 'add' || $action == 'addstdcat') {
-        // Students can create categories in evidencias if they have write permissions
-        $context_id = $pid;
-        if (!block_exaport_instructor_has_permission($action, $context_id)) {
+// Administrators have full permissions, skip all checks
+if (!block_exaport_user_is_admin()) {
+    if (block_exaport_user_is_student()) {
+        // Students are limited in what they can do with categories
+        if (empty($action) || $action == 'userlist' || $action == 'grouplist') {
+            // These actions are for viewing/sharing, allow them
+        } else if ($action == 'add' || $action == 'addstdcat') {
+            // Students can create categories in evidencias if they have write permissions
+            $context_id = $pid;
+            if (!block_exaport_instructor_has_permission($action, $context_id)) {
+                print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+            }
+        } else if ($action == 'edit' || $action == 'delete') {
+            // Students can edit/delete their own evidencias categories
+            $context_id = optional_param('id', 0, PARAM_INT);
+            if (!block_exaport_instructor_has_permission($action, $context_id)) {
+                print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+            }
+        } else {
+            // All other actions are not allowed for students
             print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
         }
-    } else if ($action == 'edit' || $action == 'delete') {
-        // Students can edit/delete their own evidencias categories
-        $context_id = optional_param('id', 0, PARAM_INT);
-        if (!block_exaport_instructor_has_permission($action, $context_id)) {
-            print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+    } else if (!block_exaport_user_is_student()) {
+        // For instructors, check if they have permission for this action
+        $context_id = null;
+        if ($action == 'edit' || $action == 'delete') {
+            $context_id = optional_param('id', 0, PARAM_INT);
+        } else if ($action == 'add' || $action == 'addstdcat') {
+            $context_id = $pid;
         }
-    } else {
-        // All other actions are not allowed for students
-        print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
-    }
-} else if (!block_exaport_user_is_student()) {
-    // For instructors, check if they have permission for this action
-    $context_id = null;
-    if ($action == 'edit' || $action == 'delete') {
-        $context_id = optional_param('id', 0, PARAM_INT);
-    } else if ($action == 'add' || $action == 'addstdcat') {
-        $context_id = $pid;
-    }
-    
-    if (!empty($action) && !block_exaport_instructor_has_permission($action, $context_id)) {
-        print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
+        
+        if (!empty($action) && !block_exaport_instructor_has_permission($action, $context_id)) {
+            print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
+        }
     }
 }
 

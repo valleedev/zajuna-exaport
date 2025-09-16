@@ -49,26 +49,33 @@ if ($CFG->branch < 31) {
 }
 
 // Check if user can create/edit items
-if (block_exaport_user_is_student()) {
-    // Students can work with items in evidencias categories where they have permissions
-    if ($action == 'copytoself') {
-        // Allow copying shared items to own portfolio
-    } else if ($action == 'add' || (empty($id) && $action != 'copytoself')) {
-        // Check if student can create items in this category
-        if (!block_exaport_instructor_can_create_in_category($categoryid)) {
-            print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+// Administrators have full permissions, skip all checks
+if (!block_exaport_user_is_admin()) {
+    if (block_exaport_user_is_student()) {
+        // Students can work with items in evidencias categories where they have permissions
+        if ($action == 'copytoself') {
+            // Allow copying shared items to own portfolio
+        } else if ($action == 'add' || (empty($id) && $action != 'copytoself')) {
+            // Check if student can create items in this category
+            error_log("DEBUG ITEM: Student trying to create item in category {$categoryid}");
+            if (!block_exaport_instructor_can_create_in_category($categoryid)) {
+                error_log("DEBUG ITEM: Permission denied for student to create in category {$categoryid}");
+                print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            } else {
+                error_log("DEBUG ITEM: Permission granted for student to create in category {$categoryid}");
+            }
+        } else if (!empty($id) && ($action == 'edit' || $action == 'delete')) {
+            // Check if student can edit/delete items (need to verify item ownership and evidencias context)
+            if (!block_exaport_student_can_edit_item($id)) {
+                print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            }
         }
-    } else if (!empty($id) && ($action == 'edit' || $action == 'delete')) {
-        // Check if student can edit/delete items (need to verify item ownership and evidencias context)
-        if (!block_exaport_student_can_edit_item($id)) {
-            print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+    } else if (!block_exaport_user_is_student()) {
+        // For instructors, check if they're trying to create in root category
+        if ($action == 'add' && block_exaport_is_root_category($categoryid)) {
+            // Instructors cannot create items in root
+            print_error('nopermissions', 'error', '', get_string('norootitemcreate', 'block_exaport'));
         }
-    }
-} else if (!block_exaport_user_is_student()) {
-    // For instructors, check if they're trying to create in root category
-    if ($action == 'add' && block_exaport_is_root_category($categoryid)) {
-        // Instructors cannot create items in root
-        print_error('nopermissions', 'error', '', get_string('norootitemcreate', 'block_exaport'));
     }
 }
 

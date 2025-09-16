@@ -1,4 +1,4 @@
-<?php
+    <?php
 // This file is part of Exabis Eportfolio (extension for Moodle)
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,6 +16,7 @@
 // (c) 2016 GTN - Global Training Network GmbH <office@gtn-solutions.com>.
 
 require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->dirroot . '/repository/lib.php');
 
 class block_exaport_comment_edit_form extends block_exaport_moodleform {
 
@@ -140,14 +141,18 @@ class block_exaport_item_edit_form extends block_exaport_moodleform {
                 $mform->setType('fileid', PARAM_TEXT);
             } else if ($this->_customdata['action'] == 'add') {
                 $mform->addElement('filemanager', 'file', get_string('file', 'block_exaport'), null,
-                    array('subdirs' => false, 'maxfiles' => $filelimits, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size));
+                    array('subdirs' => false, 'maxfiles' => $filelimits, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
+                          'return_types' => FILE_INTERNAL | FILE_EXTERNAL, 
+                          'accepted_types' => '*'));
                 // 'required' was disabled, because this input is for all types from now
                 //                $mform->addRule('file', null, 'required', null, 'client');
 
             } else {
                 // Filemanager for edit file.
                 $mform->addElement('filemanager', 'file', get_string('file', 'block_exaport'), null,
-                    array('subdirs' => false, 'maxfiles' => $filelimits, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size));
+                    array('subdirs' => false, 'maxfiles' => $filelimits, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
+                          'return_types' => FILE_INTERNAL | FILE_EXTERNAL,
+                          'accepted_types' => '*'));
                 // 'required' was disabled, because this input is for all types from now
                 //                $mform->addRule('file', null, 'required', null, 'client');
                 $mform->add_exaport_help_button('file', 'forms.item.file');
@@ -290,9 +295,35 @@ class block_exaport_item_edit_form extends block_exaport_moodleform {
                 $outercategories = null;
             }
         } else {
-            // only MY categories
+            // Get MY categories AND evidencias categories where I have write permissions
             $conditions = array("userid" => $USER->id, "pid" => 0);
             $outercategories = $DB->get_records_select("block_exaportcate", "userid = ? AND pid = ?", $conditions, "name asc");
+            
+            // Also include evidencias categories where student has write permissions
+            if (block_exaport_user_is_student()) {
+                $evidencias_sql = "
+                    SELECT c.* 
+                    FROM {block_exaportcate} c 
+                    WHERE c.source IS NOT NULL 
+                    AND c.internshare = 2
+                    AND EXISTS (
+                        SELECT 1 FROM {enrol} e 
+                        JOIN {user_enrolments} ue ON e.id = ue.enrolid 
+                        WHERE e.courseid = c.source 
+                        AND ue.userid = ?
+                        AND e.status = 0 
+                        AND ue.status = 0
+                    )
+                    ORDER BY c.name ASC
+                ";
+                $evidencias_categories = $DB->get_records_sql($evidencias_sql, array($USER->id));
+                
+                if ($evidencias_categories && $outercategories) {
+                    $outercategories = $outercategories + $evidencias_categories;
+                } else if ($evidencias_categories) {
+                    $outercategories = $evidencias_categories;
+                }
+            }
         }
         $categories = array(
             0 => block_exaport_get_root_category()->name,
@@ -311,8 +342,25 @@ function rek_category_select_setup($outercategories, $entryname, $categories) {
         $categories[$curcategory->id] = $entryname . format_string($curcategory->name);
         $name = $entryname . format_string($curcategory->name);
 
+        // Get subcategories - include both own categories and evidencias subcategories
         $conditions = array("userid" => $USER->id, "pid" => $curcategory->id);
         $innercategories = $DB->get_records_select("block_exaportcate", "userid = ? AND pid = ?", $conditions, "name asc");
+        
+        // If this is an evidencias category, also include subcategories that belong to evidencias
+        if (isset($curcategory->source) && $curcategory->source > 0) {
+            $evidencias_subcategories = $DB->get_records_select(
+                "block_exaportcate", 
+                "pid = ? AND source = ?", 
+                array($curcategory->id, $curcategory->source), 
+                "name asc"
+            );
+            if ($evidencias_subcategories && $innercategories) {
+                $innercategories = $innercategories + $evidencias_subcategories;
+            } else if ($evidencias_subcategories) {
+                $innercategories = $evidencias_subcategories;
+            }
+        }
+        
         if ($innercategories) {
             $categories = rek_category_select_setup($innercategories, $name . ' &rarr; ', $categories);
         }

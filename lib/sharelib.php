@@ -862,6 +862,12 @@ namespace {
 
     function block_exaport_user_can_see_artifacts_of_students() {
         global $CFG, $USER;
+        
+        // Administrators have full permissions everywhere
+        if (is_siteadmin() || has_capability('moodle/site:config', context_system::instance())) {
+            return true;
+        }
+        
         if ($CFG->block_exaport_teachercanseeartifactsofstudents) {
             // The $USER->profile['blockexaporttrustedteacher'] is not working, because it is session data
             // And it is not updating in real time

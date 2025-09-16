@@ -26,12 +26,17 @@ $id = optional_param('id', 0, PARAM_INT);
 $pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123 format
 
 if (block_exaport_user_is_student()) {
-    // Students are not allowed to create, edit, delete or move categories
-    // Only allow viewing actions for students
+    // Students are limited in what they can do with categories
     if (empty($action) || $action == 'userlist' || $action == 'grouplist') {
         // These actions are for viewing/sharing, allow them
+    } else if ($action == 'add' || $action == 'addstdcat') {
+        // Students can create categories in evidencias if they have write permissions
+        $context_id = $pid;
+        if (!block_exaport_instructor_has_permission($action, $context_id)) {
+            print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+        }
     } else {
-        // All other actions (add, edit, delete, move, addstdcat) are not allowed for students
+        // All other actions (edit, delete, move) are not allowed for students
         print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
     }
 } else if (!block_exaport_user_is_student()) {
@@ -358,7 +363,16 @@ if ($mform->is_cancelled()) {
     if (strpos($newentry->pid, 'evidencias_') === 0) {
         // Extract course ID from evidencias_XX format
         $courseid_for_evidencias = intval(substr($newentry->pid, 11));
-        $newentry->pid = 0; // Categories in evidencias are stored at root level
+        // Use negative course ID to represent evidencias folder as parent
+        $newentry->pid = -$courseid_for_evidencias;
+    } elseif (is_numeric($newentry->pid) && $newentry->pid > 0) {
+        // Check if the parent category is an evidencias category
+        $parent_category = $DB->get_record('block_exaportcate', array('id' => $newentry->pid));
+        if ($parent_category && !empty($parent_category->source) && is_numeric($parent_category->source)) {
+            // This is a subcategory of an evidencias category - maintain hierarchy but mark as evidencias
+            $courseid_for_evidencias = $parent_category->source;
+            // Keep the original pid to maintain hierarchy (don't set to 0)
+        }
     }
     
     $newentry->userid = $USER->id;

@@ -329,7 +329,6 @@ if ($type == 'sharedstudent') {
         }
     }
     
-    // Merge course folders, sections, and categories
     $allcategories = array_merge($categories, $coursefolders, $coursesections);
 
     foreach ($allcategories as $category) {
@@ -431,6 +430,23 @@ if ($type == 'sharedstudent') {
                 }
             }
         }
+        
+        // Load evidencias categories for this specific course when navigating in evidencias folder
+        if ($currentcategory && isset($currentcategory->courseid)) {
+            $evidencias_categories = block_exaport_get_evidencias_categories_for_course($USER->id, $currentcategory->courseid);
+            foreach ($evidencias_categories as $evidencias_cat) {
+                // Convert to category format expected by categoriesbyparent
+                $evidencias_cat->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $courseid . 
+                                       '&categoryid=' . $evidencias_cat->id;
+                $evidencias_cat->icon = block_exaport_get_category_icon($evidencias_cat);
+                // Add to allcategories and categoriesbyparent
+                $allcategories[$evidencias_cat->id] = $evidencias_cat;
+                if (!isset($categoriesbyparent[$evidencias_cat->pid])) {
+                    $categoriesbyparent[$evidencias_cat->pid] = array();
+                }
+                $categoriesbyparent[$evidencias_cat->pid][] = $evidencias_cat;
+            }
+        }
     } else if (isset($allcategories[$categoryid])) {
         $currentcategory = $allcategories[$categoryid];
     } 
@@ -520,12 +536,15 @@ if ($type == 'sharedstudent') {
         }
     }
     
-    // If we're in an evidencias folder, add categories created within evidencias for this specific course
+    // If we're in an evidencias folder, show categories that have this evidencias folder as parent
     if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'evidencias_') === 0) {
         // Extract course ID from evidencias_XX format
         $evidencias_courseid = intval(substr($currentcategory->id, 11));
-        $evidencias_categories = block_exaport_get_evidencias_categories_for_course($USER->id, $evidencias_courseid);
-        $subcategories = array_merge($subcategories, $evidencias_categories);
+        // Look for categories with PID = -courseid (evidencias categories)
+        $evidencias_pid = -$evidencias_courseid;
+        if (isset($categoriesbyparent[$evidencias_pid])) {
+            $subcategories = array_merge($subcategories, $categoriesbyparent[$evidencias_pid]);
+        }
     }
 
     // Common items.
@@ -539,14 +558,24 @@ if ($type == 'sharedstudent') {
         // For course folders, get items related to that course (for now, empty)
         $items = array(); // TODO: In the future, get course-related artifacts
     } else if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'evidencias_') === 0) {
-        // For evidencias folder, get all items from the user regardless of category 
-        // but you can filter by course if needed in the future
-        $items = block_exaport_get_items_by_category_and_user($USER->id, 0, $sqlsort, true);
-        // Extract course ID from evidencias folder if you want to filter by course later
-        // $course_id = str_replace('evidencias_', '', $currentcategory->id);
+        // For evidencias folder, instructors can see all items, students see only their own
+        $evidencias_courseid = intval(substr($currentcategory->id, 11));
+        $items = block_exaport_get_evidencias_items_for_course($USER->id, $evidencias_courseid, 0, $sqlsort);
     } else {
         // For regular categories, get items normally
-        $items = block_exaport_get_items_by_category_and_user($USER->id, $numeric_category_id, $sqlsort, true);
+        // But first check if this is an evidencias category
+        if ($numeric_category_id > 0) {
+            $category_record = $DB->get_record('block_exaportcate', array('id' => $numeric_category_id));
+            if ($category_record && !empty($category_record->source) && is_numeric($category_record->source)) {
+                // This is an evidencias category - use evidencias visibility rules
+                $items = block_exaport_get_evidencias_items_for_course($USER->id, $category_record->source, $numeric_category_id, $sqlsort);
+            } else {
+                // Regular category
+                $items = block_exaport_get_items_by_category_and_user($USER->id, $numeric_category_id, $sqlsort, true);
+            }
+        } else {
+            $items = block_exaport_get_items_by_category_and_user($USER->id, $numeric_category_id, $sqlsort, true);
+        }
     }
 }
 
@@ -618,7 +647,6 @@ if ($type == 'mine') {
 }
 
 echo '<div class="excomdos_additem ' . ($useBootstrapLayout ? 'd-flex justify-content-between align-items-center flex-column flex-sm-row' : '') . '">';
-error_log("DEBUG UI: type=$type, categoryid=$categoryid, is_student=" . (block_exaport_user_is_student() ? 'true' : 'false'));
 if (in_array($type, ['mine', 'shared'])) {
     $cattype = '';
     if ($type == 'shared') {

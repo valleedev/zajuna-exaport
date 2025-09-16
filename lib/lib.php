@@ -1240,23 +1240,24 @@ function block_exaport_get_evidencias_categories($userid) {
 function block_exaport_get_evidencias_categories_for_course($userid, $courseid) {
     global $DB, $CFG;
     
-    // Students should see evidencias categories created by any user (typically instructors) in the course
-    // Instructors should see only their own evidencias categories
-    if (block_exaport_user_is_student()) {
-        $user_condition = ''; // No user restriction for students
-    } else {
-        $user_condition = 'AND c.userid = ' . intval($userid); // Instructors see only their own
-    }
+    error_log("EVIDENCIAS DEBUG NEW: Getting categories for user $userid in course $courseid with pid = " . (-$courseid));
     
+    // Get only categories that are direct children of evidencias (pid = -courseid)
+    // This maintains the hierarchy: evidencias_X -> categories with pid=-X -> subcategories with normal pids
     $categories = $DB->get_records_sql("
         SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
                COUNT(i.id) AS item_cnt
         FROM {block_exaportcate} c
         LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
-        WHERE c.source = ? {$user_condition}
+        WHERE c.source = ? AND c.pid = ?
         GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
         ORDER BY c.name ASC
-    ", array($courseid));
+    ", array($courseid, -$courseid));
+    
+    error_log("EVIDENCIAS DEBUG NEW: Found " . count($categories) . " direct evidencias categories");
+    foreach ($categories as $cat) {
+        error_log("EVIDENCIAS DEBUG NEW: Direct category ID {$cat->id}, name '{$cat->name}', userid {$cat->userid}, pid {$cat->pid}");
+    }
     
     // Format categories for display
     $formatted_categories = array();
@@ -1269,6 +1270,60 @@ function block_exaport_get_evidencias_categories_for_course($userid, $courseid) 
     }
     
     return $formatted_categories;
+}
+
+/**
+ * Get items within evidencias categories for a course
+ * Instructors can see all items, students see only their own items
+ * 
+ * @param int $userid Current user ID
+ * @param int $courseid Course ID
+ * @param int $categoryid Specific category ID (0 for all evidencias categories in course)
+ * @param string $sqlsort Sort order
+ * @return array Array of items
+ */
+function block_exaport_get_evidencias_items_for_course($userid, $courseid, $categoryid = 0, $sqlsort = '') {
+    global $DB;
+    
+    // Determine user condition based on role
+    if (block_exaport_user_is_student()) {
+        // Students see only their own items
+        $user_condition = 'AND i.userid = ' . intval($userid);
+    } else {
+        // Instructors see all items in evidencias categories
+        $user_condition = '';
+    }
+    
+    // Build the query
+    $sql = "SELECT i.*, COUNT(f.id) AS file_cnt
+            FROM {block_exaportitem} i
+            LEFT JOIN {files} f ON (f.contextid = ? AND f.component = 'block_exaport' 
+                                   AND f.filearea = 'item_file' AND f.itemid = i.id AND f.filename != '.')
+            LEFT JOIN {block_exaportcate} c ON c.id = i.categoryid
+            WHERE (c.source = ? OR (c.source IS NULL AND c.id IS NULL))
+            AND " . block_exaport_get_item_where() . "
+            {$user_condition}";
+    
+    $params = array(context_system::instance()->id, $courseid);
+    
+    // If specific category ID is provided, add it to the condition
+    if ($categoryid > 0) {
+        $sql .= " AND i.categoryid = ?";
+        $params[] = $categoryid;
+    }
+    
+    $sql .= " GROUP BY i.id, i.userid, i.type, i.categoryid, i.name, i.url, i.intro,
+                      i.attachment, i.timemodified, i.courseid, i.shareall, i.externaccess,
+                      i.externcomment, i.sortorder, i.isoez, i.fileurl, i.beispiel_url,
+                      i.exampid, i.langid, i.source, i.sourceid";
+    
+    if ($sqlsort) {
+        $sql .= " " . $sqlsort; // $sqlsort already contains "order by"
+    } else {
+        $sql .= " ORDER BY i.name ASC";
+    }
+    
+    return $DB->get_records_sql($sql, $params);
 }
 
 /**
@@ -1691,7 +1746,7 @@ function block_exaport_is_root_category($categoryid) {
  * @return bool True if instructor can create items
  */
 function block_exaport_instructor_can_create_in_category($categoryid) {
-    error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
+    // error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
     
     // Check if students can write in evidencias categories
     if (block_exaport_user_is_student()) {
@@ -1709,11 +1764,11 @@ function block_exaport_instructor_can_create_in_category($categoryid) {
     
     // Instructors can only create in evidencias folders
     if (strpos($categoryid, 'evidencias_') === 0) {
-        error_log("DEBUG INSTRUCTOR: categoryid starts with 'evidencias_', allowing");
+        // error_log("DEBUG INSTRUCTOR: categoryid starts with 'evidencias_', allowing");
         return true;
     }
     
-    error_log("DEBUG INSTRUCTOR: categoryid does not start with 'evidencias_', checking other conditions");
+    // error_log("DEBUG INSTRUCTOR: categoryid does not start with 'evidencias_', checking other conditions");
     
     // Check if this is a subcategory within an evidencias folder
     global $DB, $USER;

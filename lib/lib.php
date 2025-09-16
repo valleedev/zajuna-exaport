@@ -1240,15 +1240,23 @@ function block_exaport_get_evidencias_categories($userid) {
 function block_exaport_get_evidencias_categories_for_course($userid, $courseid) {
     global $DB, $CFG;
     
+    // Students should see evidencias categories created by any user (typically instructors) in the course
+    // Instructors should see only their own evidencias categories
+    if (block_exaport_user_is_student()) {
+        $user_condition = ''; // No user restriction for students
+    } else {
+        $user_condition = 'AND c.userid = ' . intval($userid); // Instructors see only their own
+    }
+    
     $categories = $DB->get_records_sql("
         SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
                COUNT(i.id) AS item_cnt
         FROM {block_exaportcate} c
         LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
-        WHERE c.userid = ? AND c.source = ?
+        WHERE c.source = ? {$user_condition}
         GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
         ORDER BY c.name ASC
-    ", array($userid, $courseid));
+    ", array($courseid));
     
     // Format categories for display
     $formatted_categories = array();
@@ -2470,29 +2478,35 @@ function block_exaport_get_all_categories_for_user($userid) {
     global $DB;
     $categorycolumns = g::$DB->get_column_names_prefixed('block_exaportcate', 'c');
     
-    // Include evidencias categories if the user is a student enrolled in the course
-    $evidencias_condition = '';
     if (block_exaport_user_is_student()) {
-        // For students, also include evidencias categories from courses they're enrolled in
-        $evidencias_condition = ' OR (c.source > 0 AND c.source IN (
-            SELECT e.courseid 
-            FROM {enrol} en 
-            JOIN {user_enrolments} ue ON ue.enrolid = en.id 
-            WHERE ue.userid = ? AND en.status = 0 AND ue.status = 0
-        ))';
+        // For students: show only their own categories (non-evidencias)
+        // Evidencias categories will be shown within evidencias folders via block_exaport_get_evidencias_categories_for_course()
+        $categories = $DB->get_records_sql("
+            SELECT
+                {$categorycolumns}
+                , COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
+            WHERE c.userid = ? AND (c.source IS NULL OR c.source = 0)
+            GROUP BY
+                {$categorycolumns}
+            ORDER BY c.name ASC
+        ", array($userid));
+    } else {
+        // For instructors: show all their categories (including evidencias)
+        $categories = $DB->get_records_sql("
+            SELECT
+                {$categorycolumns}
+                , COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
+            WHERE c.userid = ?
+            GROUP BY
+                {$categorycolumns}
+            ORDER BY c.name ASC
+        ", array($userid));
     }
     
-    $categories = $DB->get_records_sql("
-        SELECT
-            {$categorycolumns}
-            , COUNT(i.id) AS item_cnt
-        FROM {block_exaportcate} c
-        LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
-        WHERE c.userid = ? AND ((c.source IS NULL OR c.source = 0) {$evidencias_condition})
-        GROUP BY
-            {$categorycolumns}
-        ORDER BY c.name ASC
-    ", block_exaport_user_is_student() ? array($userid, $userid) : array($userid));
     return $categories;
 }
 

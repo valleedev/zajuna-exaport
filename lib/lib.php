@@ -1763,17 +1763,23 @@ function block_exaport_is_root_category($categoryid) {
  * @return bool True if instructor can create items
  */
 function block_exaport_instructor_can_create_in_category($categoryid) {
-    // error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
+    error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
     
     // Check if students can write in evidencias categories
     if (block_exaport_user_is_student()) {
         error_log("DEBUG INSTRUCTOR: User is student, checking evidencias write permissions");
+        error_log("DEBUG INSTRUCTOR: is_numeric check: " . (is_numeric($categoryid) ? 'true' : 'false') . ", categoryid > 0: " . ($categoryid > 0 ? 'true' : 'false'));
         // Students can create in evidencias categories if they have write permissions
         if (is_numeric($categoryid) && $categoryid > 0) {
+            error_log("DEBUG INSTRUCTOR: Calling block_exaport_student_can_write_in_evidencias for category {$categoryid}");
             if (block_exaport_student_can_write_in_evidencias($categoryid)) {
                 error_log("DEBUG INSTRUCTOR: Student has write permissions in evidencias category");
                 return true;
+            } else {
+                error_log("DEBUG INSTRUCTOR: Student does NOT have write permissions in evidencias category");
             }
+        } else {
+            error_log("DEBUG INSTRUCTOR: Category is not numeric or <= 0");
         }
         error_log("DEBUG INSTRUCTOR: Student has no write permissions, denying");
         return false;
@@ -1985,6 +1991,39 @@ function block_exaport_student_can_write_in_evidencias($categoryid, $userid = nu
     }
     
     error_log("DEBUG WRITE PERMISSION: No write permissions (not evidencias or internshare != 2)");
+    return false;
+}
+
+/**
+ * Check if a student can edit/delete an item
+ * Students can edit/delete their own items in evidencias categories
+ * @param int $itemid The item ID to check
+ * @return bool True if student can edit/delete this item
+ */
+function block_exaport_student_can_edit_item($itemid) {
+    global $DB, $USER;
+    
+    if (!$itemid) {
+        return false;
+    }
+    
+    // Get the item details
+    $item = $DB->get_record('block_exaportitem', array('id' => $itemid));
+    if (!$item) {
+        return false;
+    }
+    
+    // Students can only edit their own items
+    if ($item->userid != $USER->id) {
+        return false;
+    }
+    
+    // If the item is in a category, check if it's an evidencias category with write permissions
+    if ($item->categoryid > 0) {
+        return block_exaport_student_can_write_in_evidencias($item->categoryid);
+    }
+    
+    // If item is not in a category, students cannot edit (only evidencias items allowed)
     return false;
 }
 

@@ -35,8 +35,14 @@ if (block_exaport_user_is_student()) {
         if (!block_exaport_instructor_has_permission($action, $context_id)) {
             print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
         }
+    } else if ($action == 'edit' || $action == 'delete') {
+        // Students can edit/delete their own evidencias categories
+        $context_id = optional_param('id', 0, PARAM_INT);
+        if (!block_exaport_instructor_has_permission($action, $context_id)) {
+            print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+        }
     } else {
-        // All other actions (edit, delete, move) are not allowed for students
+        // All other actions are not allowed for students
         print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
     }
 } else if (!block_exaport_user_is_student()) {
@@ -121,12 +127,23 @@ if (optional_param('action', '', PARAM_ALPHA) == 'movetocategory') {
 if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
     $id = required_param('id', PARAM_INT);
 
-    $category = $DB->get_record("block_exaportcate", array(
-        'id' => $id,
-        'userid' => $USER->id,
-    ));
+    // First check if user has permission to delete this category
+    if (!block_exaport_instructor_has_permission('delete', $id)) {
+        throw new \block_exaport\moodle_exception('nopermissions');
+    }
+
+    // Get the category (don't filter by userid for instructors deleting evidencias categories)
+    $category = $DB->get_record("block_exaportcate", array('id' => $id));
     if (!$category) {
         throw new \block_exaport\moodle_exception('category_not_found');
+    }
+    
+    // Additional check: if it's not an evidencias category, must belong to current user
+    if (!isset($category->source) || $category->source <= 0) {
+        // Regular category - must belong to user
+        if ($category->userid != $USER->id) {
+            throw new \block_exaport\moodle_exception('nopermissions');
+        }
     }
 
     if (optional_param('confirm', 0, PARAM_INT)) {
@@ -195,11 +212,23 @@ class simplehtml_form extends block_exaport_moodleform {
         global $USER;
 
         $id = optional_param('id', 0, PARAM_INT);
+        
+        // First get the category without userid filter
         $category = $DB->get_record_sql('
-            SELECT c.id, c.name, c.pid, c.internshare, c.shareall, c.iconmerge, c.source
+            SELECT c.id, c.name, c.pid, c.internshare, c.shareall, c.iconmerge, c.source, c.userid
             FROM {block_exaportcate} c
-            WHERE c.userid = ? AND id = ?
-            ', array($USER->id, $id));
+            WHERE id = ?
+            ', array($id));
+            
+        // If category exists, check permissions
+        if ($category && $id > 0) {
+            // Check if user has permission to edit this category
+            if (!block_exaport_instructor_has_permission('edit', $id)) {
+                // User doesn't have permission - treat as if category doesn't exist
+                $category = false;
+            }
+        }
+        
         if (!$category) {
             $category = new stdClass;
             $category->shareall = 0;

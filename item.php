@@ -50,16 +50,19 @@ if ($CFG->branch < 31) {
 
 // Check if user can create/edit items
 if (block_exaport_user_is_student()) {
-    // Students are not allowed
-    // Allow viewing shared items but not creating/editing
+    // Students can work with items in evidencias categories where they have permissions
     if ($action == 'copytoself') {
         // Allow copying shared items to own portfolio
     } else if ($action == 'add' || (empty($id) && $action != 'copytoself')) {
-        // Block creating new items
-        print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+        // Check if student can create items in this category
+        if (!block_exaport_instructor_can_create_in_category($categoryid)) {
+            print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+        }
     } else if (!empty($id) && ($action == 'edit' || $action == 'delete')) {
-        // Block editing/deleting existing items
-        print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+        // Check if student can edit/delete items (need to verify item ownership and evidencias context)
+        if (!block_exaport_student_can_edit_item($id)) {
+            print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+        }
     }
 } else if (!block_exaport_user_is_student()) {
     // For instructors, check if they're trying to create in root category

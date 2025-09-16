@@ -1238,21 +1238,38 @@ function block_exaport_get_evidencias_categories($userid) {
  * Get categories created specifically within evidencias for a particular course
  */
 function block_exaport_get_evidencias_categories_for_course($userid, $courseid) {
-    global $DB, $CFG;
+    global $DB, $CFG, $USER;
     
     error_log("EVIDENCIAS DEBUG NEW: Getting categories for user $userid in course $courseid with pid = " . (-$courseid));
     
-    // Get only categories that are direct children of evidencias (pid = -courseid)
-    // This maintains the hierarchy: evidencias_X -> categories with pid=-X -> subcategories with normal pids
-    $categories = $DB->get_records_sql("
-        SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
-               COUNT(i.id) AS item_cnt
-        FROM {block_exaportcate} c
-        LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
-        WHERE c.source = ? AND c.pid = ?
-        GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
-        ORDER BY c.name ASC
-    ", array($courseid, -$courseid));
+    // Check if user is instructor (not a student)
+    $is_instructor = !block_exaport_user_is_student($userid);
+    
+    if ($is_instructor) {
+        // Instructors can see ALL evidencias categories from all users in this course
+        $categories = $DB->get_records_sql("
+            SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
+                   COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
+            WHERE c.source = ? AND c.pid = ?
+            GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
+            ORDER BY c.name ASC
+        ", array($courseid, -$courseid));
+        error_log("EVIDENCIAS DEBUG NEW: User is instructor, showing all categories");
+    } else {
+        // Students see their own categories + shared categories with appropriate permissions
+        $categories = $DB->get_records_sql("
+            SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
+                   COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
+            WHERE c.source = ? AND c.pid = ? AND (c.userid = ? OR c.internshare > 0)
+            GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
+            ORDER BY c.name ASC
+        ", array($courseid, -$courseid, $userid));
+        error_log("EVIDENCIAS DEBUG NEW: User is student, showing own + shared categories");
+    }
     
     error_log("EVIDENCIAS DEBUG NEW: Found " . count($categories) . " direct evidencias categories");
     foreach ($categories as $cat) {
@@ -2546,22 +2563,44 @@ abstract class block_exaport_moodleform extends moodleform {
 }
 
 function block_exaport_get_all_categories_for_user($userid) {
-    global $DB;
+    global $DB, $USER;
     $categorycolumns = g::$DB->get_column_names_prefixed('block_exaportcate', 'c');
     
-    // For all users: show only non-evidencias categories in the root level
-    // Evidencias categories will be shown within evidencias folders via block_exaport_get_evidencias_categories_for_course()
-    $categories = $DB->get_records_sql("
-        SELECT
-            {$categorycolumns}
-            , COUNT(i.id) AS item_cnt
-        FROM {block_exaportcate} c
-        LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
-        WHERE c.userid = ? AND (c.source IS NULL OR c.source = 0)
-        GROUP BY
-            {$categorycolumns}
-        ORDER BY c.name ASC
-    ", array($userid));
+    // Check if user is instructor (not student)
+    $is_instructor = !block_exaport_user_is_student($userid);
+    
+    if ($is_instructor) {
+        // Instructors can see their own categories + all evidencias subcategories from students
+        $categories = $DB->get_records_sql("
+            SELECT
+                {$categorycolumns}
+                , COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
+            WHERE (
+                (c.userid = ? AND (c.source IS NULL OR c.source = 0)) OR
+                (c.source > 0 AND c.pid > 0)
+            )
+            GROUP BY
+                {$categorycolumns}
+            ORDER BY c.name ASC
+        ", array($userid));
+        error_log("CATEGORIES DEBUG: Instructor loading " . count($categories) . " categories (own + evidencias subcategories)");
+    } else {
+        // Students see only their own categories + shared ones
+        $categories = $DB->get_records_sql("
+            SELECT
+                {$categorycolumns}
+                , COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
+            WHERE c.userid = ? AND (c.source IS NULL OR c.source = 0)
+            GROUP BY
+                {$categorycolumns}
+            ORDER BY c.name ASC
+        ", array($userid));
+        error_log("CATEGORIES DEBUG: Student loading " . count($categories) . " categories (own only)");
+    }
     
     return $categories;
 }

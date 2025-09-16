@@ -35,9 +35,15 @@ if (block_exaport_user_is_student()) {
         print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
     }
 } else if (!block_exaport_user_is_student()) {
-    // For instructors, check if they're trying to create in an allowed category
-    if (($action == 'add' || $action == 'addstdcat') && !block_exaport_instructor_can_create_in_category($pid)) {
-        // Instructors can only create categories in evidencias folders
+    // For instructors, check if they have permission for this action
+    $context_id = null;
+    if ($action == 'edit' || $action == 'delete') {
+        $context_id = optional_param('id', 0, PARAM_INT);
+    } else if ($action == 'add' || $action == 'addstdcat') {
+        $context_id = $pid;
+    }
+    
+    if (!empty($action) && !block_exaport_instructor_has_permission($action, $context_id)) {
         print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
     }
 }
@@ -307,27 +313,26 @@ if ($mform->is_cancelled()) {
 } else if ($newentry = $mform->get_data()) {
     require_sesskey();
     
-    // Additional check: Students cannot create or edit categories
-    // Instructors can only create categories in evidencias folders
-    // IMPORTANT: Do this check BEFORE converting evidencias pid to 0
-    if (block_exaport_user_is_student()) {
-        print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
-    } else if (empty($newentry->id) && !block_exaport_instructor_can_create_in_category($newentry->pid)) {
-        // This is creating a new category outside evidencias - not allowed for instructors
-        error_log("DEBUG CATEGORY: Permission denied for pid='" . $newentry->pid . "' (type: " . gettype($newentry->pid) . ")");
-        print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
+    // Permission check using the new unified function
+    $action = empty($newentry->id) ? 'add' : 'edit';
+    $context_id = empty($newentry->id) ? $newentry->pid : $newentry->id;
+    
+    if (!block_exaport_instructor_has_permission($action, $context_id)) {
+        if (block_exaport_user_is_student()) {
+            print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+        } else {
+            print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
+        }
     }
     
-    // Convert evidencias parent ID to root (0) since evidencias folders are virtual
-    $actual_pid = $newentry->pid;
-    $original_pid = $newentry->pid; // Save original pid for redirect
+    // Handle evidencias categories specially
+    $original_pid = $newentry->pid; // Save for redirect
     $courseid_for_evidencias = null;
     
     if (strpos($newentry->pid, 'evidencias_') === 0) {
         // Extract course ID from evidencias_XX format
-        $courseid_for_evidencias = intval(substr($newentry->pid, 11)); // Remove 'evidencias_' prefix
-        $actual_pid = 0; // Categories created in evidencias go to root but are marked with course source
-        error_log("DEBUG CATEGORY: Creating evidencias category for course " . $courseid_for_evidencias);
+        $courseid_for_evidencias = intval(substr($newentry->pid, 11));
+        $newentry->pid = 0; // Categories in evidencias are stored at root level
     }
     
     $newentry->userid = $USER->id;
@@ -340,12 +345,8 @@ if ($mform->is_cancelled()) {
     
     // Mark categories created in evidencias with the course ID as source
     if ($courseid_for_evidencias !== null) {
-        $newentry->source = $courseid_for_evidencias; // Mark with course ID so it only appears in that course's evidencias
-        error_log("DEBUG CATEGORY: Setting source=" . $courseid_for_evidencias . " for evidencias category");
+        $newentry->source = $courseid_for_evidencias;
     }
-    
-    // Update the actual parent ID
-    $newentry->pid = $actual_pid;
 
     if ($newentry->id) {
         $DB->update_record("block_exaportcate", $newentry);

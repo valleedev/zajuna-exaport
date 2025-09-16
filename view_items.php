@@ -1092,8 +1092,8 @@ function block_exaport_category_template_tile($category, $courseid, $type, $curr
             if (@$category->structure_share) {
                 $categoryContent .= ' <img src="pix/sharedfolder.png" title="shared to other users as a structure">';
             };
-            // Only show edit/delete buttons if instructor can create in this category
-            if (block_exaport_instructor_can_create_in_category($categoryid)) {
+            // Only show edit/delete buttons if instructor has permission for this category
+            if (block_exaport_instructor_has_permission('edit', $category->id)) {
                 $categoryContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'
                     . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
                     //                            .'<img src="pix/edit.png" alt="file"></a>'
@@ -1312,8 +1312,8 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
             /*if (@$category->structure_share) {
                 $categoryContent .= ' <img src="pix/sharedfolder.png" title="shared to other users as a structure">';
             };*/
-            // Only show edit/delete buttons if instructor can create in this category
-            if (block_exaport_instructor_can_create_in_category($categoryid)) {
+            // Only show edit/delete buttons if instructor has permission for this category
+            if (block_exaport_instructor_has_permission('edit', $category->id)) {
                 $categoryContent .= '
 						<span class="excomdos_tileedit">
 							<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'

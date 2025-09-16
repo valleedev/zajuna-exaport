@@ -1777,6 +1777,56 @@ function block_exaport_is_category_within_evidencias($category) {
     return false;
 }
 
+/**
+ * Check if instructors have full permissions for a given action and context
+ * Instructors have full permissions when working within evidencias folders
+ * @param string $action The action to check (add, edit, delete, etc.)
+ * @param mixed $context_id The context ID (could be pid for creation, category id for edit/delete)
+ * @return bool True if instructor has permission
+ */
+function block_exaport_instructor_has_permission($action, $context_id = null) {
+    global $DB, $USER;
+    
+    // Students have no permissions for these actions
+    if (block_exaport_user_is_student()) {
+        return false;
+    }
+    
+    // For creation actions, check if the parent is evidencias
+    if (in_array($action, ['add', 'addstdcat'])) {
+        $pid = $context_id ? $context_id : optional_param('pid', 0, PARAM_RAW);
+        return strpos($pid, 'evidencias_') === 0;
+    }
+    
+    // For edit/delete actions, check if the category is within evidencias
+    if (in_array($action, ['edit', 'delete']) && $context_id) {
+        // Special case: if context_id is not numeric, it's a virtual folder (course_XX, evidencias_XX, etc.)
+        // These cannot be edited or deleted
+        if (!is_numeric($context_id)) {
+            error_log("PERMISSION INFO: Cannot edit/delete virtual folder: $context_id");
+            return false;
+        }
+        
+        $category = $DB->get_record('block_exaportcate', array('id' => $context_id, 'userid' => $USER->id));
+        if (!$category) {
+            // Category doesn't exist or doesn't belong to user
+            error_log("PERMISSION ERROR: Category ID $context_id not found or doesn't belong to user {$USER->id}");
+            return false;
+        }
+        
+        // Check if this category was created in evidencias (has source > 0)
+        if (isset($category->source) && $category->source > 0 && is_numeric($category->source)) {
+            return true;
+        }
+        
+        // Check if it's a subcategory within evidencias
+        return block_exaport_is_category_within_evidencias($category);
+    }
+    
+    // Default: no permission
+    return false;
+}
+
 function block_exaport_get_students_for_teacher($userid = null, $courseid = 0) {
     global $DB, $USER;
     if ($userid === null) {

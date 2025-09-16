@@ -2587,19 +2587,22 @@ function block_exaport_get_all_categories_for_user($userid) {
         ", array($userid));
         error_log("CATEGORIES DEBUG: Instructor loading " . count($categories) . " categories (own + evidencias subcategories)");
     } else {
-        // Students see only their own categories + shared ones
+        // Students see their own categories + their own evidencias subcategories + shared ones
         $categories = $DB->get_records_sql("
             SELECT
                 {$categorycolumns}
                 , COUNT(i.id) AS item_cnt
             FROM {block_exaportcate} c
             LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
-            WHERE c.userid = ? AND (c.source IS NULL OR c.source = 0)
+            WHERE c.userid = ? AND (
+                (c.source IS NULL OR c.source = 0) OR
+                (c.source > 0)
+            )
             GROUP BY
                 {$categorycolumns}
             ORDER BY c.name ASC
         ", array($userid));
-        error_log("CATEGORIES DEBUG: Student loading " . count($categories) . " categories (own only)");
+        error_log("CATEGORIES DEBUG: Student loading " . count($categories) . " categories (own + own evidencias subcategories)");
     }
     
     return $categories;

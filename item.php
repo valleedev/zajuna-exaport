@@ -25,7 +25,7 @@ $confirm = optional_param("confirm", "", PARAM_BOOL);
 $backtype = optional_param('backtype', 'all', PARAM_ALPHA);
 $compids = optional_param('compids', '', PARAM_TEXT);
 $backtype = block_exaport_check_item_type($backtype, true);
-$categoryid = optional_param('categoryid', 0, PARAM_INT);
+$categoryid = optional_param('categoryid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123 format
 $cattype = optional_param('cattype', '', PARAM_ALPHA);
 $descriptorselection = optional_param('descriptorselection', true, PARAM_BOOL);
 $id = optional_param('id', 0, PARAM_INT);
@@ -51,7 +51,33 @@ if ($CFG->branch < 31) {
 // Check if user can create/edit items
 // Administrators have full permissions, skip all checks
 if (!block_exaport_user_is_admin()) {
-    if (block_exaport_user_is_student()) {
+    error_log("ITEM PERMISSION DEBUG: User is not admin, checking detailed permissions");
+    error_log("ITEM PERMISSION DEBUG: is_student = " . (block_exaport_user_is_student() ? 'true' : 'false'));
+    error_log("ITEM PERMISSION DEBUG: is_teacher = " . (block_exaport_user_is_teacher() ? 'true' : 'false'));
+    
+    // Give priority to teacher role - if user is teacher, treat as instructor regardless of student role
+    if (block_exaport_user_is_teacher()) {
+        error_log("ITEM PERMISSION DEBUG: Processing as instructor/teacher (has priority)");
+        // For instructors: Allow creating in evidencias hierarchy, but not in root
+        if ($action == 'add') {
+            error_log("INSTRUCTOR ITEM DEBUG: categoryid = '$categoryid', action = '$action'");
+            error_log("INSTRUCTOR ITEM DEBUG: is_root_category = " . (block_exaport_is_root_category($categoryid) ? 'true' : 'false'));
+            error_log("INSTRUCTOR ITEM DEBUG: can_create_in_category = " . (block_exaport_instructor_can_create_in_category($categoryid) ? 'true' : 'false'));
+            
+            // Additional check: Instructors cannot create items in actual root category (0 or empty)
+            if (block_exaport_is_root_category($categoryid)) {
+                error_log("INSTRUCTOR ITEM DEBUG: Attempting to create in root category, blocking");
+                print_error('nopermissions', 'error', '', get_string('norootitemcreate', 'block_exaport'));
+            }
+            
+            // Then check if they can create in this category (this includes evidencias check)
+            if (!block_exaport_instructor_can_create_in_category($categoryid)) {
+                error_log("INSTRUCTOR ITEM DEBUG: Cannot create in category, showing error");
+                print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            }
+        }
+    } else if (block_exaport_user_is_student()) {
+        error_log("ITEM PERMISSION DEBUG: Processing as student (pure student role)");
         // Students can work with items in evidencias categories where they have permissions
         if ($action == 'copytoself') {
             // Allow copying shared items to own portfolio
@@ -70,11 +96,26 @@ if (!block_exaport_user_is_admin()) {
                 print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
             }
         }
-    } else if (!block_exaport_user_is_student()) {
-        // For instructors, check if they're trying to create in root category
-        if ($action == 'add' && block_exaport_is_root_category($categoryid)) {
-            // Instructors cannot create items in root
-            print_error('nopermissions', 'error', '', get_string('norootitemcreate', 'block_exaport'));
+    } else {
+        error_log("ITEM PERMISSION DEBUG: User is neither student nor detected teacher - treating as instructor by default");
+        // For undetected instructors: Allow creating in evidencias hierarchy, but not in root
+        if ($action == 'add') {
+            error_log("DEFAULT INSTRUCTOR DEBUG: categoryid = '$categoryid', action = '$action'");
+            
+            // Default instructors cannot create items in actual root category (0 or empty)
+            if (block_exaport_is_root_category($categoryid)) {
+                error_log("DEFAULT INSTRUCTOR DEBUG: Attempting to create in root category, blocking");
+                print_error('nopermissions', 'error', '', get_string('norootitemcreate', 'block_exaport'));
+            }
+            
+            // Allow creating in evidencias folders
+            if (strpos($categoryid, 'evidencias_') === 0) {
+                error_log("DEFAULT INSTRUCTOR DEBUG: Creating in evidencias folder, allowing");
+                // Continue with item creation
+            } else {
+                error_log("DEFAULT INSTRUCTOR DEBUG: Cannot create outside evidencias, showing error");
+                print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            }
         }
     }
 }

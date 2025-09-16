@@ -1258,16 +1258,25 @@ function block_exaport_get_evidencias_categories_for_course($userid, $courseid) 
         ", array($courseid, -$courseid));
         error_log("EVIDENCIAS DEBUG NEW: User is instructor, showing all categories");
     } else {
-        // Students see their own categories + shared categories with appropriate permissions
+        // Students see their own categories + shared categories + instructor-created evidencias categories
         $categories = $DB->get_records_sql("
             SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
                    COUNT(i.id) AS item_cnt
             FROM {block_exaportcate} c
             LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
-            WHERE c.source = ? AND c.pid = ? AND (c.userid = ? OR c.internshare > 0)
+            WHERE c.source = ? AND c.pid = ? 
+            AND (c.userid = ? OR c.internshare > 0 OR 
+                 EXISTS (
+                     SELECT 1 FROM {role_assignments} ra 
+                     JOIN {context} ctx ON ra.contextid = ctx.id 
+                     WHERE ra.userid = c.userid 
+                     AND ctx.instanceid = ? 
+                     AND ctx.contextlevel = 50 
+                     AND ra.roleid IN (SELECT id FROM {role} WHERE shortname IN ('editingteacher', 'teacher'))
+                 ))
             GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
             ORDER BY c.name ASC
-        ", array($courseid, -$courseid, $userid));
+        ", array($courseid, -$courseid, $userid, $courseid));
         error_log("EVIDENCIAS DEBUG NEW: User is student, showing own + shared categories");
     }
     
@@ -1715,16 +1724,41 @@ function block_exaport_user_is_teacher($userid = null) {
     if ($userid === null) {
         $userid = $USER->id;
     }
-    // Role 3 = teacher
-    $query = "SELECT DISTINCT u.id as userid, u.id AS tmp
+    
+    // First check if user is admin
+    if (is_siteadmin($userid)) {
+        error_log("TEACHER CHECK: User $userid is site admin");
+        return true;
+    }
+    
+    // Check for multiple teacher/instructor roles - be more inclusive
+    // Look for any role that is NOT student (role 5)
+    $query = "SELECT DISTINCT ra.roleid, r.shortname
       FROM {role_assignments} ra
       JOIN {user} u ON ra.userid = u.id
       JOIN {context} c ON c.id = ra.contextid
-      WHERE c.contextlevel = ? AND u.id = ? AND ra.roleid = '3' AND u.deleted = 0 ";
+      JOIN {role} r ON r.id = ra.roleid
+      WHERE c.contextlevel = ? AND u.id = ? AND ra.roleid != '5' AND u.deleted = 0 ";
     $roles = $DB->get_records_sql($query, [CONTEXT_COURSE, $userid]);
+    
+    error_log("TEACHER CHECK: User $userid has " . count($roles) . " non-student roles: " . implode(', ', array_column($roles, 'shortname')));
+    
     if (count($roles) > 0) {
         return true;
     }
+    
+    // Also check for system-level capabilities that indicate teacher/admin status
+    try {
+        if (has_capability('moodle/course:create', context_system::instance(), $userid) ||
+            has_capability('moodle/site:config', context_system::instance(), $userid) ||
+            has_capability('moodle/course:manageactivities', context_system::instance(), $userid)) {
+            error_log("TEACHER CHECK: User $userid has system-level teaching capabilities");
+            return true;
+        }
+    } catch (Exception $e) {
+        error_log("TEACHER CHECK: Error checking capabilities for user $userid: " . $e->getMessage());
+    }
+    
     return false;
 }
 
@@ -1761,7 +1795,25 @@ function block_exaport_user_is_admin() {
  * @return bool True if we are in root category
  */
 function block_exaport_is_root_category($categoryid) {
-    return ($categoryid === 0 || $categoryid === '0' || empty($categoryid));
+    // Convert to string to handle both numeric and string inputs
+    $categoryid_str = (string)$categoryid;
+    
+    // Root category is when categoryid is 0, '0', empty, or null
+    if ($categoryid === 0 || $categoryid === '0' || empty($categoryid) || $categoryid === null) {
+        return true;
+    }
+    
+    // Special case: evidencias_xxx is NOT a root category
+    if (strpos($categoryid_str, 'evidencias_') === 0) {
+        return false;
+    }
+    
+    // Course_xxx is also NOT a root category
+    if (strpos($categoryid_str, 'course_') === 0) {
+        return false;
+    }
+    
+    return false;
 }
 
 /**
@@ -1771,6 +1823,8 @@ function block_exaport_is_root_category($categoryid) {
  * @return bool True if instructor can create items
  */
 function block_exaport_instructor_can_create_in_category($categoryid) {
+    global $DB;
+    
     error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
     
     // Administrators have full permissions everywhere
@@ -1779,9 +1833,49 @@ function block_exaport_instructor_can_create_in_category($categoryid) {
         return true;
     }
     
-    // Check if students can write in evidencias categories
+    // FIRST check if user is a teacher/instructor - they get priority over student role
+    if (block_exaport_user_is_teacher()) {
+        error_log("DEBUG INSTRUCTOR: User is teacher, checking evidencias permissions");
+        
+        // Allow creating directly in evidencias folders (evidencias_123 format)
+        if (strpos($categoryid, 'evidencias_') === 0) {
+            error_log("DEBUG INSTRUCTOR: Teacher can create in evidencias folder: $categoryid");
+            return true;
+        }
+        
+        // Allow creating in any subcategory that belongs to evidencias hierarchy
+        if (is_numeric($categoryid) && $categoryid > 0) {
+            $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+            if ($category && block_exaport_is_category_within_evidencias($category)) {
+                error_log("DEBUG INSTRUCTOR: Teacher can create in evidencias subcategory: $categoryid");
+                return true;
+            }
+        }
+        
+        // Check if trying to create inside evidencias via URL parameter
+        $parentid = optional_param('pid', 0, PARAM_RAW);
+        if ($parentid && strpos($parentid, 'evidencias_') === 0) {
+            error_log("DEBUG INSTRUCTOR: Teacher can create - parentid is evidencias: $parentid");
+            return true;
+        }
+        
+        // Check if parentid is a numeric category within evidencias
+        if (is_numeric($parentid) && $parentid > 0) {
+            $parent_category = $DB->get_record('block_exaportcate', array('id' => $parentid));
+            if ($parent_category && block_exaport_is_category_within_evidencias($parent_category)) {
+                error_log("DEBUG INSTRUCTOR: Teacher can create - parent is in evidencias hierarchy");
+                return true;
+            }
+        }
+        
+        // Teachers cannot create outside evidencias
+        error_log("DEBUG INSTRUCTOR: Teacher cannot create outside evidencias hierarchy");
+        return false;
+    }
+    
+    // Then check if students can write in evidencias categories (only if not a teacher)
     if (block_exaport_user_is_student()) {
-        error_log("DEBUG INSTRUCTOR: User is student, checking evidencias write permissions");
+        error_log("DEBUG INSTRUCTOR: User is student (not teacher), checking evidencias write permissions");
         error_log("DEBUG INSTRUCTOR: is_numeric check: " . (is_numeric($categoryid) ? 'true' : 'false') . ", categoryid > 0: " . ($categoryid > 0 ? 'true' : 'false'));
         // Students can create in evidencias categories if they have write permissions
         if (is_numeric($categoryid) && $categoryid > 0) {
@@ -1799,42 +1893,8 @@ function block_exaport_instructor_can_create_in_category($categoryid) {
         return false;
     }
     
-    // Instructors can only create in evidencias folders
-    if (strpos($categoryid, 'evidencias_') === 0) {
-        // error_log("DEBUG INSTRUCTOR: categoryid starts with 'evidencias_', allowing");
-        return true;
-    }
-    
-    // error_log("DEBUG INSTRUCTOR: categoryid does not start with 'evidencias_', checking other conditions");
-    
-    // Check if this is a subcategory within an evidencias folder
-    global $DB, $USER;
-    if (is_numeric($categoryid) && $categoryid > 0) {
-        // Get the category to check its path
-        $category = $DB->get_record('block_exaportcate', array('id' => $categoryid, 'userid' => $USER->id));
-        if ($category) {
-            // Check if this category or any of its parents is within an evidencias folder
-            return block_exaport_is_category_within_evidencias($category);
-        }
-    }
-    
-    // Also allow creating inside evidencias - check the URL parameter for parentid
-    $parentid = optional_param('pid', 0, PARAM_RAW);
-    if ($parentid && strpos($parentid, 'evidencias_') === 0) {
-        error_log("DEBUG INSTRUCTOR: parentid from URL starts with 'evidencias_', allowing");
-        return true;
-    }
-    
-    // Check if parentid is a numeric category within evidencias
-    if (is_numeric($parentid) && $parentid > 0) {
-        $parent_category = $DB->get_record('block_exaportcate', array('id' => $parentid, 'userid' => $USER->id));
-        if ($parent_category) {
-            return block_exaport_is_category_within_evidencias($parent_category);
-        }
-    }
-    
-    // Instructors cannot create in root or course folders
-    error_log("DEBUG INSTRUCTOR: No conditions met, denying");
+    // Default: no permission for users who are neither teachers nor students
+    error_log("DEBUG INSTRUCTOR: User is neither teacher nor student, denying");
     return false;
 }
 
@@ -1850,9 +1910,11 @@ function block_exaport_is_category_within_evidencias($category) {
         return false;
     }
     
-    // Check if this category has a special marker indicating it's from evidencias
-    // We'll use a naming convention or special field to identify evidencias subcategories
-    // For now, let's check if the category name contains evidencias or if it was created in an evidencias context
+    // Check if this category has source field > 0 (indicates it's from evidencias)
+    if (isset($category->source) && $category->source > 0 && is_numeric($category->source)) {
+        error_log("EVIDENCIAS CHECK: Category {$category->id} is evidencias category (source: {$category->source})");
+        return true;
+    }
     
     // Traverse up the category hierarchy to find if any parent is an evidencias folder
     $current_category = $category;
@@ -1860,28 +1922,35 @@ function block_exaport_is_category_within_evidencias($category) {
     $depth = 0;
     
     while ($current_category && $depth < $max_depth) {
-        // Check if current category name suggests it's from evidencias
+        // Check if current category name contains evidencias
         if (stripos($current_category->name, 'evidencias') !== false) {
+            error_log("EVIDENCIAS CHECK: Category {$current_category->id} contains 'evidencias' in name: {$current_category->name}");
             return true;
         }
         
-        // Check if this category has a special source field indicating it's from evidencias
-        // Categories created in evidencias have source = courseid (not 999)
+        // Check if this category has source field indicating it's from evidencias
         if (isset($current_category->source) && $current_category->source > 0 && is_numeric($current_category->source)) {
+            error_log("EVIDENCIAS CHECK: Parent category {$current_category->id} is evidencias (source: {$current_category->source})");
             return true;
         }
         
         // Move to parent category
-        if ($current_category->pid && $current_category->pid > 0) {
+        if (isset($current_category->pid) && $current_category->pid && $current_category->pid > 0) {
             $current_category = $DB->get_record('block_exaportcate', 
                 array('id' => $current_category->pid, 'userid' => $current_category->userid));
+            if (!$current_category) {
+                error_log("EVIDENCIAS CHECK: Parent category {$current_category->pid} not found, stopping traversal");
+                break;
+            }
         } else {
+            error_log("EVIDENCIAS CHECK: No parent category found for {$current_category->id}, stopping traversal");
             break;
         }
         
         $depth++;
     }
     
+    error_log("EVIDENCIAS CHECK: Category {$category->id} is NOT within evidencias hierarchy");
     return false;
 }
 
@@ -1931,6 +2000,58 @@ function block_exaport_instructor_has_permission($action, $context_id = null) {
         return false;
     }
     
+    // For instructors: Full permissions within evidencias hierarchy
+    if (block_exaport_user_is_teacher() || !block_exaport_user_is_student()) {
+        // For creation actions (add, addstdcat)
+        if (in_array($action, ['add', 'addstdcat'])) {
+            $pid = $context_id ? $context_id : optional_param('pid', 0, PARAM_RAW);
+            
+            // Allow creating directly in evidencias folders
+            if (strpos($pid, 'evidencias_') === 0) {
+                error_log("PERMISSION DEBUG: Instructor can create in evidencias folder: $pid");
+                return true;
+            }
+            
+            // Allow creating in any evidencias subcategory
+            if (is_numeric($pid) && $pid > 0) {
+                $parent_category = $DB->get_record('block_exaportcate', array('id' => $pid));
+                if ($parent_category && block_exaport_is_category_within_evidencias($parent_category)) {
+                    error_log("PERMISSION DEBUG: Instructor can create in evidencias subcategory: $pid");
+                    return true;
+                }
+            }
+        }
+        
+        // For edit/delete actions
+        if (in_array($action, ['edit', 'delete']) && $context_id) {
+            // Cannot edit/delete virtual folders
+            if (!is_numeric($context_id)) {
+                error_log("PERMISSION INFO: Cannot edit/delete virtual folder: $context_id");
+                return false;
+            }
+            
+            // Allow editing/deleting any category within evidencias hierarchy
+            $category = $DB->get_record('block_exaportcate', array('id' => $context_id));
+            if (!$category) {
+                error_log("PERMISSION ERROR: Category ID $context_id not found");
+                return false;
+            }
+            
+            // Check if this category is within evidencias hierarchy
+            if (block_exaport_is_category_within_evidencias($category)) {
+                error_log("PERMISSION DEBUG: Instructor has full permissions on evidencias category {$context_id}");
+                return true;
+            }
+            
+            // Legacy check: if category was created in evidencias (has source > 0)
+            if (isset($category->source) && $category->source > 0 && is_numeric($category->source)) {
+                error_log("PERMISSION DEBUG: Instructor can edit/delete evidencias category {$context_id} (source: {$category->source})");
+                return true;
+            }
+        }
+    }
+    
+    // Legacy logic for backward compatibility
     // For creation actions, check if the parent is evidencias
     if (in_array($action, ['add', 'addstdcat'])) {
         $pid = $context_id ? $context_id : optional_param('pid', 0, PARAM_RAW);
@@ -2041,6 +2162,20 @@ function block_exaport_student_can_edit_item($itemid) {
     // Get the item details
     $item = $DB->get_record('block_exaportitem', array('id' => $itemid));
     if (!$item) {
+        return false;
+    }
+    
+    // Instructors can edit any item within evidencias hierarchy
+    if (block_exaport_user_is_teacher() || !block_exaport_user_is_student()) {
+        // If the item is in a category, check if it's an evidencias category
+        if ($item->categoryid > 0) {
+            $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+            if ($category && block_exaport_is_category_within_evidencias($category)) {
+                error_log("EDIT ITEM: Instructor can edit item {$itemid} in evidencias category {$item->categoryid}");
+                return true;
+            }
+        }
+        // Instructors cannot edit items outside evidencias
         return false;
     }
     

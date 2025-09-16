@@ -674,13 +674,23 @@ if (in_array($type, ['mine', 'shared'])) {
             error_log("DEBUG UI: NOT showing create category button for student, categoryid=$categoryid (no permissions)");
         }
     }
+    
     // Add "Mixed" artefact - only if instructor can create in this category
-    if (block_exaport_instructor_can_create_in_category($categoryid)) {
+    // BUT hide for instructors when they are at the evidencias root level
+    $is_evidencias_root = (strpos($categoryid, 'evidencias_') === 0);
+    $is_instructor = (block_exaport_user_is_teacher() && !block_exaport_user_is_student());
+    
+    error_log("ADD ARTEFACT BUTTON DEBUG: categoryid='$categoryid', is_evidencias_root=" . ($is_evidencias_root ? 'true' : 'false') . ", is_instructor=" . ($is_instructor ? 'true' : 'false'));
+    
+    if (block_exaport_instructor_can_create_in_category($categoryid) && !($is_evidencias_root && $is_instructor)) {
+        error_log("ADD ARTEFACT BUTTON DEBUG: Showing add artefact button");
         echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?action=add&courseid=' . $courseid . '&categoryid=' . $categoryid . $cattype
             . '&type=mixed">'
             . block_exaport_fontawesome_icon('clone', 'solid', 2, [], [], ['data-fa-transform' => 'flip-h flip-v'],
                 'add', [], [], ['data-fa-transform' => 'shrink-7 down-4 right-8'])
             . '<br />' . get_string("add_mixed", "block_exaport") . "</a></span>";
+    } else {
+        error_log("ADD ARTEFACT BUTTON DEBUG: Hiding add artefact button");
     }
     // Next types are disabled after adding 'mixed' type. Real artefact type will be changed after filling fields.
     // These types are hidden only in this view. All other functions are working with types as before.

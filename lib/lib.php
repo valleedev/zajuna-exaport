@@ -2142,6 +2142,117 @@ function block_exaport_student_can_write_in_evidencias($categoryid, $userid = nu
 }
 
 /**
+ * Check if a student can perform actions (create/edit/delete) within instructor-created folders in evidencias
+ * Students have full permissions within folders created by instructors in evidencias hierarchy
+ * @param int $categoryid The category ID to check
+ * @param int $userid The user ID to check (optional, uses current user if not provided)
+ * @return bool True if student can perform actions in this category or its subcategories
+ */
+function block_exaport_student_can_act_in_instructor_folder($categoryid, $userid = null) {
+    global $DB, $USER;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Checking if student {$userid} can act in category {$categoryid}");
+    
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: User is administrator, granting full permissions");
+        return true;
+    }
+    
+    // Only students need this check
+    if (!block_exaport_user_is_student()) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: User is not a student");
+        return false;
+    }
+    
+    // Handle special case: if categoryid is not numeric (like 'course_72' or 'evidencias_72'), 
+    // it means we're at the root level and students cannot create there
+    if (!is_numeric($categoryid)) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Category ID is not numeric ({$categoryid}), denying access at root level");
+        return false;
+    }
+    
+    // Get the category
+    $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+    if (!$category) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Category {$categoryid} not found");
+        return false;
+    }
+    
+    // Check if we're in evidencias context
+    if ($category->source !== 'courses') {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Not in courses context (evidencias)");
+        return false;
+    }
+    
+    // Traverse up the hierarchy to find if we're within an instructor-created folder
+    $current_category = $category;
+    $courseid = abs($current_category->pid); // pid is negative for evidencias root
+    
+    error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Traversing hierarchy for category {$categoryid}, courseid: {$courseid}");
+    
+    while ($current_category) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Checking category {$current_category->id}, userid: {$current_category->userid}, pid: {$current_category->pid}");
+        
+        // If we reach the evidencias root (pid = -courseid), stop
+        if ($current_category->pid == -$courseid) {
+            error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Reached evidencias root, checking if creator is instructor");
+            // Check if the category creator is an instructor in this course
+            if (block_exaport_user_is_teacher_in_course($current_category->userid, $courseid)) {
+                error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Creator {$current_category->userid} is instructor, granting permissions");
+                return true;
+            }
+            break;
+        }
+        
+        // Check if current category creator is an instructor
+        if (block_exaport_user_is_teacher_in_course($current_category->userid, $courseid)) {
+            error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Found instructor-created category {$current_category->id}, granting permissions");
+            return true;
+        }
+        
+        // Move up to parent category
+        if ($current_category->pid > 0) {
+            $current_category = $DB->get_record('block_exaportcate', array('id' => $current_category->pid));
+        } else {
+            break;
+        }
+    }
+    
+    error_log("DEBUG STUDENT INSTRUCTOR FOLDER: No instructor-created parent found, denying permissions");
+    return false;
+}
+
+/**
+ * Check if a user is a teacher in a specific course
+ * @param int $userid The user ID to check
+ * @param int $courseid The course ID
+ * @return bool True if user is teacher in the course
+ */
+function block_exaport_user_is_teacher_in_course($userid, $courseid) {
+    global $DB;
+    
+    // Get course context
+    $context = context_course::instance($courseid);
+    
+    // Check if user has teacher capabilities in this course
+    $sql = "SELECT COUNT(*) FROM {role_assignments} ra 
+            JOIN {role} r ON ra.roleid = r.id 
+            WHERE ra.userid = ? AND ra.contextid = ? 
+            AND r.shortname IN ('editingteacher', 'teacher')";
+    
+    $count = $DB->count_records_sql($sql, array($userid, $context->id));
+    
+    error_log("DEBUG TEACHER CHECK: User {$userid} in course {$courseid} - teacher count: {$count}");
+    
+    return $count > 0;
+}
+
+/**
  * Check if a student can edit/delete an item
  * Students can edit/delete their own items in evidencias categories
  * @param int $itemid The item ID to check
@@ -2331,6 +2442,31 @@ function block_exaport_item_is_editable($itemid) {
     // Administrators have full permissions everywhere
     if (block_exaport_user_is_admin()) {
         return true;
+    }
+
+    // Get the item to check category permissions
+    $item = $DB->get_record('block_exaportitem', array('id' => $itemid));
+    if (!$item) {
+        return false;
+    }
+
+    // Check if student can act in instructor folder (new permission system)
+    if (block_exaport_user_is_student() && $item->categoryid) {
+        if (block_exaport_student_can_act_in_instructor_folder($item->categoryid)) {
+            error_log("DEBUG ITEM EDITABLE: Student can act in instructor folder for item {$itemid}");
+            return true;
+        }
+    }
+
+    // Instructors have full permissions in evidencias hierarchy
+    if (block_exaport_user_is_teacher() && $item->categoryid) {
+        $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+        if ($category && $category->source === 'courses') {
+            if (block_exaport_instructor_has_permission($item->categoryid)) {
+                error_log("DEBUG ITEM EDITABLE: Instructor has permission for item {$itemid}");
+                return true;
+            }
+        }
     }
 
     if ($CFG->block_exaport_app_alloweditdelete) {

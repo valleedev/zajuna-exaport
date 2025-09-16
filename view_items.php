@@ -663,8 +663,8 @@ if (in_array($type, ['mine', 'shared'])) {
         } else {
             error_log("DEBUG UI: NOT showing create category button for type=mine, categoryid=$categoryid (no permissions)");
         }
-    } else if (block_exaport_user_is_student() && block_exaport_instructor_can_create_in_category($categoryid)) {
-        // Also show category creation for students with write permissions in evidencias
+    } else if (block_exaport_user_is_student() && block_exaport_student_can_act_in_instructor_folder($categoryid)) {
+        // Also show category creation for students within instructor-created folders in evidencias
         error_log("DEBUG UI: Showing create category button for student, categoryid=$categoryid");
         echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=add&courseid=' . $courseid . '&pid=' . $categoryid . '">'
             . block_exaport_fontawesome_icon('folder', 'solid', 2, [], ['color' => '#7a7a7a'], [], 'add') . '<br />'
@@ -675,14 +675,28 @@ if (in_array($type, ['mine', 'shared'])) {
         }
     }
     
-    // Add "Mixed" artefact - only if instructor can create in this category
+    // Add "Mixed" artefact - check permissions based on user role
     // BUT hide for instructors when they are at the evidencias root level
     $is_evidencias_root = (strpos($categoryid, 'evidencias_') === 0);
     $is_instructor = (block_exaport_user_is_teacher() && !block_exaport_user_is_student());
+    $is_student = block_exaport_user_is_student();
     
-    error_log("ADD ARTEFACT BUTTON DEBUG: categoryid='$categoryid', is_evidencias_root=" . ($is_evidencias_root ? 'true' : 'false') . ", is_instructor=" . ($is_instructor ? 'true' : 'false'));
+    error_log("ADD ARTEFACT BUTTON DEBUG: categoryid='$categoryid', is_evidencias_root=" . ($is_evidencias_root ? 'true' : 'false') . ", is_instructor=" . ($is_instructor ? 'true' : 'false') . ", is_student=" . ($is_student ? 'true' : 'false'));
     
-    if (block_exaport_instructor_can_create_in_category($categoryid) && !($is_evidencias_root && $is_instructor)) {
+    $can_add_artefact = false;
+    
+    if ($is_instructor) {
+        // Instructors can add artefacts if they have permission, but not at evidencias root
+        $can_add_artefact = block_exaport_instructor_can_create_in_category($categoryid) && !$is_evidencias_root;
+    } else if ($is_student) {
+        // Students can add artefacts if they are within instructor-created folders
+        $can_add_artefact = block_exaport_student_can_act_in_instructor_folder($categoryid);
+    } else {
+        // Default permission check for other users
+        $can_add_artefact = block_exaport_instructor_can_create_in_category($categoryid);
+    }
+    
+    if ($can_add_artefact) {
         error_log("ADD ARTEFACT BUTTON DEBUG: Showing add artefact button");
         echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?action=add&courseid=' . $courseid . '&categoryid=' . $categoryid . $cattype
             . '&type=mixed">'

@@ -32,15 +32,16 @@ if (!block_exaport_user_is_admin()) {
         if (empty($action) || $action == 'userlist' || $action == 'grouplist') {
             // These actions are for viewing/sharing, allow them
         } else if ($action == 'add' || $action == 'addstdcat') {
-            // Students can create categories in evidencias if they have write permissions
+            // Students can create categories in evidencias if they are within instructor folders
             $context_id = $pid;
-            if (!block_exaport_instructor_has_permission($action, $context_id)) {
+            // Check if student can act within instructor-created folders
+            if (!block_exaport_student_can_act_in_instructor_folder($context_id)) {
                 print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
             }
         } else if ($action == 'edit' || $action == 'delete') {
-            // Students can edit/delete their own evidencias categories
+            // Students can edit/delete categories within instructor folders
             $context_id = optional_param('id', 0, PARAM_INT);
-            if (!block_exaport_instructor_has_permission($action, $context_id)) {
+            if (!block_exaport_student_can_act_in_instructor_folder($context_id)) {
                 print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
             }
         } else {

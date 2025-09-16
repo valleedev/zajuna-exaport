@@ -82,17 +82,18 @@ if (!block_exaport_user_is_admin()) {
         if ($action == 'copytoself') {
             // Allow copying shared items to own portfolio
         } else if ($action == 'add' || (empty($id) && $action != 'copytoself')) {
-            // Check if student can create items in this category
+            // Check if student can create items in this category within instructor folders
             error_log("DEBUG ITEM: Student trying to create item in category {$categoryid}");
-            if (!block_exaport_instructor_can_create_in_category($categoryid)) {
+            if (!block_exaport_student_can_act_in_instructor_folder($categoryid)) {
                 error_log("DEBUG ITEM: Permission denied for student to create in category {$categoryid}");
                 print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
             } else {
                 error_log("DEBUG ITEM: Permission granted for student to create in category {$categoryid}");
             }
         } else if (!empty($id) && ($action == 'edit' || $action == 'delete')) {
-            // Check if student can edit/delete items (need to verify item ownership and evidencias context)
-            if (!block_exaport_student_can_edit_item($id)) {
+            // Check if student can edit/delete items (check if item is in instructor folder)
+            $item = $DB->get_record('block_exaportitem', array('id' => $id));
+            if (!$item || !block_exaport_student_can_act_in_instructor_folder($item->categoryid)) {
                 print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
             }
         }

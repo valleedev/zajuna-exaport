@@ -34,9 +34,13 @@ if (!block_exaport_user_is_admin()) {
         } else if ($action == 'add' || $action == 'addstdcat') {
             // Students can create categories in evidencias if they are within instructor folders
             $context_id = $pid;
+            error_log("DEBUG CATEGORY CREATE: Student trying to create in pid=$context_id, action=$action");
             // Check if student can act within instructor-created folders
             if (!block_exaport_student_can_act_in_instructor_folder($context_id)) {
+                error_log("DEBUG CATEGORY CREATE: Permission denied for student to create in pid=$context_id");
                 print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+            } else {
+                error_log("DEBUG CATEGORY CREATE: Permission granted for student to create in pid=$context_id");
             }
         } else if ($action == 'edit' || $action == 'delete') {
             // Students can edit/delete categories within instructor folders

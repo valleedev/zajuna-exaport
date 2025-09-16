@@ -2184,30 +2184,27 @@ function block_exaport_student_can_act_in_instructor_folder($categoryid, $userid
     }
     
     // Check if we're in evidencias context
-    if ($category->source !== 'courses') {
-        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Not in courses context (evidencias)");
+    // Evidencias categories have numeric source (course ID) instead of 'courses'
+    if (!is_numeric($category->source)) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Not in evidencias context (source is not numeric: {$category->source})");
         return false;
     }
     
     // Traverse up the hierarchy to find if we're within an instructor-created folder
     $current_category = $category;
-    $courseid = abs($current_category->pid); // pid is negative for evidencias root
     
-    error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Traversing hierarchy for category {$categoryid}, courseid: {$courseid}");
+    // Get the courseid - for evidencias categories it's stored in the source field
+    $courseid = (int)$category->source;
     
-    while ($current_category) {
-        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Checking category {$current_category->id}, userid: {$current_category->userid}, pid: {$current_category->pid}");
+    error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Evidencias category {$categoryid}, courseid: {$courseid}");
+    
+    // We need to check if ANY parent in the hierarchy was created by an instructor
+    $checked_categories = array(); // Prevent infinite loops
+    
+    while ($current_category && !in_array($current_category->id, $checked_categories)) {
+        $checked_categories[] = $current_category->id;
         
-        // If we reach the evidencias root (pid = -courseid), stop
-        if ($current_category->pid == -$courseid) {
-            error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Reached evidencias root, checking if creator is instructor");
-            // Check if the category creator is an instructor in this course
-            if (block_exaport_user_is_teacher_in_course($current_category->userid, $courseid)) {
-                error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Creator {$current_category->userid} is instructor, granting permissions");
-                return true;
-            }
-            break;
-        }
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Checking category {$current_category->id}, userid: {$current_category->userid}, pid: {$current_category->pid}");
         
         // Check if current category creator is an instructor
         if (block_exaport_user_is_teacher_in_course($current_category->userid, $courseid)) {
@@ -2215,10 +2212,22 @@ function block_exaport_student_can_act_in_instructor_folder($categoryid, $userid
             return true;
         }
         
+        // If we reach the evidencias root (pid = -courseid), we've checked all the way up
+        if ($current_category->pid == -$courseid) {
+            error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Reached evidencias root without finding instructor parent");
+            break;
+        }
+        
         // Move up to parent category
         if ($current_category->pid > 0) {
-            $current_category = $DB->get_record('block_exaportcate', array('id' => $current_category->pid));
+            $parent_category = $DB->get_record('block_exaportcate', array('id' => $current_category->pid));
+            if (!$parent_category) {
+                error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Parent category {$current_category->pid} not found, stopping");
+                break;
+            }
+            $current_category = $parent_category;
         } else {
+            error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Reached root level (pid <= 0), stopping");
             break;
         }
     }

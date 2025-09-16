@@ -672,6 +672,8 @@ if (in_array($type, ['mine', 'shared'])) {
     } else {
         if (block_exaport_user_is_student()) {
             error_log("DEBUG UI: NOT showing create category button for student, categoryid=$categoryid (no permissions)");
+            error_log("DEBUG UI: block_exaport_user_is_student() = " . (block_exaport_user_is_student() ? 'true' : 'false'));
+            error_log("DEBUG UI: block_exaport_student_can_act_in_instructor_folder($categoryid) = " . (block_exaport_student_can_act_in_instructor_folder($categoryid) ? 'true' : 'false'));
         }
     }
     

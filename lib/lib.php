@@ -1891,7 +1891,17 @@ function block_exaport_instructor_has_permission($action, $context_id = null) {
                 return block_exaport_student_can_write_in_evidencias($context_id);
             }
         }
-        // Students cannot edit or delete categories
+        
+        // Students can edit and delete their own evidencias categories
+        if (in_array($action, ['edit', 'delete']) && $context_id && is_numeric($context_id)) {
+            $category = $DB->get_record('block_exaportcate', array('id' => $context_id, 'userid' => $USER->id));
+            if ($category && isset($category->source) && $category->source > 0) {
+                error_log("PERMISSION DEBUG: Student can edit/delete own evidencias category {$context_id}");
+                return true;
+            }
+        }
+        
+        // Students cannot edit or delete regular categories
         return false;
     }
     
@@ -1910,15 +1920,17 @@ function block_exaport_instructor_has_permission($action, $context_id = null) {
             return false;
         }
         
-        $category = $DB->get_record('block_exaportcate', array('id' => $context_id, 'userid' => $USER->id));
+        // For instructors: allow editing any evidencias category
+        // For students: the check was already done above
+        $category = $DB->get_record('block_exaportcate', array('id' => $context_id));
         if (!$category) {
-            // Category doesn't exist or doesn't belong to user
-            error_log("PERMISSION ERROR: Category ID $context_id not found or doesn't belong to user {$USER->id}");
+            error_log("PERMISSION ERROR: Category ID $context_id not found");
             return false;
         }
         
         // Check if this category was created in evidencias (has source > 0)
         if (isset($category->source) && $category->source > 0 && is_numeric($category->source)) {
+            error_log("PERMISSION DEBUG: Instructor can edit/delete evidencias category {$context_id} (source: {$category->source})");
             return true;
         }
         

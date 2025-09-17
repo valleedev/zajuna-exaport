@@ -1236,10 +1236,22 @@ function block_exaport_category_template_tile($category, $courseid, $type, $curr
             };
             // Only show edit/delete buttons if instructor has permission for this category
             if (block_exaport_instructor_has_permission('edit', $category->id)) {
-                $categoryContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'
+                // Check if we're in evidencias context
+                $evidencias_param = '';
+                if (!empty($category->source) && is_numeric($category->source)) {
+                    $evidencias_param = '&evidencias=' . $category->source;
+                    error_log("DEBUG VIEW_ITEMS: Category {$category->id} detected as evidencias, source={$category->source}");
+                } else {
+                    error_log("DEBUG VIEW_ITEMS: Category {$category->id} NOT evidencias, source='{$category->source}'");
+                }
+                
+                $delete_url = $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=delete' . $evidencias_param;
+                error_log("DEBUG VIEW_ITEMS: Generated delete URL: {$delete_url}");
+                
+                $categoryContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . $evidencias_param . '">'
                     . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
                     //                            .'<img src="pix/edit.png" alt="file"></a>'
-                    . '<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=delete' . '">'
+                    . '<a href="' . $delete_url . '">'
                     . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
                     //                            .'<img src="pix/del.png" alt="file">'
                     . '</a>
@@ -1469,12 +1481,18 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
             };*/
             // Only show edit/delete buttons if instructor has permission for this category
             if (block_exaport_instructor_has_permission('edit', $category->id)) {
+                // Check if we're in evidencias context
+                $evidencias_param = '';
+                if (!empty($category->source) && is_numeric($category->source)) {
+                    $evidencias_param = '&evidencias=' . $category->source;
+                }
+                
                 $categoryContent .= '
 						<span class="excomdos_tileedit">
-							<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . '">'
+							<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=edit' . $evidencias_param . '">'
                     . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
                     . '</a>
-							<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=delete' . '">'
+							<a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?courseid=' . $courseid . '&id=' . $category->id . '&action=delete' . $evidencias_param . '">'
                     . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
                     . '</a>
 						</span>';

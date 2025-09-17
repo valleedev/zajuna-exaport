@@ -106,7 +106,18 @@ if (optional_param('action', '', PARAM_ALPHA) == 'grouplist') {
 
 if (optional_param('action', '', PARAM_ALPHA) == 'addstdcat') {
     block_exaport_import_categories('lang_categories');
-    redirect('view_items.php?courseid=' . $courseid);
+    
+    // Check if we should return to evidencias
+    $evidencias = optional_param('evidencias', 0, PARAM_INT);
+    $categoryid = optional_param('categoryid', 0, PARAM_RAW);
+    $redirect_url = 'view_items.php?courseid=' . $courseid;
+    if ($evidencias > 0) {
+        $redirect_url .= '&evidencias=' . $evidencias;
+        if (!empty($categoryid)) {
+            $redirect_url .= '&categoryid=' . $categoryid;
+        }
+    }
+    redirect($redirect_url);
 }
 if (optional_param('action', '', PARAM_ALPHA) == 'movetocategory') {
     confirm_sesskey();
@@ -185,7 +196,38 @@ if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
             $message = "Could not delete your record";
         } else {
             block_exaport_add_to_log($courseid, "bookmark", "delete category", "", $category->id);
-            redirect('view_items.php?courseid=' . $courseid . '&categoryid=' . $category->pid);
+            
+            // Check if we're in evidencias context and preserve it
+            $evidencias = optional_param('evidencias', 0, PARAM_INT);
+            $redirect_categoryid = $category->pid;
+            
+            // Special handling for evidencias categories
+            if (!empty($category->source) && is_numeric($category->source)) {
+                // This was an evidencias category
+                if ($category->pid < 0) {
+                    // If pid is negative (-courseid), redirect to evidencias root
+                    $redirect_categoryid = 'evidencias_' . abs($category->pid);
+                }
+                $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid . '&evidencias=' . $category->source;
+                error_log("DEBUG DELETE: Evidencias category, redirecting to: {$redirect_url}");
+            } else if ($evidencias > 0) {
+                // Explicit evidencias parameter was passed
+                if ($category->pid < 0) {
+                    // If pid is negative (-courseid), redirect to evidencias root
+                    $redirect_categoryid = 'evidencias_' . abs($category->pid);
+                }
+                $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid . '&evidencias=' . $evidencias;
+                error_log("DEBUG DELETE: Using explicit evidencias parameter, redirecting to: {$redirect_url}");
+            } else {
+                // Regular category
+                $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid;
+                error_log("DEBUG DELETE: Regular category, redirecting to: {$redirect_url}");
+            }
+            
+            // Debug logging
+            error_log("DEBUG DELETE: category->id={$category->id}, category->pid={$category->pid}, category->source='{$category->source}', evidencias_param={$evidencias}");
+            error_log("DEBUG DELETE: Final redirect URL: {$redirect_url}");
+            redirect($redirect_url);
         }
     }
 
@@ -395,7 +437,36 @@ if ($mform->is_cancelled()) {
     $same = optional_param('back', '', PARAM_TEXT);
     $id = optional_param('id', 0, PARAM_INT);
     $pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123
-    redirect('view_items.php?courseid=' . $courseid . '&categoryid=' . ($same == 'same' ? $id : $pid));
+    $evidencias = optional_param('evidencias', 0, PARAM_INT);
+    
+    error_log("DEBUG CANCEL: id={$id}, pid={$pid}, evidencias_param={$evidencias}");
+    
+    // Check if we're in evidencias context and preserve it
+    $redirect_categoryid = ($same == 'same' ? $id : $pid);
+    $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid;
+    
+    // If we have an explicit evidencias parameter, use it
+    if ($evidencias > 0) {
+        $redirect_url .= '&evidencias=' . $evidencias;
+        error_log("DEBUG CANCEL: Using explicit evidencias parameter: {$evidencias}");
+    }
+    // If we have an ID, check if it's an evidencias category
+    else if ($id > 0) {
+        $cat = $DB->get_record('block_exaportcate', array('id' => $id));
+        if ($cat && !empty($cat->source) && is_numeric($cat->source)) {
+            $redirect_url .= '&evidencias=' . $cat->source;
+            error_log("DEBUG CANCEL: Using category source as evidencias: {$cat->source}");
+        }
+    }
+    // Or if pid starts with evidencias_
+    else if (strpos($pid, 'evidencias_') === 0) {
+        $evidencias_id = str_replace('evidencias_', '', $pid);
+        $redirect_url .= '&evidencias=' . $evidencias_id;
+        error_log("DEBUG CANCEL: Using pid evidencias: {$evidencias_id}");
+    }
+    
+    error_log("DEBUG CANCEL: Final redirect URL: {$redirect_url}");
+    redirect($redirect_url);
 } else if ($newentry = $mform->get_data()) {
     require_sesskey();
     
@@ -592,8 +663,33 @@ if ($mform->is_cancelled()) {
             array('maxbytes' => $CFG->block_exaport_max_uploadfile_size));
     };
 
-    redirect('view_items.php?courseid=' . $courseid . '&categoryid=' .
-        ($newentry->back == 'same' ? $newentry->id : $original_pid));
+    // Check if we're in evidencias context and preserve it
+    $redirect_categoryid = ($newentry->back == 'same' ? $newentry->id : $original_pid);
+    $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid;
+    
+    // Check if the category being created/edited belongs to evidencias
+    if ($newentry->id > 0) {
+        // Editing existing category - get fresh record to check source
+        $cat = $DB->get_record('block_exaportcate', array('id' => $newentry->id));
+        if ($cat && !empty($cat->source) && is_numeric($cat->source)) {
+            $redirect_url .= '&evidencias=' . $cat->source;
+        }
+    } else if (!empty($newentry->source) && is_numeric($newentry->source)) {
+        // New category with evidencias source
+        $redirect_url .= '&evidencias=' . $newentry->source;
+    } else if (strpos($original_pid, 'evidencias_') === 0) {
+        // Parent is evidencias root
+        $evidencias_id = str_replace('evidencias_', '', $original_pid);
+        $redirect_url .= '&evidencias=' . $evidencias_id;
+    } else if (is_numeric($original_pid) && $original_pid > 0) {
+        // Check if parent category belongs to evidencias
+        $parent_cat = $DB->get_record('block_exaportcate', array('id' => $original_pid));
+        if ($parent_cat && !empty($parent_cat->source) && is_numeric($parent_cat->source)) {
+            $redirect_url .= '&evidencias=' . $parent_cat->source;
+        }
+    }
+    
+    redirect($redirect_url);
 } else {
     block_exaport_print_header("myportfolio");
 

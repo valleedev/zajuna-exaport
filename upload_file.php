@@ -140,8 +140,13 @@ if ($form->is_cancelled()) {
     
     // Handle file upload using the same method as item.php
     if ($insert->type == 'file' && !empty($data->attachment)) {
+        error_log("UPLOAD FILE DEBUG: Saving file with context->id={$context->id}, user_context=" . context_user::instance($USER->id)->id);
+        error_log("UPLOAD FILE DEBUG: Item ID={$insert->id}, Category ID={$categoryid}");
+        
         file_save_draft_area_files($data->attachment, $context->id, 'block_exaport', 'item_file', $insert->id,
             array('maxbytes' => 10485760)); // 10MB limit
+            
+        error_log("UPLOAD FILE DEBUG: File saved successfully");
     }
     
     // Log the action

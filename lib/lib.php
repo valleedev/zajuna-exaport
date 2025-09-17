@@ -4247,3 +4247,129 @@ function block_exaport_get_file_icon($item) {
     
     return $iconhtml;
 }
+
+/**
+ * Check if user can view an item in evidencias system
+ * @param object $item The item object
+ * @param int $courseid The course ID  
+ * @return bool True if user can view the item
+ */
+function block_exaport_user_can_view_item($item, $courseid = null) {
+    global $USER, $DB;
+    
+    // Administrators can view everything
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+    
+    // Get category info to determine if this is in evidencias
+    $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+    if (!$category) {
+        // If no category or not evidencias, use standard rules
+        return true; // Default view permission
+    }
+    
+    // If not in evidencias (no source field), use standard rules  
+    if (empty($category->source) || !is_numeric($category->source)) {
+        return true; // Standard portfolio view
+    }
+    
+    // This is in evidencias - apply evidencias rules
+    $course_id = $category->source;
+    
+    // Instructors in the course can view all evidencias items
+    if (block_exaport_user_is_teacher_in_course($USER->id, $course_id)) {
+        return true;
+    }
+    
+    // Students can only view their own items
+    if ($item->userid == $USER->id) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Check if user can edit an item in evidencias system
+ * @param object $item The item object
+ * @param int $courseid The course ID
+ * @return bool True if user can edit the item
+ */
+function block_exaport_user_can_edit_item($item, $courseid = null) {
+    global $USER, $DB;
+    
+    // Administrators can edit everything
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+    
+    // Get category info to determine if this is in evidencias
+    $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+    if (!$category) {
+        // If no category, only owner can edit
+        return ($item->userid == $USER->id);
+    }
+    
+    // If not in evidencias (no source field), use standard rules
+    if (empty($category->source) || !is_numeric($category->source)) {
+        return ($item->userid == $USER->id); // Standard portfolio edit
+    }
+    
+    // This is in evidencias - apply evidencias rules
+    $course_id = $category->source;
+    
+    // Instructors in the course can edit all evidencias items
+    if (block_exaport_user_is_teacher_in_course($USER->id, $course_id)) {
+        return true;
+    }
+    
+    // Students can only edit their own items
+    if ($item->userid == $USER->id) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Check if user can delete an item in evidencias system
+ * @param object $item The item object
+ * @param int $courseid The course ID
+ * @return bool True if user can delete the item
+ */
+function block_exaport_user_can_delete_item($item, $courseid = null) {
+    global $USER, $DB;
+    
+    // Administrators can delete everything
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+    
+    // Get category info to determine if this is in evidencias
+    $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+    if (!$category) {
+        // If no category, only owner can delete
+        return ($item->userid == $USER->id);
+    }
+    
+    // If not in evidencias (no source field), use standard rules
+    if (empty($category->source) || !is_numeric($category->source)) {
+        return ($item->userid == $USER->id); // Standard portfolio delete
+    }
+    
+    // This is in evidencias - apply evidencias rules
+    $course_id = $category->source;
+    
+    // Instructors in the course can delete all evidencias items
+    if (block_exaport_user_is_teacher_in_course($USER->id, $course_id)) {
+        return true;
+    }
+    
+    // Students can only delete their own items
+    if ($item->userid == $USER->id) {
+        return true;
+    }
+    
+    return false;
+}

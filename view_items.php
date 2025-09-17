@@ -1006,17 +1006,18 @@ if ($layout == 'details') {
         }
 
         if ($type == 'mine') {
-            // Only show edit/delete buttons if instructor can create in this category
-            if (block_exaport_instructor_can_create_in_category($categoryid)) {
+            // Use new evidencias-aware permission system
+            if (block_exaport_user_can_edit_item($item, $courseid)) {
                 $icons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit">'
                     . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
-                    //                    .'<img src="pix/edit.png" alt="'.get_string("edit").'" />'
                     . '</a>';
+            }
+            
+            if (block_exaport_user_can_delete_item($item, $courseid)) {
                 if ($allowedit = block_exaport_item_is_editable($item->id)) {
                     $icons .= ' <a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id .
                         '&action=delete&categoryid=' . $categoryid . '">'
                         . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
-                        //                        .'<img src="pix/del.png" alt="'.get_string("delete").'"/>'
                         . '</a>';
                 } else {
                     $icons .= '<img src="pix/deleteview.png" alt="' . get_string("delete") . '">';
@@ -1311,20 +1312,20 @@ function block_exaport_artefact_template_tile($item, $courseid, $type, $category
             if ($type == 'shared') {
                 $cattype = '&cattype=shared';
             }
-            if ($item->userid == $USER->id) { // only for self!
+            // Use new evidencias-aware permission system for edit
+            if (block_exaport_user_can_edit_item($item, $courseid)) {
                 $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id .
                     '&action=edit' . $cattype . '">'
                     . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
-                    //                                    .'<img src="pix/edit.png" alt="file">'
                     . '</a>';
             }
-            if (($type == 'mine' && $allowedit = block_exaport_item_is_editable($item->id)) // strange condition. If exacomp is not used - always allowed!
-                || $item->userid == $USER->id) {
-                if ($item->userid == $USER->id) {
+            
+            // Use new evidencias-aware permission system for delete
+            if (block_exaport_user_can_delete_item($item, $courseid)) {
+                if ($allowedit = block_exaport_item_is_editable($item->id)) {
                     $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id .
                         '&action=delete&categoryid=' . $categoryid . $cattype . '" class="item_delete_icon">'
                         . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
-                        //                                        .'<img src="pix/del.png" alt="file">'
                         . '</a>';
                 }
             } else if (!$allowedit = block_exaport_item_is_editable($item->id)) {
@@ -1558,23 +1559,21 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
             if ($type == 'shared') {
                 $cattype = '&cattype=shared';
             }
-            // Only show edit/delete buttons if instructor can create in this category
-            if (block_exaport_instructor_can_create_in_category($categoryid)) {
-                if ($item->userid == $USER->id) { // only for self!
-                    $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit' . $cattype . '">'
-                        . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
+            // Use new evidencias-aware permission system
+            if (block_exaport_user_can_edit_item($item, $courseid)) {
+                $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=edit' . $cattype . '">'
+                    . block_exaport_fontawesome_icon('pen-to-square', 'regular', 1)
+                    . '</a>';
+            }
+            
+            if (block_exaport_user_can_delete_item($item, $courseid)) {
+                if ($allowedit = block_exaport_item_is_editable($item->id)) {
+                    $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=delete&categoryid=' . $categoryid . $cattype . '" class="item_delete_icon">'
+                        . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
                         . '</a>';
                 }
-                if (($type == 'mine' && $allowedit = block_exaport_item_is_editable($item->id)) // strange condition. If exacomp is not used - always allowed!
-                    || $item->userid == $USER->id) {
-                    if ($item->userid == $USER->id) {
-                        $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=delete&categoryid=' . $categoryid . $cattype . '" class="item_delete_icon">'
-                            . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
-                            . '</a>';
-                    }
-                } else if (!$allowedit = block_exaport_item_is_editable($item->id)) {
-                    $itemContent .= '<img src="pix/deleteview.png" alt="file">';
-                }
+            } else if (!$allowedit = block_exaport_item_is_editable($item->id)) {
+                $itemContent .= '<img src="pix/deleteview.png" alt="file">';
             }
             if ($item->userid != $USER->id) {
                 $itemuser = $DB->get_record('user', ['id' => $item->userid]);

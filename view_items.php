@@ -709,26 +709,19 @@ if (in_array($type, ['mine', 'shared'])) {
     }
     
     if ($can_add_artefact) {
-        error_log("ADD ARTEFACT BUTTON DEBUG: Showing add artefact button");
-        echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?action=add&courseid=' . $courseid . '&categoryid=' . $categoryid . $cattype
-            . '&type=mixed">'
-            . block_exaport_fontawesome_icon('clone', 'solid', 2, [], [], ['data-fa-transform' => 'flip-h flip-v'],
-                'add', [], [], ['data-fa-transform' => 'shrink-7 down-4 right-8'])
-            . '<br />' . get_string("add_mixed", "block_exaport") . "</a></span>";
-    } else {
-        error_log("ADD ARTEFACT BUTTON DEBUG: Hiding add artefact button");
-    }
-    
-    // Add simple "Upload file" button for students only
-    $is_student_upload = $is_student && block_exaport_student_owns_category($categoryid);
-    if ($is_student_upload) {
-        error_log("UPLOAD FILE BUTTON DEBUG: Showing upload file button for student");
+        error_log("UPLOAD FILE BUTTON DEBUG: Showing upload file button (replacing add artefact)");
         echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/upload_file.php?courseid=' . $courseid . '&categoryid=' . $categoryid . '">'
             . block_exaport_fontawesome_icon('upload', 'solid', 2)
             . '<br />' . get_string("upload_file_evidence", "block_exaport") . "</a></span>";
     } else {
         error_log("UPLOAD FILE BUTTON DEBUG: Hiding upload file button");
     }
+    
+    // Remove the separate student upload logic since we now use upload for everyone
+    // Old logic was: Add simple "Upload file" button for students only
+    // $is_student_upload = $is_student && block_exaport_student_owns_category($categoryid);
+    // Now everyone who can add artefacts gets the upload button instead
+    
     // Next types are disabled after adding 'mixed' type. Real artefact type will be changed after filling fields.
     // These types are hidden only in this view. All other functions are working with types as before.
     /*

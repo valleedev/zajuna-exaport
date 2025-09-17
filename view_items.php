@@ -934,8 +934,21 @@ if ($layout == 'details') {
 
     $itemscnt = count($items);
     foreach ($items as $item) {
-        $url = $CFG->wwwroot . '/blocks/exaport/shared_item.php?courseid=' . $courseid . '&access=portfolio/id/' . $item->userid . '&itemid=' .
-            $item->id;
+        // Check if this is an evidencias file - if so, use download endpoint
+        $isEvidenciasFile = false;
+        if ($item->type == 'file' && !empty($item->categoryid)) {
+            $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+            if ($category && !empty($category->source) && is_numeric($category->source)) {
+                $isEvidenciasFile = true;
+            }
+        }
+        
+        if ($isEvidenciasFile) {
+            $url = $CFG->wwwroot . '/blocks/exaport/download_file.php?courseid=' . $courseid . '&itemid=' . $item->id;
+        } else {
+            $url = $CFG->wwwroot . '/blocks/exaport/shared_item.php?courseid=' . $courseid . '&access=portfolio/id/' . $item->userid . '&itemid=' .
+                $item->id;
+        }
 
         $itemind++;
 
@@ -1275,7 +1288,20 @@ function block_exaport_artefact_template_tile($item, $courseid, $type, $category
     global $CFG, $USER, $DB;
     $itemContent = '';
 
-    $url = $CFG->wwwroot . '/blocks/exaport/shared_item.php?courseid=' . $courseid . '&access=portfolio/id/' . $item->userid . '&itemid=' . $item->id;
+    // Check if this is an evidencias file - if so, use download endpoint
+    $isEvidenciasFile = false;
+    if ($item->type == 'file' && !empty($item->categoryid)) {
+        $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+        if ($category && !empty($category->source) && is_numeric($category->source)) {
+            $isEvidenciasFile = true;
+        }
+    }
+    
+    if ($isEvidenciasFile) {
+        $url = $CFG->wwwroot . '/blocks/exaport/download_file.php?courseid=' . $courseid . '&itemid=' . $item->id;
+    } else {
+        $url = $CFG->wwwroot . '/blocks/exaport/shared_item.php?courseid=' . $courseid . '&access=portfolio/id/' . $item->userid . '&itemid=' . $item->id;
+    }
     $itemContent .= '
         <div class="excomdos_tile excomdos_tile_item id-' . $item->id . '">
             <div class="excomdos_tilehead">
@@ -1523,7 +1549,20 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
     if (isset($item->is_course_file) && $item->is_course_file) {
         $url = $item->url; // Use the direct file URL
     } else {
-        $url = $CFG->wwwroot . '/blocks/exaport/shared_item.php?courseid=' . $courseid . '&access=portfolio/id/' . $item->userid . '&itemid=' . $item->id;
+        // Check if this is an evidencias file - if so, use download endpoint
+        $isEvidenciasFile = false;
+        if ($item->type == 'file' && !empty($item->categoryid)) {
+            $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+            if ($category && !empty($category->source) && is_numeric($category->source)) {
+                $isEvidenciasFile = true;
+            }
+        }
+        
+        if ($isEvidenciasFile) {
+            $url = $CFG->wwwroot . '/blocks/exaport/download_file.php?courseid=' . $courseid . '&itemid=' . $item->id;
+        } else {
+            $url = $CFG->wwwroot . '/blocks/exaport/shared_item.php?courseid=' . $courseid . '&access=portfolio/id/' . $item->userid . '&itemid=' . $item->id;
+        }
     }
 
     $itemContent = '

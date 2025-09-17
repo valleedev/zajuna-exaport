@@ -93,11 +93,14 @@ class externallib extends \external_api {
 
         if ($type == "all" || $type == "shared" || $level == 0) {
             if ($level == 0) {
-                // Shared categories:
+                // Shared categories: DISABLED
+                /*
                 $sqlsort = " ORDER BY c.name, u.lastname, u.firstname";
                 $usercats = block_exaport_get_group_share_categories($USER->id);
                 $categorycolumns = g::$DB->get_column_names_prefixed('block_exaportcate', 'c');
                 $sharedcategories = block_exaport_get_shared_categories($categorycolumns, $usercats, $sqlsort);
+                */
+                $sharedcategories = array(); // Empty array instead of shared categories
 
                 foreach ($sharedcategories as $category) {
                     $result = new stdClass();
@@ -1844,12 +1847,15 @@ class externallib extends \external_api {
 
         $params = static::validate_parameters(self::get_shared_categories_parameters(), array());
 
-
+        // Shared categories functionality disabled
+        /*
         // Categories for user groups.
         $sqlsort = " ORDER BY c.name, u.lastname, u.firstname";
         $usercats = block_exaport_get_group_share_categories($USER->id);
         $categorycolumns = g::$DB->get_column_names_prefixed('block_exaportcate', 'c');
         $categories = block_exaport_get_shared_categories($categorycolumns, $usercats, $sqlsort);
+        */
+        $categories = array(); // Return empty array instead
 
         return $categories;
     }

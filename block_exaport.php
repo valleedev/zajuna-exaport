@@ -62,11 +62,6 @@ class block_exaport extends block_list {
 
         $output = block_exaport_get_renderer();
 
-        $icon = '<img src="' . $output->image_url('resume', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('resume_my') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/resume.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .
-            $icon . block_exaport_get_string('resume_my') . '</a>';
-
         $icon = '<img src="' . $output->image_url('my_portfolio', 'block_exaport') . '" class="icon" alt="" />';
         $this->content->items[] = '<a title="' . block_exaport_get_string('myportfoliotitle') . '" ' .
             ' href="' . $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .

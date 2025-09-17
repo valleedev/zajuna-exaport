@@ -509,8 +509,6 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
             get_string("back_to_desp", "block_exaport"), '', true);
     }
 
-    $tabs['resume_my'] = new tabobject('resume_my', $CFG->wwwroot . '/blocks/exaport/resume.php?courseid=' . $COURSE->id,
-        get_string("resume_my", "block_exaport"), '', true);
     $tabs['myportfolio'] = new tabobject('myportfolio', $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id,
         block_exaport_get_string("myportfolio"), '', true);
     $tabs['shared_categories'] = new tabobject('shared_categories',

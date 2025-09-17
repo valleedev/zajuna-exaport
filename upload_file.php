@@ -28,14 +28,37 @@ block_exaport_require_login($courseid);
 
 $conditions = block_exaport_check_competence_interaction();
 
-// Check if user is a student and has permission to upload in this category
+// Check if user has permission to create items in this category
 $is_student = !block_exaport_user_is_admin() && !block_exaport_user_is_teacher_in_course($USER->id, $courseid);
-if (!$is_student) {
-    print_error('onlystudentscanupload', 'block_exaport');
+$is_instructor = block_exaport_user_is_teacher_in_course($USER->id, $courseid);
+$is_admin = block_exaport_user_is_admin();
+
+error_log("UPLOAD ACCESS CHECK: user_id={$USER->id}, is_student=$is_student, is_instructor=$is_instructor, is_admin=$is_admin, categoryid=$categoryid");
+
+$can_upload = false;
+
+if ($is_admin) {
+    // Administrators can upload anywhere they can create categories
+    $can_upload = block_exaport_instructor_can_create_in_category($categoryid);
+    error_log("UPLOAD ACCESS: Admin check - can_upload=$can_upload");
+} else if ($is_instructor) {
+    // Instructors can upload if they have permission, but not at evidencias root
+    $is_evidencias_root = (strpos($categoryid, 'evidencias_') === 0);
+    $can_upload = block_exaport_instructor_can_create_in_category($categoryid) && !$is_evidencias_root;
+    error_log("UPLOAD ACCESS: Instructor check - can_upload=$can_upload, is_evidencias_root=$is_evidencias_root");
+} else {
+    // Students can upload in their own personal folders OR in evidencias folders with write permissions
+    if (block_exaport_student_owns_category($categoryid)) {
+        $can_upload = true;
+        error_log("UPLOAD ACCESS: Student owns category - can_upload=true");
+    } else {
+        // Check if student has write permissions in evidencias
+        $can_upload = block_exaport_student_can_write_in_evidencias_category($categoryid, $USER->id);
+        error_log("UPLOAD ACCESS: Student evidencias check - can_upload=$can_upload");
+    }
 }
 
-// Check if student can upload in this category (must be their own personal folder)
-if (!block_exaport_student_owns_category($categoryid)) {
+if (!$can_upload) {
     print_error('cannotuploadhere', 'block_exaport', 
         new moodle_url('/blocks/exaport/view_items.php', ['courseid' => $courseid, 'categoryid' => $categoryid]));
 }

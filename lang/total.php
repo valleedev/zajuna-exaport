@@ -977,8 +977,6 @@ return [
     ],
     'viewlayout' => [
         'Layout',
-    'viewlayout' => [
-        'Layout',
         'Layout',
     ],
     'viewshare' => [
@@ -2718,6 +2716,6 @@ return [
     'block_exaport_used_layout_clean_old' => [
         'Kachel-Layout (Alt - Unterstützung endet mit Version 4.6.7)',
         'Tiles layout (Old - ended of support from v4.6.7)',
-    ],
+    ]
 ];
 ?>

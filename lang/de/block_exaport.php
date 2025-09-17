@@ -782,32 +782,6 @@ $string['privacy:metadata:block_exaportresume:skillspersonal'] = 'Persönliche F
 $string['privacy:metadata:block_exaportresume:skillsacademic'] = 'akademische Fähigkeiten';
 $string['privacy:metadata:block_exaportresume:skillscareers'] = 'Karriere Fähigkeiten';
 $string['privacy:metadata:core_files'] = 'Exabis ePortfolio speichert Dateien, die vom Benutzer hochgeladen wurden, um Teil von Artefakten, Lebenslaufeinträgen und Kommentaren zu werden.';
-				<br>
-				<p>Stell dir vor, all die Mühe, die du in Aufgaben, Präsentationen und Projekte steckst. Hast du jemals das Gefühl, dass es nach der Abgabe einfach in einer Schublade verschwindet?</p>
-				<p>Aber hier ist die gute Nachricht: Diese Projekte sind <strong>Beweise für deine Fähigkeiten und dein Wissen</strong>, und du kannst sie nutzen, um potenzielle Arbeitgeber oder Kunden zu beeindrucken!</p>
-				<p><strong>Erstelle dein digitales Portfolio</strong> und präsentiere deine besten Arbeiten, von Präsentationen, Aufgaben und Projekten bis hin zu Videos. Es ist einfacher, als du denkst!</p>
-				<br>
-				<h4>Was ist ein ePortfolio?</h4>
-				<br>
-				<p>Ein <strong>ePortfolio</strong> (elektronisches Portfolio) ist eine <strong>digitale Sammlung</strong>, die deine <strong>Fähigkeiten, dein Wissen und deine Erfahrungen</strong> präsentiert.
-					Während dein Lebenslauf sich auf deine Ausbildung und Berufserfahrung konzentriert, geht dein ePortfolio darüber hinaus und bietet <strong>Beweise und Kontext</strong> für deine Fähigkeiten.
-					Es ermöglicht dir, Arbeitsproben zu zeigen und dein <strong>Talent schnell und effektiv zu demonstrieren</strong>.
-					Letztendlich ist dein ePortfolio ein mächtiges Werkzeug, um deine <strong>Qualifikationen hervorzuheben</strong> und dich abzuheben.
-				</p>
-				<p><strong>Denke daran, dass verschiedene Rollen unterschiedliche Arten von ePortfolios erfordern können.</strong>
-					Einige Schlüsselelemente bleiben jedoch konstant.
-					Mit <strong>Exabis ePortfolio</strong> kannst du <strong>mehrere Ansichten erstellen</strong>, die auf bestimmte Positionen, Jobchancen oder andere Zwecke zugeschnitten sind.
-				</p>
-				<br>
-				<h4>Wie erstelle ich mein ePortfolio?</h4>
-				<br>
-				<ol>
-					<li><strong>Sammle deine Arbeiten</strong>: Beginne damit, alle deine Projekte, Präsentationen und Aufgaben zu überprüfen.</li>
-					<li><strong>Wähle deine besten Arbeiten aus</strong>: Wähle die Stücke aus, die deine stärksten Fähigkeiten zeigen und die positives Feedback erhalten haben.</li>
-					<li><strong>Reflektiere und beschreibe</strong>: Überlege, welche Fähigkeiten und Kompetenzen jedes Stück demonstriert. Schreibe eine kurze Beschreibung, um Kontext zu bieten.</li>
-					<li><strong>Erstelle und iteriere</strong>: Scheue dich nicht davor, zu experimentieren und dein ePortfolio im Laufe der Zeit zu verfeinern, während du lernst und wächst.</li>
-				</ol>
-				<p><strong>Exabis ePortfolio</strong> kann dich durch jeden Schritt führen und den Prozess der Erstellung deines ePortfolios reibungslos und effizient gestalten.</p>';
 $string['cofigureblock_cvinfo_help'] = 'Du wirst den aktuellen Status der ausgewählten Elemente in deinem Lebenslauf sehen. Der Blockinhalt wird aktualisiert, wenn du später Änderungen an irgendwelchen Elementen in deinem Lebenslauf vornimmst.';
 $string['cofigureblock_cvinfo_cover'] = 'Über mich';
 $string['cofigureblock_cvinfo_cover_actual'] = 'Aktuellen Lebenslauf "Über mich" Inhalt hinzufügen';

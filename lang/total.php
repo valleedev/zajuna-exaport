@@ -294,6 +294,7 @@ return [
         'Notiz',
         'Note',
     ],
+    'sharedviews' => [
         'Geteilte Views',
         'Shared Views',
     ],
@@ -793,7 +794,9 @@ return [
         'EPX-Datei erstellen',
         'Create EPX-File',
     ],
+    'exportviewselect' => [
         'Um alle Einträge einer bestimmten View zu exportieren, bitte diese hier w&auml;hlen',
+        'To export all entries of a specific view, please select it here',
     ],
     'export_directory' => [
         'Exportiere Ordnerstruktur',
@@ -845,13 +848,19 @@ return [
     ],
 
     // === Views.
+    'view' => [
         'View',
         'View',
     ],
+    'views' => [
         'Meine Views',
+        'My Views',
     ],
+    'explainingviews' => [
         'View verwalten',
+        'Manage Views',
     ],
+    'noviews' => [
         'Bitte Views anlegen',
         'Please create a new View',
     ],
@@ -968,8 +977,11 @@ return [
     ],
     'viewlayout' => [
         'Layout',
+    'viewlayout' => [
+        'Layout',
         'Layout',
     ],
+    'viewshare' => [
         'Teilen',
         'Share',
     ],

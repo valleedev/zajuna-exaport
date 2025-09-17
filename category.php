@@ -519,7 +519,27 @@ if ($mform->is_cancelled()) {
     $newentry->userid = $USER->id;
     
     // Handle sharing settings - simplified for evidencias
+    $is_evidencias_category = false;
+    
+    // Check if this is an evidencias category (new or existing)
     if (strpos($original_pid, 'evidencias_') === 0) {
+        // New category in evidencias
+        $is_evidencias_category = true;
+        error_log("DEBUG CATEGORY SAVE: New evidencias category (pid = evidencias_X)");
+    } else if (!empty($newentry->id) && $newentry->id > 0) {
+        // Editing existing category - check if it's an evidencias category
+        $existing_category = $DB->get_record('block_exaportcate', array('id' => $newentry->id));
+        if ($existing_category && !empty($existing_category->source) && is_numeric($existing_category->source)) {
+            $is_evidencias_category = true;
+            error_log("DEBUG CATEGORY SAVE: Editing evidencias category (id = {$newentry->id}, source = {$existing_category->source})");
+        }
+    } else if (is_numeric($original_pid) && $original_pid < 0) {
+        // Parent PID is negative (evidencias root)
+        $is_evidencias_category = true;
+        error_log("DEBUG CATEGORY SAVE: New category with negative PID (evidencias root)");
+    }
+    
+    if ($is_evidencias_category) {
         // For evidencias categories, use a special field to mark write permissions
         $allow_uploads = optional_param('allow_student_uploads', 0, PARAM_INT);
         error_log("DEBUG CATEGORY SAVE: allow_student_uploads = $allow_uploads");
@@ -750,7 +770,8 @@ if ($mform->is_cancelled()) {
 
     // For evidencias categories, set the allow_student_uploads field based on internshare value
     if ($is_evidencias) {
-        $category->allow_student_uploads = ($category->internshare == 2) ? 1 : 1; // Default to 1 (checked) for evidencias
+        $category->allow_student_uploads = ($category->internshare == 2) ? 1 : 0; // 1 if students allowed, 0 if not
+        error_log("DEBUG FORM: Setting allow_student_uploads = {$category->allow_student_uploads} based on internshare = {$category->internshare}");
     }
 
     $mform->set_data($category);

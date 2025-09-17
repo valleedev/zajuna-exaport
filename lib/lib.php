@@ -2262,6 +2262,72 @@ function block_exaport_user_is_teacher_in_course($userid, $courseid) {
 }
 
 /**
+ * Check if a category belongs to the current student (is in their personal portfolio area)
+ * @param int $categoryid The category ID to check
+ * @param int $userid The user ID to check (optional, uses current user if not provided)
+ * @return bool True if the category was created by the student
+ */
+function block_exaport_student_owns_category($categoryid, $userid = null) {
+    global $DB, $USER;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    // Handle non-numeric categoryids (like 'evidencias_72')
+    if (!is_numeric($categoryid)) {
+        error_log("DEBUG STUDENT OWNS: Category ID is not numeric ({$categoryid}), student cannot own it");
+        return false;
+    }
+    
+    error_log("DEBUG STUDENT OWNS: Checking if category {$categoryid} was created by student {$userid}");
+    
+    // Get the category
+    $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+    if (!$category) {
+        error_log("DEBUG STUDENT OWNS: Category {$categoryid} not found");
+        return false;
+    }
+    
+    // Check if this category was created by the student
+    if ($category->userid == $userid) {
+        error_log("DEBUG STUDENT OWNS: Category {$categoryid} was created by student {$userid}");
+        return true;
+    }
+    
+    // Check if any parent category was created by the student
+    $current_category = $category;
+    $checked_categories = array(); // Prevent infinite loops
+    
+    while ($current_category && !in_array($current_category->id, $checked_categories)) {
+        $checked_categories[] = $current_category->id;
+        
+        error_log("DEBUG STUDENT OWNS: Checking parent category {$current_category->id}, userid: {$current_category->userid}");
+        
+        if ($current_category->userid == $userid) {
+            error_log("DEBUG STUDENT OWNS: Found student-created parent category {$current_category->id}");
+            return true;
+        }
+        
+        // Move up to parent category
+        if ($current_category->pid > 0) {
+            $parent_category = $DB->get_record('block_exaportcate', array('id' => $current_category->pid));
+            if (!$parent_category) {
+                error_log("DEBUG STUDENT OWNS: Parent category {$current_category->pid} not found, stopping");
+                break;
+            }
+            $current_category = $parent_category;
+        } else {
+            error_log("DEBUG STUDENT OWNS: Reached root level");
+            break;
+        }
+    }
+    
+    error_log("DEBUG STUDENT OWNS: Category {$categoryid} and its parents were not created by student {$userid}");
+    return false;
+}
+
+/**
  * Check if a student can edit/delete an item
  * Students can edit/delete their own items in evidencias categories
  * @param int $itemid The item ID to check

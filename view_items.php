@@ -695,9 +695,14 @@ if (in_array($type, ['mine', 'shared'])) {
         // Instructors can add artefacts if they have permission, but not at evidencias root
         $can_add_artefact = block_exaport_instructor_can_create_in_category($categoryid) && !$is_evidencias_root;
     } else if ($is_student) {
-        // Students cannot add artefacts in instructor folders - only categories
-        $can_add_artefact = false;
-        error_log("ADD ARTEFACT BUTTON DEBUG: Students cannot add artefacts in instructor folders");
+        // Students can add artefacts only in their own personal folders
+        if (block_exaport_student_owns_category($categoryid)) {
+            $can_add_artefact = true;
+            error_log("ADD ARTEFACT BUTTON DEBUG: Student can add artefacts in their own personal folder");
+        } else {
+            $can_add_artefact = false;
+            error_log("ADD ARTEFACT BUTTON DEBUG: Student cannot add artefacts outside their personal area");
+        }
     } else {
         // Default permission check for other users
         $can_add_artefact = block_exaport_instructor_can_create_in_category($categoryid);

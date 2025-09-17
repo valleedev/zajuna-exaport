@@ -82,9 +82,16 @@ if (!block_exaport_user_is_admin()) {
         if ($action == 'copytoself') {
             // Allow copying shared items to own portfolio
         } else if ($action == 'add' || (empty($id) && $action != 'copytoself')) {
-            // Students cannot create new items/artefacts in instructor folders - only categories
-            error_log("DEBUG ITEM: Student trying to create item in category {$categoryid} - DENIED (students can only create categories)");
-            print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            // Students can create artefacts only in their own personal folders
+            error_log("DEBUG ITEM: Student trying to create item in category {$categoryid}");
+            
+            if (block_exaport_student_owns_category($categoryid)) {
+                error_log("DEBUG ITEM: Student can create item in their own personal folder (category {$categoryid})");
+                // Allow creation in own personal folder
+            } else {
+                error_log("DEBUG ITEM: Student trying to create item outside personal area - DENIED");
+                print_error('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            }
         } else if (!empty($id) && ($action == 'edit' || $action == 'delete')) {
             // Check if student can edit/delete items (check if item is in instructor folder and belongs to student)
             $item = $DB->get_record('block_exaportitem', array('id' => $id));

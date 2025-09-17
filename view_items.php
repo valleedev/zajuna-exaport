@@ -687,12 +687,17 @@ if (in_array($type, ['mine', 'shared'])) {
     
     $can_add_artefact = false;
     
-    if ($is_instructor) {
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        $can_add_artefact = block_exaport_instructor_can_create_in_category($categoryid);
+        error_log("ADD ARTEFACT BUTTON DEBUG: Administrator - granting artefact permissions");
+    } else if ($is_instructor) {
         // Instructors can add artefacts if they have permission, but not at evidencias root
         $can_add_artefact = block_exaport_instructor_can_create_in_category($categoryid) && !$is_evidencias_root;
     } else if ($is_student) {
-        // Students can add artefacts if they are within instructor-created folders
-        $can_add_artefact = block_exaport_student_can_act_in_instructor_folder($categoryid);
+        // Students cannot add artefacts in instructor folders - only categories
+        $can_add_artefact = false;
+        error_log("ADD ARTEFACT BUTTON DEBUG: Students cannot add artefacts in instructor folders");
     } else {
         // Default permission check for other users
         $can_add_artefact = block_exaport_instructor_can_create_in_category($categoryid);

@@ -110,6 +110,13 @@ if (optional_param('action', '', PARAM_ALPHA) == 'addstdcat') {
     // Check if we should return to evidencias
     $evidencias = optional_param('evidencias', 0, PARAM_INT);
     $categoryid = optional_param('categoryid', 0, PARAM_RAW);
+    
+    // Handle negative categoryid (evidencias)
+    if (is_numeric($categoryid) && $categoryid < 0) {
+        $categoryid = 'evidencias_' . abs($categoryid);
+        error_log("DEBUG ADDSTDCAT: Converted negative categoryid to evidencias format: {$categoryid}");
+    }
+    
     $redirect_url = 'view_items.php?courseid=' . $courseid;
     if ($evidencias > 0) {
         $redirect_url .= '&evidencias=' . $evidencias;
@@ -117,6 +124,7 @@ if (optional_param('action', '', PARAM_ALPHA) == 'addstdcat') {
             $redirect_url .= '&categoryid=' . $categoryid;
         }
     }
+    error_log("DEBUG ADDSTDCAT: Redirecting to: {$redirect_url}");
     redirect($redirect_url);
 }
 if (optional_param('action', '', PARAM_ALPHA) == 'movetocategory') {
@@ -443,6 +451,13 @@ if ($mform->is_cancelled()) {
     
     // Check if we're in evidencias context and preserve it
     $redirect_categoryid = ($same == 'same' ? $id : $pid);
+    
+    // Handle negative PIDs (evidencias categories)
+    if (is_numeric($redirect_categoryid) && $redirect_categoryid < 0) {
+        $redirect_categoryid = 'evidencias_' . abs($redirect_categoryid);
+        error_log("DEBUG CANCEL: Converted negative PID to evidencias format: {$redirect_categoryid}");
+    }
+    
     $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid;
     
     // If we have an explicit evidencias parameter, use it
@@ -665,6 +680,13 @@ if ($mform->is_cancelled()) {
 
     // Check if we're in evidencias context and preserve it
     $redirect_categoryid = ($newentry->back == 'same' ? $newentry->id : $original_pid);
+    
+    // Handle negative PIDs (evidencias categories)
+    if (is_numeric($redirect_categoryid) && $redirect_categoryid < 0) {
+        $redirect_categoryid = 'evidencias_' . abs($redirect_categoryid);
+        error_log("DEBUG SAVE: Converted negative PID to evidencias format: {$redirect_categoryid}");
+    }
+    
     $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid;
     
     // Check if the category being created/edited belongs to evidencias

@@ -558,9 +558,9 @@ if ($type == 'sharedstudent') {
         // For course folders, get items related to that course (for now, empty)
         $items = array(); // TODO: In the future, get course-related artifacts
     } else if ($currentcategory && isset($currentcategory->id) && strpos($currentcategory->id, 'evidencias_') === 0) {
-        // For evidencias folder, instructors can see all items, students see only their own
-        $evidencias_courseid = intval(substr($currentcategory->id, 11));
-        $items = block_exaport_get_evidencias_items_for_course($USER->id, $evidencias_courseid, 0, $sqlsort);
+        // For evidencias root folder, don't show any items, only show subcategories
+        // This prevents student files from appearing in the main evidencias folder
+        $items = array(); // Empty array - no items shown at evidencias root level
     } else {
         // For regular categories, get items normally
         // But first check if this is an evidencias category
@@ -717,6 +717,17 @@ if (in_array($type, ['mine', 'shared'])) {
             . '<br />' . get_string("add_mixed", "block_exaport") . "</a></span>";
     } else {
         error_log("ADD ARTEFACT BUTTON DEBUG: Hiding add artefact button");
+    }
+    
+    // Add simple "Upload file" button for students only
+    $is_student_upload = $is_student && block_exaport_student_owns_category($categoryid);
+    if ($is_student_upload) {
+        error_log("UPLOAD FILE BUTTON DEBUG: Showing upload file button for student");
+        echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/upload_file.php?courseid=' . $courseid . '&categoryid=' . $categoryid . '">'
+            . block_exaport_fontawesome_icon('upload', 'solid', 2)
+            . '<br />' . get_string("upload_file_evidence", "block_exaport") . "</a></span>";
+    } else {
+        error_log("UPLOAD FILE BUTTON DEBUG: Hiding upload file button");
     }
     // Next types are disabled after adding 'mixed' type. Real artefact type will be changed after filling fields.
     // These types are hidden only in this view. All other functions are working with types as before.

@@ -265,6 +265,15 @@ class simplehtml_form extends block_exaport_moodleform {
         $pid = optional_param('pid', '', PARAM_RAW);
         $is_evidencias = (strpos($pid, 'evidencias_') === 0);
         
+        // Also check if the parent category (pid) belongs to evidencias
+        if (!$is_evidencias && is_numeric($pid) && $pid > 0) {
+            $parent_category = $DB->get_record('block_exaportcate', array('id' => $pid));
+            if ($parent_category && is_numeric($parent_category->source)) {
+                $is_evidencias = true;
+                error_log("DEBUG FORM: Parent category {$pid} belongs to evidencias (source={$parent_category->source})");
+            }
+        }
+        
         // Also check if we're editing a category that belongs to evidencias
         if (!$is_evidencias && $category->id > 0) {
             // Check if this category has a source field set (indicating it's from evidencias)
@@ -273,46 +282,55 @@ class simplehtml_form extends block_exaport_moodleform {
             error_log("DEBUG FORM: Editing category ID {$category->id}, source='{$category->source}', is_evidencias=" . ($is_evidencias ? 'true' : 'false'));
         }
         
-        error_log("DEBUG FORM: Final is_evidencias=" . ($is_evidencias ? 'true' : 'false'));
+        // Check if this is a student creating in evidencias - simplified form for students
+        $is_student_in_evidencias = $is_evidencias && block_exaport_user_is_student();
         
-        if (!$is_evidencias) {
-            // Show full form for regular categories
-            $mform->addElement('filemanager',
-                'iconfile',
-                get_string('iconfile', 'block_exaport'),
-                null,
-                array('subdirs' => false,
-                    'maxfiles' => 1,
-                    'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
-                    'accepted_types' => array('image', 'web_image')));
-            $mform->add_exaport_help_button('iconfile', 'forms.category.iconfile');
+        error_log("DEBUG FORM: pid='$pid', is_evidencias=" . ($is_evidencias ? 'true' : 'false') . ", is_student=" . (block_exaport_user_is_student() ? 'true' : 'false') . ", is_student_in_evidencias=" . ($is_student_in_evidencias ? 'true' : 'false'));
+        
+        error_log("DEBUG FORM: Final is_evidencias=" . ($is_evidencias ? 'true' : 'false') . ", is_student_in_evidencias=" . ($is_student_in_evidencias ? 'true' : 'false'));
+        
+        if (!$is_evidencias || $is_student_in_evidencias) {
+            // For students in evidencias OR regular categories, don't show icon options
+            if (!$is_student_in_evidencias) {
+                // Show icon options only for regular categories (not for students in evidencias)
+                $mform->addElement('filemanager',
+                    'iconfile',
+                    get_string('iconfile', 'block_exaport'),
+                    null,
+                    array('subdirs' => false,
+                        'maxfiles' => 1,
+                        'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
+                        'accepted_types' => array('image', 'web_image')));
+                $mform->add_exaport_help_button('iconfile', 'forms.category.iconfile');
 
-            //        if (extension_loaded('gd') && function_exists('gd_info')) {
-            // changed into Fontawesome and Javascript
-            $mform->addElement('advcheckbox',
-                'iconmerge',
-                get_string('iconfile_merge', 'block_exaport'),
-                get_string('iconfile_merge_description', 'block_exaport'),
-                array('group' => 1),
-                array(0, 1));
-            $mform->add_exaport_help_button('iconmerge', 'forms.category.iconmerge');
+                //        if (extension_loaded('gd') && function_exists('gd_info')) {
+                // changed into Fontawesome and Javascript
+                $mform->addElement('advcheckbox',
+                    'iconmerge',
+                    get_string('iconfile_merge', 'block_exaport'),
+                    get_string('iconfile_merge_description', 'block_exaport'),
+                    array('group' => 1),
+                    array(0, 1));
+                $mform->add_exaport_help_button('iconmerge', 'forms.category.iconmerge');
+            }
         }
 
-        // Sharing - simplified for evidencias, full for regular categories
+        // Sharing - simplified for students in evidencias, full for instructors/regular categories
         if (has_capability('block/exaport:shareintern', context_system::instance())) {
-            if ($is_evidencias) {
-                // Simplified permissions for evidencias - checkbox for write permissions to students
+            if ($is_evidencias && !$is_student_in_evidencias) {
+                // Simplified permissions for evidencias instructors - checkbox for write permissions to students
                 $mform->addElement('checkbox', 'allow_student_uploads', 'Permitir subir archivos a aprendices', 'Los aprendices podrán crear elementos y subir archivos en esta carpeta');
                 $mform->setType('allow_student_uploads', PARAM_INT);
                 $mform->setDefault('allow_student_uploads', 1); // Default checked
-            } else {
-                // Full sharing options for regular categories
+            } else if (!$is_evidencias && !$is_student_in_evidencias) {
+                // Full sharing options for regular categories (not for students)
                 $mform->addElement('checkbox', 'internshare', get_string('share', 'block_exaport'));
                 $mform->setType('internshare', PARAM_INT);
                 $mform->add_exaport_help_button('internshare', 'forms.category.internshare');
             }
+            // Students in evidencias get no sharing options (simplified form)
             
-            if (!$is_evidencias) {
+            if (!$is_evidencias && !$is_student_in_evidencias) {
                 $mform->addElement('html', '<div id="internaccess-settings" class="fitem"">' .
                     '<div class="fitemtitle"></div><div class="felement">');
 
@@ -358,7 +376,7 @@ class simplehtml_form extends block_exaport_moodleform {
                 $mform->addElement('html', '</table></div>');
                 $mform->addElement('html', '</div></div>');
             }
-        };
+        }
 
         $this->add_action_buttons();
     }

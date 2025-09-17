@@ -77,11 +77,6 @@ class block_exaport extends block_list {
             ' href="' . $CFG->wwwroot . '/blocks/exaport/shared_categories.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .
             $icon . block_exaport_get_string('shared_categories') . '</a>';
 
-        $icon = '<img src="' . $output->image_url('importexport', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('importexport') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/importexport.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .
-            $icon . block_exaport_get_string('importexport') . '</a>';
-
         return $this->content;
     }
 }

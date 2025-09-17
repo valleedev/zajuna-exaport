@@ -147,9 +147,6 @@ $string['explainpersonal'] = '<span class=\'block_eportfolio_bold\'>Pers&ouml;nl
 $string['personal'] = 'Informationen';
 $string['descriptionsaved'] = 'Beschreibung gespeichert';
 $string['course'] = 'Kurs';
-$string['importexport'] = 'Import/Export';
-$string['explainimport'] = 'hier kannst du SCORM-Dateien ins Portfolio importieren. Wenn Marker gefunden werden, die darauf hinweisen, dass diese SCORM-Datei zuvor aus dem Portfolio-Modul exportiert wurde, so wird versucht, die Struktur entsprechend zu importieren.';
-$string['makeimport'] = 'Import';
 $string['add_this_file'] = 'Diese Datei hinzufügen';
 $string['bookmarksall'] = 'Alle Eintr&auml;ge';
 $string['bookmarkslinks'] = 'Links';

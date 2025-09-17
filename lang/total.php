@@ -56,23 +56,13 @@ return [
         'Exabis ePortfolie zur Startseite hinzuf&uumlgen',
         'add Exabis ePortfolio on My home',
     ],
-    'exaport:export' => [
-        'Export von SCORM-Files',
-        'Export of SCORM-Files',
-    ],
-    'exaport:import' => [
-        'Import von SCORM-Files',
-        'Import of SCORM-Files',
-    ],
-    'exaport:importfrommoodle' => [
-        'Import von Moodle',
-        'Import from Moodle',
-    ],
     'exaport:shareintern' => [
         'Internes Teilen von Views',
+        'Share views internally',
     ],
     'exaport:shareextern' => [
         'Externes Teilen von Views',
+        'Share views externally',
     ],
     'exaport:allowposts' => [
         'Kommentare erlauben',
@@ -457,79 +447,6 @@ return [
         'Make it yours',
     ],
 
-    // === Export/import.
-    'import' => [
-        'Import SCORM-Datei',
-        'Import SCORM-File',
-    ],
-    'import_short' => [
-        'Import',
-        'Import',
-    ],
-    'explainexport' => [
-        '<span class=\'block_eportfolio_center\'><span class=\'block_eportfolio_bold\'>Export:</span> hier kannst du dein ePortfolio exportieren</span>',
-        'Export your portfolio here.',
-    ],
-    'createexport' => [
-        'SCORM-Datei erstellen',
-        'Create SCORM-File',
-    ],
-    'createexportxapi' => [
-        'XAPI-Datei erstellen',
-        'Create XAPI-File',
-    ],
-    'clicktodownloadscorm' => [
-        'Folgenden Button drücken, um SCORM-Datei herunterzuladen:',
-        'Press button to download the SCORM file:',
-    ],
-    'add_directory_structure' => [
-        'Mit Unterverzeichnissen exportieren',
-        'Add directory-structure',
-    ],
-    'download' => [
-        'Herunterladen',
-        'Download',
-    ],
-    'endedit' => [
-        'Editieren beenden',
-        'End editing',
-    ],
-    'change' => [
-        '&auml;ndern',
-        'Change',
-    ],
-    'explainpersonal' => [
-        '<span class=\'block_eportfolio_bold\'>Pers&ouml;nliche Informationen</span>',
-        'Personal information',
-    ],
-    'personal' => [
-        'Informationen',
-        'Information',
-    ],
-    'descriptionsaved' => [
-        'Beschreibung gespeichert',
-        'description saved',
-    ],
-    'course' => [
-        'Kurs',
-        'Course',
-    ],
-    'importexport' => [
-        'Import/Export',
-        'Import/Export',
-    ],
-    'explainimport' => [
-        'hier kannst du SCORM-Dateien ins Portfolio importieren. Wenn Marker gefunden werden, die darauf hinweisen, dass diese SCORM-Datei zuvor aus dem Portfolio-Modul exportiert wurde, so wird versucht, die Struktur entsprechend zu importieren.',
-        'Here you can import a SCORM-File into the portfolio. If markers from previous exports are found the import tries to import the data in the existing filestructure.',
-    ],
-    'makeimport' => [
-        'Import',
-        'Import',
-    ],
-    'add_this_file' => [
-        'Diese Datei hinzufügen',
-        'add this file',
-    ],
     'bookmarksall' => [
         'Alle Eintr&auml;ge',
         'All Items',

@@ -25,28 +25,6 @@ $capabilities = array(
             'user' => CAP_ALLOW,
         ),
     ),
-    'block/exaport:export' => array(
-        'captype' => 'read',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'legacy' => array(
-            'user' => CAP_ALLOW,
-        ),
-    ),
-    'block/exaport:import' => array(
-        'riskbitmask' => RISK_SPAM | RISK_XSS,
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'legacy' => array(
-            'user' => CAP_ALLOW,
-        ),
-    ),
-    'block/exaport:importfrommoodle' => array(
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'legacy' => array(
-            'user' => CAP_ALLOW,
-        ),
-    ),
     'block/exaport:shareintern' => array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,

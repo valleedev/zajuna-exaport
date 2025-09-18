@@ -22,7 +22,13 @@ require(__DIR__ . '/inc.php');
 class block_exaport extends block_list {
 
     public function init() {
-        $this->title = get_string('blocktitle', 'block_exaport');
+        // Use custom Zajuna key if available, fallback to standard key
+        $stringman = get_string_manager();
+        if ($stringman->string_exists('zajuna_blocktitle', 'block_exaport')) {
+            $this->title = get_string('zajuna_blocktitle', 'block_exaport');
+        } else {
+            $this->title = get_string('blocktitle', 'block_exaport');
+        }
     }
 
     public function instance_allow_multiple() {

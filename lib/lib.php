@@ -561,7 +561,16 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
     }
 
     $PAGE->set_title($itemname);
-    $PAGE->set_heading(get_string(block_exaport_course_has_desp() ? "desp_pluginname" : 'pluginname', "block_exaport"));
+    // Use custom Zajuna key if available, fallback to standard key
+    $stringman = get_string_manager();
+    if (block_exaport_course_has_desp()) {
+        $heading_key = "desp_pluginname";
+    } else if ($stringman->string_exists('zajuna_pluginname', 'block_exaport')) {
+        $heading_key = 'zajuna_pluginname';
+    } else {
+        $heading_key = 'pluginname';
+    }
+    $PAGE->set_heading(get_string($heading_key, "block_exaport"));
 
     // Header.
     global $OUTPUT;

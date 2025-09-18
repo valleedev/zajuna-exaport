@@ -25,6 +25,9 @@ $string['translation:email'] = 'ariepl.work@gmail.com';
 $string['pluginname'] = 'Exabis ePortfolio';
 // === Shown in block title and all headers.
 $string['blocktitle'] = 'Exabis ePortfolio';
+// Zajuna custom keys - these will never be overridden by official language packs
+$string['zajuna_pluginname'] = 'Exabis ePortfolio';
+$string['zajuna_blocktitle'] = 'Exabis ePortfolio';
 $string['exaport:use'] = 'Use allowed';
 $string['exaport:addinstance'] = 'add Exabis ePortfolio to the course';
 $string['exaport:myaddinstance'] = 'add Exabis ePortfolio on My home';

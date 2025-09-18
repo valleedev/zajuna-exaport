@@ -24,6 +24,9 @@ $string['translation:email'] = 'jfesanchez@gmail.com';
 // Main.
 $string['pluginname'] = 'Portafolio Aprendiz';
 $string['blocktitle'] = 'Portafolio Aprendiz';
+// Zajuna custom keys - these will never be overridden by official language packs
+$string['zajuna_pluginname'] = 'Portafolio Aprendiz';
+$string['zajuna_blocktitle'] = 'Portafolio Aprendiz';
 $string['exaport:use'] = 'Uso permitido';
 $string['exaport:export'] = 'Exportar archivos SCORM';
 $string['exaport:import'] = 'Importar archivos SCORM';

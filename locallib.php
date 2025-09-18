@@ -122,6 +122,11 @@ class exaport_portfolio_caller extends portfolio_module_caller_base {
      * @return string
      */
     public static function display_name() {
+        // Use custom Zajuna key if available, fallback to standard key
+        $stringman = get_string_manager();
+        if ($stringman->string_exists('zajuna_pluginname', 'block_exaport')) {
+            return get_string('zajuna_pluginname', 'block_exaport');
+        }
         return get_string('pluginname', 'block_exaport');
     }
 

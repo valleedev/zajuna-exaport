@@ -22,7 +22,8 @@ $string['translation:organisation'] = 'TICAL';
 $string['translation:email'] = 'jfesanchez@gmail.com';
 
 // Main.
-$string['blocktitle'] = 'E-Portafolio';
+$string['pluginname'] = 'Portafolio Aprendiz';
+$string['blocktitle'] = 'Portafolio Aprendiz';
 $string['exaport:use'] = 'Uso permitido';
 $string['exaport:export'] = 'Exportar archivos SCORM';
 $string['exaport:import'] = 'Importar archivos SCORM';

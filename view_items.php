@@ -751,6 +751,8 @@ if (in_array($type, ['mine', 'shared'])) {
 
 echo '<div class="excomdos_changeview ' . ($useBootstrapLayout ? 'my-4 my-sm-0 align-self-end align-self-sm-center' : '') . '"><p>';
 //echo '<span>'.block_exaport_get_string('change_layout').':</span>';
+// ZAJUNA: Hidden - Layout change buttons (Details/Tiles view)
+/*
 if ($layout == 'tiles') {
     echo '<span><a href="' . $PAGE->url->out(true, ['layout' => 'details']) . '">'
         . block_exaport_fontawesome_icon('list', 'solid', '2')
@@ -762,13 +764,17 @@ if ($layout == 'tiles') {
         //            .'<img src="pix/view_tile.png" alt="Tile View" />'
         . '<br />' . block_exaport_get_string("tiles") . "</a></span>";
 }
+*/
 
+// ZAJUNA: Hidden - Print button
+/*
 if ($type == 'mine') {
     echo '<span><a target="_blank" href="' . $CFG->wwwroot . '/blocks/exaport/view_items_print.php?courseid=' . $courseid . '">'
         . block_exaport_fontawesome_icon('print', 'solid', '2')
         //            .'<img src="pix/view_print.png" alt="Tile View" />'
         . '<br />' . get_string("printerfriendly", "group") . "</a></span>";
 }
+*/
 echo '</p></div></div>';
 
 echo '<div class="excomdos_cat">';

@@ -43,7 +43,7 @@ if (
 ) {
     @$CFG->debug = 5;
     @error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
-    @ini_set('display_errors', '5');
+    // @ini_set('display_errors', '5'); // Commented to prevent headers already sent
 }
 require_once($CFG->libdir . '/filelib.php');
 

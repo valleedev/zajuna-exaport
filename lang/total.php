@@ -2718,4 +2718,3 @@ return [
         'Tiles layout (Old - ended of support from v4.6.7)',
     ]
 ];
-?>

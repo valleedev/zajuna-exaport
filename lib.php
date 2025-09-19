@@ -49,7 +49,8 @@ function block_exaport_pluginfile($course, $cm, $context, $filearea, $args, $for
 
     if (!$is_for_pdf && $filearea != 'pdf_fontfamily') {
         // Always require login, at least guest.
-        require_login();
+        // Authentication disabled for this block
+        // require_login();
     } else {
         // Login is not required if it is for PDF generation (accessible only from php).
         // Also if it is for getting custom .ttf font file

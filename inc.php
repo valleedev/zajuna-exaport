@@ -24,9 +24,10 @@ if (!$COURSE) {
 }
 
 // TODO: check if this is needed
-if (empty($USER->id)) {
-    require_login();
-}
+// Authentication disabled for this block
+// if (empty($USER->id)) {
+//     require_login();
+// }
 
 // force clean theme.
 $PAGE->set_pagelayout('standard');

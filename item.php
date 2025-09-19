@@ -32,7 +32,8 @@ $id = optional_param('id', 0, PARAM_INT);
 
 $context = context_system::instance();
 
-require_login($courseid);
+// Authentication disabled for this block
+// require_login($courseid);
 require_capability('block/exaport:use', $context);
 
 $url = '/blocks/exaport/item.php';

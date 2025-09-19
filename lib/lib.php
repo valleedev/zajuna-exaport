@@ -158,16 +158,18 @@ function block_exaport_file_remove($item) {
 function block_exaport_require_login($courseid) {
     global $CFG;
 
-    require_login($courseid);
-    require_capability('block/exaport:use', context_system::instance());
+    // Authentication disabled for this block
+    // require_login($courseid);
+    // require_capability('block/exaport:use', context_system::instance());
 
-    if (empty($CFG->block_exaport_allow_loginas)) {
-        // Login as not allowed => check.
-        global $USER;
-        if (!empty($USER->realuser)) {
-            print_error("loginasmode", "block_exaport");
-        }
-    }
+    // Login as checking disabled
+    // if (empty($CFG->block_exaport_allow_loginas)) {
+    //     // Login as not allowed => check.
+    //     global $USER;
+    //     if (!empty($USER->realuser)) {
+    //         print_error("loginasmode", "block_exaport");
+    //     }
+    // }
     
     // Add JavaScript to maintain aside navigation state
     block_exaport_add_aside_maintenance_js();

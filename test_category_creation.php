@@ -18,7 +18,8 @@
 require_once(__DIR__ . '/inc.php');
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
-require_login($courseid);
+// Authentication disabled for this block
+// require_login($courseid);
 
 echo 'course id: ' . $COURSE->id . "<br />\n";
 

@@ -19,7 +19,8 @@ require_once(__DIR__ . '/inc.php');
 
 $access = optional_param('access', 0, PARAM_TEXT);
 
-require_login(0, true);
+// Authentication disabled for this block
+// require_login(0, true);
 
 if (!$user = block_exaport_get_user_from_access($access)) {
     print_error("nouserforid", "block_exaport");

@@ -38,7 +38,8 @@ $PAGE->set_url($url, ['courseid' => $courseid]);
 $context = context_system::instance();
 $PAGE->set_context($context);
 
-require_login($courseid);
+// Authentication disabled for this block
+// require_login($courseid);
 
 require_once($CFG->libdir . '/formslib.php');
 

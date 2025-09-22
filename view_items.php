@@ -1269,7 +1269,7 @@ function block_exaport_category_template_tile($category, $courseid, $type, $curr
         $categoryThumbUrl = $category->url;
         $categoryName = $category->name;
         if ($category->icon) {
-            if ($category->iconmerge) {
+            if (isset($category->iconmerge) && $category->iconmerge) {
                 // icon merge (also look JS - exaport.js - block_exaport_check_fontawesome_icon_merging()):
                 $categoryIcon = block_exaport_fontawesome_icon('folder-open', 'regular', '6', ['icon-for-merging'], [], ['data-categoryId' => $category->id], '', [], [], [], ['exaport-items-category-big']);
                 $categoryIcon .= '<img id="mergeImageIntoCategory' . $category->id . '" src="' . $category->icon . '?tcacheremove=' . date('dmYhis') . '" style="display:none;">';
@@ -1360,8 +1360,7 @@ function block_exaport_artefact_template_tile($item, $courseid, $type, $category
             // Use new evidencias-aware permission system for delete
             if (block_exaport_user_can_delete_item($item, $courseid)) {
                 if ($allowedit = block_exaport_item_is_editable($item->id)) {
-                    $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id .
-                        '&action=delete&categoryid=' . $categoryid . $cattype . '" class="item_delete_icon">'
+                    $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=delete&categoryid=' . $categoryid . $cattype . '" class="item_delete_icon">'
                         . block_exaport_fontawesome_icon('trash-can', 'regular', 1, [], [], [], '', [], [], [], ['exaport-remove-icon'])
                         . '</a>';
                 }
@@ -1372,17 +1371,13 @@ function block_exaport_artefact_template_tile($item, $courseid, $type, $category
                 $itemuser = $DB->get_record('user', ['id' => $item->userid]);
                 // user icon
                 $itemContent .= '<a class="" role="button" data-container="body"
-                            ' ./*data-toggle="popover" data-placement="bottom" // popover does not work in Firefox
-                            data-content="'.fullname($itemuser).'" tabindex="0" data-trigger="hover".*/
-                    '
                             title="' . fullname($itemuser) . '">'
                     . block_exaport_fontawesome_icon('circle-user', 'solid', 1)
-                    //                                        .'<img src="pix/personal.png">'
                     . '</a>';
-                // echo '<img src="pix/personal.png" alt="'.fullname($itemuser).'" title="'.fullname($itemuser).'">';
             }
         }
     }
+
     $itemContent .= '
                 </span>
         </div>
@@ -1518,7 +1513,7 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
                            '</div>';
             $categoryName = $category->name; // Section name
         } else if ($category->icon) {
-            if ($category->iconmerge) {
+            if (isset($category->iconmerge) && $category->iconmerge) {
                 // icon merge (also look JS - exaport.js - block_exaport_check_fontawesome_icon_merging()):
                 $categoryIcon = block_exaport_fontawesome_icon('folder-open', 'regular', '6', ['icon-for-merging'], [], ['data-categoryId' => $category->id], '', [], [], [], ['exaport-items-category-big']);
                 $categoryIcon .= '<img id="mergeImageIntoCategory' . $category->id . '" src="' . $category->icon . '?tcacheremove=' . date('dmYhis') . '" style="display:none;">';
@@ -1530,12 +1525,6 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
         } else {
             $categoryIcon = block_exaport_fontawesome_icon('folder-open', 'regular', '6', [], [], [], '', [], [], [], ['exaport-items-category-big']);
         }
-    }
-    
-    // Add special CSS class for course folders
-    $cardClasses = 'card h-100 excomdos_tile excomdos_tile_category id-' . $category->id;
-    if (isset($category->type) && $category->type === 'course_folder') {
-        $cardClasses .= ' exaport-course-folder-card';
     }
     
     $categoryContent .= '
@@ -1622,6 +1611,7 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
                     . '</a>';
             }
             
+            // Use new evidencias-aware permission system for delete
             if (block_exaport_user_can_delete_item($item, $courseid)) {
                 if ($allowedit = block_exaport_item_is_editable($item->id)) {
                     $itemContent .= '<a href="' . $CFG->wwwroot . '/blocks/exaport/item.php?courseid=' . $courseid . '&id=' . $item->id . '&action=delete&categoryid=' . $categoryid . $cattype . '" class="item_delete_icon">'

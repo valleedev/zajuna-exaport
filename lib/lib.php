@@ -422,8 +422,9 @@ function block_exaport_course_has_desp() {
         return $COURSE->has_desp;
     }
 
-    // Desp block installed?
-    if (!is_dir(__DIR__ . '/../../desp')) {
+    // Desp block installed? Check more defensively
+    $desp_path = __DIR__ . '/../../desp';
+    if (!$desp_path || !is_dir($desp_path)) {
         return $COURSE->has_desp = false;
     }
 
@@ -467,16 +468,22 @@ function block_exaport_init_js_css() {
     $PAGE->requires->css('/blocks/exaport/css/styles.css');
 
     // Load Font Awesome icons for consistent display
-    if (file_exists($CFG->dirroot . '/blocks/exaport/pix/icons/fontawesome/js/all.min.js')) {
+    $fontawesome_file = $CFG->dirroot . '/blocks/exaport/pix/icons/fontawesome/js/all.min.js';
+    if (!empty($fontawesome_file) && file_exists($fontawesome_file)) {
         $PAGE->requires->js('/blocks/exaport/pix/icons/fontawesome/js/all.min.js');
     }
 
     $scriptname = preg_replace('!\.[^\.]+$!', '', basename($_SERVER['PHP_SELF']));
-    if (file_exists($CFG->dirroot . '/blocks/exaport/css/' . $scriptname . '.css')) {
-        $PAGE->requires->css('/blocks/exaport/css/' . $scriptname . '.css');
-    }
-    if (file_exists($CFG->dirroot . '/blocks/exaport/javascript/' . $scriptname . '.js')) {
-        $PAGE->requires->js('/blocks/exaport/javascript/' . $scriptname . '.js', true);
+    if (!empty($scriptname)) {
+        $css_file = $CFG->dirroot . '/blocks/exaport/css/' . $scriptname . '.css';
+        $js_file = $CFG->dirroot . '/blocks/exaport/javascript/' . $scriptname . '.js';
+        
+        if (!empty($css_file) && file_exists($css_file)) {
+            $PAGE->requires->css('/blocks/exaport/css/' . $scriptname . '.css');
+        }
+        if (!empty($js_file) && file_exists($js_file)) {
+            $PAGE->requires->js('/blocks/exaport/javascript/' . $scriptname . '.js', true);
+        }
     }
 
     // language strings
@@ -3502,9 +3509,9 @@ function block_exaport_add_iconpack($limitFaToExaportContent = false) {
         $PAGE->requires->js('/blocks/exaport/javascript/exaport_fa.js');
     }
 
-    // add font awesome - check if file exists first
-    $fontawesome_path = $CFG->dirroot . '/blocks/exaport/pix/icons/fontawesome/js/all.min.js';
-    if (file_exists($fontawesome_path)) {
+    // add font awesome - check if file exists first with defensive programming
+    $fontawesome_path = !empty($CFG->dirroot) ? $CFG->dirroot . '/blocks/exaport/pix/icons/fontawesome/js/all.min.js' : '';
+    if (!empty($fontawesome_path) && file_exists($fontawesome_path)) {
         $PAGE->requires->js('/blocks/exaport/pix/icons/fontawesome/js/all.min.js');
     } else {
         // Fallback: try to load from CDN if local file doesn't exist

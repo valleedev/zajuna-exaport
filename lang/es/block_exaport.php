@@ -35,8 +35,12 @@ $string['exaport:shareintern'] = 'Compartir internammente entradas de portafolio
 $string['exaport:shareextern'] = 'Compartir externammente entradas de portafolio';
 $string['exaport:allowposts'] = 'Permitir posteo';
 $string['exaport:competences'] = 'Allow competences';
-$string['modulename'] = 'Exabis ePortfolio';
-$string['blockname'] = 'Exabis ePortfolio';
+$string['modulename'] = 'Zajuna Portfolio';
+$string['blockname'] = 'Zajuna Portfolio';
+
+// Zajuna custom keys - these will override default names
+$string['zajuna_pluginname'] = 'Zajuna Portfolio';
+$string['zajuna_blocktitle'] = 'Zajuna Portfolio';
 $string['new'] = 'Nuevo';
 $string['addbookmark'] = 'Agregar marcador';
 $string['addcategory'] = 'Agregar Categoria';
@@ -96,7 +100,7 @@ $string['managecategories'] = 'Administrar categorías';
 $string['mandatoryfields'] = 'Los campos nombre, categoria e introducción son obligatorios. Por favor llénelos.';
 $string['mandatoryfieldsforcat'] = 'El campo nombre es obligatorio. Por favor rellénelo.';
 $string['myportfolio'] = 'Mi Portafolio';
-$string['myportfoliotitle'] = 'Módulo Exabis ePortfolio: Agrege sus vínculos y archivos aquí.';
+$string['myportfoliotitle'] = 'Módulo Zajuna Portfolio: Agregue sus vínculos y archivos aquí.';
 $string['mydialogues'] = 'Mis Diálogos';
 $string['mymoodle'] = 'Mi Moodle';
 $string['newlink'] = 'Agregar nuevo link';
@@ -177,7 +181,7 @@ $string['scormhastobezip'] = 'Archivo SCORM tiene que se de formato .zip';
 $string['uploadfailed'] = 'Carga fallida.';
 $string['couldntupdatedesc'] = ' No se pudo actualizar su descripción!';
 $string['couldntinsertdesc'] = 'No se pudo insertar su descripción!';
-$string['exportcomment'] = 'Este es un archivo exportado de Exabis E-portafolio. Por favor, no quite los comentarios, que son necesarios para la importación!';
+$string['exportcomment'] = 'Este es un archivo exportado de Zajuna Portfolio. Por favor, no quite los comentarios, que son necesarios para la importación!';
 $string['comment'] = 'Comentario';
 $string['commentshouldnotbeempty'] = 'Tienes que introducir un comentario.';
 $string['title'] = 'Titulo';
@@ -265,10 +269,10 @@ $string['filecopiedtocourse'] = 'Archivo copiado al curso $a->coursename bajo el
 $string['copyitemtocourse'] = 'Copiar al curso';
 
 // Config.
-$string['config_version_3'] = 'Nuevo diseño de E-Portafolio : incluyendo vistas, etc.';
-$string['config_version_2'] = 'Antiguo  diseño de ePortfolio ';
-$string['config_feature_copy_to_course'] = 'Permitir a los estudiantes para copiar archivos de E-portafolio a sus cursos';
-$string['version_5.2.0_needed'] = 'Exabis E-portafolio REQUIERE al Menos la version 5.2.0 de PHP';
+$string['config_version_3'] = 'Nuevo diseño de Portfolio : incluyendo vistas, etc.';
+$string['config_version_2'] = 'Antiguo  diseño de Portfolio';
+$string['config_feature_copy_to_course'] = 'Permitir a los estudiantes para copiar archivos de Portfolio a sus cursos';
+$string['version_5.2.0_needed'] = 'Zajuna Portfolio REQUIERE al menos la versión 5.2.0 de PHP';
 $string['settings_interaktion_exacomp_head'] = 'interaction exabis ePortfolio - Exabis Competence Grid';
 $string['settings_interaktion_exacomp_body'] = 'interaction with block Exabis Competence Grid, if installed.';
 // Not Used Anymore.
@@ -334,3 +338,9 @@ $string['course_section'] = 'Sección del Curso';
 $string['course_folder'] = 'Curso';
 $string['course_file'] = 'Archivo del Curso';
 $string['section_files'] = 'Archivos de la Sección';
+
+// Configuration strings that appear during installation
+$string['block_exaport_maxbytes'] = 'Tamaño máximo de archivo a subir en Zajuna Portfolio';
+$string['block_exaport_maxbytes_body'] = 'Esto especifica un tamaño máximo para archivos subidos que pueden procesarse en Zajuna Portfolio.<br> El valor para el sitio completo es: {$a->sitemaxbytes}. Vea <a href="{$a->settingsurl}">configuraciones</a>';
+$string['block_exaport_userquota'] = 'Cuota del usuario para Zajuna Portfolio';
+$string['block_exaport_userquota_body'] = 'El máximo número de bytes que un usuario puede almacenar en su propio Zajuna Portfolio.<br> Valor para el sitio completo es: {$a->bytes}. Vea <a href="{$a->settingsurl}">configuraciones</a>';

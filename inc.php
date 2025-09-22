@@ -32,8 +32,9 @@ if (!$COURSE) {
 // force clean theme - only if PAGE is available
 if (isset($PAGE) && $PAGE !== null) {
     $PAGE->set_pagelayout('standard');
-    $PAGE->requires->jquery();
-    $PAGE->requires->jquery_plugin('ui');
+    // jQuery will be loaded by the block when rendered, not during installation
+    // $PAGE->requires->jquery();
+    // $PAGE->requires->jquery_plugin('ui');
 }
 
 // Get rid 'warning' messages for ajax request (regardless moodle configuration)

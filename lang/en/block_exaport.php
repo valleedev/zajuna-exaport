@@ -22,15 +22,15 @@ $string['translation:email'] = 'ariepl.work@gmail.com';
 
 // === Main ===
 // Shown in admin plugin list.
-$string['pluginname'] = 'Exabis ePortfolio';
+$string['pluginname'] = 'Portafolio Aprendiz';
 // === Shown in block title and all headers.
-$string['blocktitle'] = 'Exabis ePortfolio';
+$string['blocktitle'] = 'Portafolio Aprendiz';
 // Zajuna custom keys - these will never be overridden by official language packs
-$string['zajuna_pluginname'] = 'Zajuna Portfolio';
-$string['zajuna_blocktitle'] = 'Zajuna Portfolio';
+$string['zajuna_pluginname'] = 'Portafolio Aprendiz';
+$string['zajuna_blocktitle'] = 'Portafolio Aprendiz';
 $string['exaport:use'] = 'Use allowed';
-$string['exaport:addinstance'] = 'add Exabis ePortfolio to the course';
-$string['exaport:myaddinstance'] = 'add Exabis ePortfolio on My home';
+$string['exaport:addinstance'] = 'add Portafolio Aprendiz to the course';
+$string['exaport:myaddinstance'] = 'add Portafolio Aprendiz on My home';
 $string['exaport:export'] = 'Export of SCORM-Files';
 $string['exaport:import'] = 'Import of SCORM-Files';
 $string['exaport:importfrommoodle'] = 'Import from Moodle';
@@ -445,8 +445,8 @@ $string['settings_disable_shareemails_body'] = '';
 $string['settings_disable_external_comments_body'] = '';
 $string['block_exaport_app_externaleportfolio_head'] = 'Save files to mahara if checked, save to exaport if not checked';
 $string['block_exaport_app_externaleportfolio_body'] = 'For App';
-$string['block_exaport_maxbytes'] = 'Maximum uploaded file size in Exabis ePortfolio';
-$string['block_exaport_maxbytes_body'] = 'This specifies a maximum size that uploaded files can be throughout the Exabis ePortfolio.<br> Value for whole site is: {$a->sitemaxbytes}. See <a href="{$a->settingsurl}">settings</a>';
+$string['block_exaport_maxbytes'] = 'Maximum uploaded file size in Portafolio Aprendiz';
+$string['block_exaport_maxbytes_body'] = 'This specifies a maximum size that uploaded files can be throughout the Portafolio Aprendiz.<br> Value for whole site is: {$a->sitemaxbytes}. See <a href="{$a->settingsurl}">settings</a>';
 $string['block_exaport_userquota'] = 'User quota for Exabis ePortfolio';
 $string['block_exaport_userquota_body'] = 'The maximum number of bytes that a user can store in their own Exabis ePortfolio.<br> Value for whole site is: {$a->bytes}. See <a href="{$a->settingsurl}">settings</a>';
 $string['block_exaport_multiplefilesinitem'] = 'Multiple files in "File" artefact';

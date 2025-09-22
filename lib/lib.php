@@ -466,6 +466,11 @@ function block_exaport_init_js_css() {
 
     $PAGE->requires->css('/blocks/exaport/css/styles.css');
 
+    // Load Font Awesome icons for consistent display
+    if (file_exists($CFG->dirroot . '/blocks/exaport/pix/icons/fontawesome/js/all.min.js')) {
+        $PAGE->requires->js('/blocks/exaport/pix/icons/fontawesome/js/all.min.js');
+    }
+
     $scriptname = preg_replace('!\.[^\.]+$!', '', basename($_SERVER['PHP_SELF']));
     if (file_exists($CFG->dirroot . '/blocks/exaport/css/' . $scriptname . '.css')) {
         $PAGE->requires->css('/blocks/exaport/css/' . $scriptname . '.css');
@@ -3491,14 +3496,21 @@ function block_exaport_item_icon_type_options($itemtype) {
  * @return void
  */
 function block_exaport_add_iconpack($limitFaToExaportContent = false) {
-    global $PAGE;
+    global $PAGE, $CFG;
 
     if ($limitFaToExaportContent) {
         $PAGE->requires->js('/blocks/exaport/javascript/exaport_fa.js');
     }
 
-    // add font awesome
-    $PAGE->requires->js('/blocks/exaport/pix/icons/fontawesome/js/all.min.js');
+    // add font awesome - check if file exists first
+    $fontawesome_path = $CFG->dirroot . '/blocks/exaport/pix/icons/fontawesome/js/all.min.js';
+    if (file_exists($fontawesome_path)) {
+        $PAGE->requires->js('/blocks/exaport/pix/icons/fontawesome/js/all.min.js');
+    } else {
+        // Fallback: try to load from CDN if local file doesn't exist
+        $PAGE->requires->js('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js');
+    }
+    
     // add boxicons
     //$PAGE->requires->css('/blocks/exaport/pix/icons/boxicons/css/boxicons.min.css');
 }

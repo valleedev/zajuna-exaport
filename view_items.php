@@ -658,8 +658,13 @@ if (in_array($type, ['mine', 'shared'])) {
         if (block_exaport_instructor_can_create_in_category($categoryid)) {
             error_log("DEBUG UI: Showing create category button for type=mine, categoryid=$categoryid");
             echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=add&courseid=' . $courseid . '&pid=' . $categoryid . '">'
-                . block_exaport_fontawesome_icon('folder', 'solid', 2, [], ['color' => '#7a7a7a'], [], 'add') . '<br />'
-                . get_string("category", "block_exaport") . "</a></span>";
+                . '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 30 30">'
+                . '<path fill="#ffffff" d="M22.48,8.53c-.14-.73-.6-1.36-1.31-1.61l-8.75-.02c-1.27-.63-2.46-2-3.91-2.13-2.14-.2-4.59.13-6.76.02-.53.13-.99.51-1.21,1-.04.09-.24.67-.24.72v13.23l2.18-9.29c.26-.87,1.52-1.92,2.43-1.92h17.58ZM24.7,13.17c.02-1.34,1.35-3.29-.49-3.97-6.28.11-12.6-.13-18.87-.08-1.11,0-2,.65-2.38,1.69-.74,3.49-1.67,6.95-2.31,10.45.08.87.69,1.23,1.51,1.29h16.28c1.94,3.03,6.28,3.69,9.05,1.36,4-3.36,2.27-9.79-2.8-10.73Z"/>'
+                . '<path fill="#00304d" d="M24.7,13.17c5.06.93,6.8,7.37,2.8,10.73-2.77,2.33-7.1,1.67-9.05-1.37H2.17c-.82-.06-1.43-.42-1.51-1.29.63-3.5,1.57-6.96,2.31-10.45.38-1.03,1.27-1.68,2.38-1.69,6.27-.04,12.58.19,18.87.08,1.84.68.5,2.63.49,3.97ZM22.98,14.3c-3.15.34-5.12,3.72-3.98,6.66,1.32,3.39,5.86,4.21,8.27,1.46,2.95-3.38.18-8.61-4.29-8.12Z"/>'
+                . '<path fill="#39a900" d="M22.48,8.53H4.9c-.91,0-2.17,1.04-2.43,1.92L.3,19.73V6.5s.2-.63.24-.72c.23-.49.69-.87,1.21-1l6.76-.02c1.45.13,2.65,1.51,3.91,2.13l8.75.02c.71.25,1.17.88,1.31,1.61Z"/>'
+                . '<path fill="#39a900" d="M22.98,14.3c4.47-.49,7.24,4.74,4.29,8.12-2.4,2.75-6.95,1.94-8.27-1.46-1.14-2.94.83-6.32,3.98-6.66ZM24.25,16.12h-1.33v2.36h-2.32l-.11.11v1.18l.11.11h2.32v2.36h1.33v-2.36h2.36v-1.4h-2.36v-2.36Z"/>'
+                . '</svg>'
+                . '<br />' . get_string("category", "block_exaport") . "</a></span>";
         } else {
             error_log("DEBUG UI: NOT showing create category button for type=mine, categoryid=$categoryid (no permissions)");
         }
@@ -667,8 +672,13 @@ if (in_array($type, ['mine', 'shared'])) {
         // Also show category creation for students within instructor-created folders in evidencias
         error_log("DEBUG UI: Showing create category button for student, categoryid=$categoryid");
         echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/category.php?action=add&courseid=' . $courseid . '&pid=' . $categoryid . '">'
-            . block_exaport_fontawesome_icon('folder', 'solid', 2, [], ['color' => '#7a7a7a'], [], 'add') . '<br />'
-            . get_string("category", "block_exaport") . "</a></span>";
+            . '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 30 30">'
+            . '<path fill="#ffffff" d="M22.48,8.53c-.14-.73-.6-1.36-1.31-1.61l-8.75-.02c-1.27-.63-2.46-2-3.91-2.13-2.14-.2-4.59.13-6.76.02-.53.13-.99.51-1.21,1-.04.09-.24.67-.24.72v13.23l2.18-9.29c.26-.87,1.52-1.92,2.43-1.92h17.58ZM24.7,13.17c.02-1.34,1.35-3.29-.49-3.97-6.28.11-12.6-.13-18.87-.08-1.11,0-2,.65-2.38,1.69-.74,3.49-1.67,6.95-2.31,10.45.08.87.69,1.23,1.51,1.29h16.28c1.94,3.03,6.28,3.69,9.05,1.36,4-3.36,2.27-9.79-2.8-10.73Z"/>'
+            . '<path fill="#00304d" d="M24.7,13.17c5.06.93,6.8,7.37,2.8,10.73-2.77,2.33-7.1,1.67-9.05-1.37H2.17c-.82-.06-1.43-.42-1.51-1.29.63-3.5,1.57-6.96,2.31-10.45.38-1.03,1.27-1.68,2.38-1.69,6.27-.04,12.58.19,18.87.08,1.84.68.5,2.63.49,3.97ZM22.98,14.3c-3.15.34-5.12,3.72-3.98,6.66,1.32,3.39,5.86,4.21,8.27,1.46,2.95-3.38.18-8.61-4.29-8.12Z"/>'
+            . '<path fill="#39a900" d="M22.48,8.53H4.9c-.91,0-2.17,1.04-2.43,1.92L.3,19.73V6.5s.2-.63.24-.72c.23-.49.69-.87,1.21-1l6.76-.02c1.45.13,2.65,1.51,3.91,2.13l8.75.02c.71.25,1.17.88,1.31,1.61Z"/>'
+            . '<path fill="#39a900" d="M22.98,14.3c4.47-.49,7.24,4.74,4.29,8.12-2.4,2.75-6.95,1.94-8.27-1.46-1.14-2.94.83-6.32,3.98-6.66ZM24.25,16.12h-1.33v2.36h-2.32l-.11.11v1.18l.11.11h2.32v2.36h1.33v-2.36h2.36v-1.4h-2.36v-2.36Z"/>'
+            . '</svg>'
+            . '<br />' . get_string("category", "block_exaport") . "</a></span>";
     } else {
         if (block_exaport_user_is_student()) {
             error_log("DEBUG UI: NOT showing create category button for student, categoryid=$categoryid (no permissions)");
@@ -710,9 +720,16 @@ if (in_array($type, ['mine', 'shared'])) {
     
     if ($can_add_artefact) {
         error_log("UPLOAD FILE BUTTON DEBUG: Showing upload file button (replacing add artefact)");
-        echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/upload_file.php?courseid=' . $courseid . '&categoryid=' . $categoryid . '">'
-            . block_exaport_fontawesome_icon('upload', 'solid', 2)
-            . '<br />' . get_string("upload_file_evidence", "block_exaport") . "</a></span>";
+
+        // Botón 1
+        echo '<span><a href="#">'
+            . '<svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 30 30">'
+            . '<defs><style>.st0{fill:#00304d;}</style></defs>'
+            . '<path class="st0" d="M25.4,16.8c-.6-.2-1.3-.4-1.9-.4V7.9h-4.1c-.9,0-1.8-1.1-1.8-2V2H6.3c-.1,0-.3.3-.3.5v23.6c0,.1.2.3.3.3h9.5c.2.3.3.7.5,1s.4.7.6,1H6.1c-.9,0-2-1.2-2-2V2.1c.1-1,.8-1.8,1.7-2,4-.2,8,0,12,0,.5,0,.7.1,1.1.5,1.8,2.1,4.3,3.9,6,6s.5.6.5.8v9.5Z"/>'
+            . '<path class="st0" d="M18.5,28.3c-3.4-3.3-2-9.1,2.6-10.4s9.4,3.3,7.6,8.1c-1.5,4.2-7,5.4-10.1,2.3ZM23.1,19.4c-.1,0-.4-.1-.5,0l-3,4c0,.5,1.3.2,1.6.4s0,.2,0,.3c.1,1.2-.1,2.7,0,3.8s0,.3.2.3c.8,0,1.9.1,2.7,0s.1,0,.2,0v-4.2c0,0,.1-.1.2-.2.3-.2,1.9.2,1.5-.5l-2.9-3.9Z"/>'
+            . '</svg>'
+            . '<br />Botón 1</a></span>';
+      
     } else {
         error_log("UPLOAD FILE BUTTON DEBUG: Hiding upload file button");
     }
@@ -875,10 +892,17 @@ if ($layout == 'details') {
         $itemind++;
         $table->data[$itemind] = array();
         
-        // Different icon for course folders and sections
+        // Solo mostrar el SVG personalizado para carpetas de cursos
         if (isset($category->type) && $category->type === 'course_folder') {
-            $table->data[$itemind]['type'] = '<span class="course-folder-icon">' . 
-                block_exaport_fontawesome_icon('graduation-cap', 'solid', 1) . '</span>';
+            $table->data[$itemind]['type'] = '<span class="course-folder-icon">'
+                . '<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100">'
+                . '<defs><style>.cls-1{fill:#00304d;}</style></defs>'
+                . '<rect x="0" y="0" width="100" height="100" fill="#00304d" rx="12"/>'
+                . '<path class="cls-1" d="M14.9,31.61l79.55-.07c2.61.09,4.96,2.04,5.35,4.64-2.7,15.02-6.12,30-9.37,44.94-.89,4.09-.42,8.27-5.97,8.74H5.37c-3.2-.12-5.66-2.94-5.09-6.15,3.04-14.12,5.96-28.27,9.1-42.38.9-4.03.42-8.67,5.52-9.71Z"/>'
+                . '<path class="cls-1" d="M18.91,28.39s-3.56-.1-4.58.02c-3.52.43-6.39,3.37-7.18,6.74-2.38,10.17-3.62,21.35-6.45,31.37-.08.27-.06.79-.45.73V22.75c0-.97,0-3.81,3.81-3.81h14.45l.39.39v9.06Z"/>'
+                . '<path class="cls-1" d="M79.86,10.15H24.69c-1.45,0-2.63,1.18-2.63,2.63v12.99c0,1.45,1.18,2.63,2.63,2.63h55.17c1.45,0,2.63-1.18,2.63-2.63v-12.99c0-1.45-1.18-2.63-2.63-2.63ZM73.93,24.04H31.01c-.95,0-1.72-.77-1.72-1.72s.77-1.72,1.72-1.72h42.92c.95,0,1.72.77,1.72,1.72s-.77,1.72-1.72,1.72ZM73.93,18.94H31.01c-.95,0-1.72-.77-1.72-1.72s.77-1.72,1.72-1.72h42.92c.95,0,1.72.77,1.72,1.72s-.77,1.72-1.72,1.72Z"/>'
+                . '</svg>'
+                . '</span>';
             $categoryclass = 'exaport-course-folder';
         } else if (isset($category->type) && $category->type === 'course_section') {
             $table->data[$itemind]['type'] = '<span class="course-section-icon">' . 
@@ -1447,7 +1471,7 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
 
     $categoryContent .= '
     <div class="col mb-4">
-				<div class="' . $cardClasses . ' ">
+                <div class="' . $cardClasses . ' " style="border: 1px solid #38a900a6;">
 					<div class="card-header excomdos_tilehead d-flex justify-content-between">
 						<span class="excomdos_tileinfo">
 							';
@@ -1503,9 +1527,14 @@ function block_exaport_category_template_bootstrap_card($category, $courseid, $t
         
         // Special handling for course folders and sections
         if (isset($category->type) && $category->type === 'course_folder') {
-            $categoryIcon = '<div class="course-folder-icon-large">' . 
-                           block_exaport_fontawesome_icon('graduation-cap', 'solid', '6', [], [], [], '', [], [], [], ['exaport-course-folder-icon']) . 
-                           '</div>';
+            $categoryIcon = '<div class="course-folder-icon-large">'
+                . '<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">'
+                . '<defs><style>.cls-1{fill:#39a900;}</style></defs>'
+                . '<path class="cls-1" d="M14.9,31.61l79.55-.07c2.61.09,4.96,2.04,5.35,4.64-2.7,15.02-6.12,30-9.37,44.94-.89,4.09-.42,8.27-5.97,8.74H5.37c-3.2-.12-5.66-2.94-5.09-6.15,3.04-14.12,5.96-28.27,9.1-42.38.9-4.03.42-8.67,5.52-9.71Z"/>'
+                . '<path class="cls-1" d="M18.91,28.39s-3.56-.1-4.58.02c-3.52.43-6.39,3.37-7.18,6.74-2.38,10.17-3.62,21.35-6.45,31.37-.08.27-.06.79-.45.73V22.75c0-.97,0-3.81,3.81-3.81h14.45l.39.39v9.06Z"/>'
+                . '<path class="cls-1" d="M79.86,10.15H24.69c-1.45,0-2.63,1.18-2.63,2.63v12.99c0,1.45,1.18,2.63,2.63,2.63h55.17c1.45,0,2.63-1.18,2.63-2.63v-12.99c0-1.45-1.18-2.63-2.63-2.63ZM73.93,24.04H31.01c-.95,0-1.72-.77-1.72-1.72s.77-1.72,1.72-1.72h42.92c.95,0,1.72.77,1.72,1.72s-.77,1.72-1.72,1.72ZM73.93,18.94H31.01c-.95,0-1.72-.77-1.72-1.72s.77-1.72,1.72-1.72h42.92c.95,0,1.72.77,1.72,1.72s-.77,1.72-1.72,1.72Z"/>'
+                . '</svg>'
+                . '</div>';
             $categoryName = $category->name; // Full course name
         } else if (isset($category->type) && $category->type === 'course_section') {
             $categoryIcon = '<div class="course-section-icon-large">' . 
@@ -1572,8 +1601,8 @@ function block_exaport_artefact_template_bootstrap_card($item, $courseid, $type,
     }
 
     $itemContent = '
-        <div class="col mb-4">
-				<div class="card h-100 excomdos_tile excomdos_tile_item id-13 ui-draggable ui-draggable-handle">
+    <div class="col mb-4">
+        <div class="card h-100 excomdos_tile excomdos_tile_item id-13 ui-draggable ui-draggable-handle" style="border: 2px solid #39a900;">
 					<div class="card-header excomdos_tilehead d-flex justify-content-between flex-wrap">
 						<div class="excomdos_tileinfo">
 							<span class="excomdos_tileinfo_type">'

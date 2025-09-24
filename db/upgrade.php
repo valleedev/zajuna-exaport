@@ -1237,5 +1237,57 @@ function xmldb_block_exaport_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2025092302, 'exaport');
     }
 
+    // Migrate audit table to full structure - version 2025092400
+    if ($oldversion < 2025092400) {
+        $table = new xmldb_table('block_exaport_audit_events');
+        
+        // Check if table exists and drop it to recreate with correct structure
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+        
+        // Define the complete table structure that our code expects
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('event_type', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('risk_level', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('user_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('username', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('user_email', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('full_name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('user_roles', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('ip_address', XMLDB_TYPE_CHAR, '45', null, null, null, null);
+        $table->add_field('user_agent', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('resource_type', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('resource_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('resource_name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('parent_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('resource_metadata', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timestamp', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('description', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('details', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('session_id', XMLDB_TYPE_CHAR, '50', null, null, null, null);
+        $table->add_field('course_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('change_log', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        
+        // Add primary key
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('user_id_fk', XMLDB_KEY_FOREIGN, array('user_id'), 'user', array('id'));
+        
+        // Add indexes for better performance (user_id index is created automatically with foreign key)
+        $table->add_index('event_type_idx', XMLDB_INDEX_NOTUNIQUE, array('event_type'));
+        $table->add_index('risk_level_idx', XMLDB_INDEX_NOTUNIQUE, array('risk_level'));
+        $table->add_index('timestamp_idx', XMLDB_INDEX_NOTUNIQUE, array('timestamp'));
+        $table->add_index('resource_type_idx', XMLDB_INDEX_NOTUNIQUE, array('resource_type'));
+        $table->add_index('resource_id_idx', XMLDB_INDEX_NOTUNIQUE, array('resource_id'));
+        $table->add_index('course_id_idx', XMLDB_INDEX_NOTUNIQUE, array('course_id'));
+        $table->add_index('session_id_idx', XMLDB_INDEX_NOTUNIQUE, array('session_id'));
+        
+        // Create the table with the complete structure
+        $dbman->create_table($table);
+        
+        // Exaport savepoint reached.
+        upgrade_block_savepoint(true, 2025092400, 'exaport');
+    }
+
     return $result;
 }

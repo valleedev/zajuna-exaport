@@ -61,7 +61,7 @@ if ($action === 'export') {
     if (!empty($date_from)) {
         $from_timestamp = strtotime($date_from . ' 00:00:00');
         if ($from_timestamp) {
-            $where_conditions[] = 'ae.occurred_at >= ?';
+            $where_conditions[] = 'ae.timestamp >= ?';
             $params[] = $from_timestamp;
         }
     }
@@ -69,7 +69,7 @@ if ($action === 'export') {
     if (!empty($date_to)) {
         $to_timestamp = strtotime($date_to . ' 23:59:59');
         if ($to_timestamp) {
-            $where_conditions[] = 'ae.occurred_at <= ?';
+            $where_conditions[] = 'ae.timestamp <= ?';
             $params[] = $to_timestamp;
         }
     }
@@ -95,7 +95,7 @@ if ($action === 'export') {
     }
     
     if (!empty($search_text)) {
-        $where_conditions[] = '(ae.metadata LIKE ? OR u.username LIKE ? OR u.firstname LIKE ? OR u.lastname LIKE ?)';
+        $where_conditions[] = '(ae.resource_metadata LIKE ? OR u.username LIKE ? OR u.firstname LIKE ? OR u.lastname LIKE ?)';
         $search_param = '%' . $search_text . '%';
         $params[] = $search_param;
         $params[] = $search_param;
@@ -112,7 +112,7 @@ if ($action === 'export') {
             FROM {block_exaport_audit_events} ae
             LEFT JOIN {user} u ON ae.user_id = u.id
             $where_clause
-            ORDER BY ae.occurred_at DESC";
+            ORDER BY ae.timestamp DESC";
     
     $events = $DB->get_records_sql($sql, $params);
     
@@ -142,12 +142,12 @@ if ($action === 'export') {
     
     // CSV data
     foreach ($events as $event) {
-        $metadata = json_decode($event->metadata, true);
+        $metadata = isset($event->metadata) && !empty($event->metadata) ? json_decode($event->metadata, true) : array();
         $resource_name = isset($metadata['resource_name']) ? $metadata['resource_name'] : '';
         $description = isset($metadata['description']) ? $metadata['description'] : '';
         
         fputcsv($output, [
-            date('Y-m-d H:i:s', $event->occurred_at),
+            date('Y-m-d H:i:s', $event->timestamp),
             $event->firstname . ' ' . $event->lastname . ' (' . $event->username . ')',
             ucfirst(str_replace('_', ' ', $event->event_type)),
             ucfirst($event->resource_type),
@@ -159,8 +159,8 @@ if ($action === 'export') {
             $event->user_agent,
             $event->session_id,
             $event->course_id,
-            $event->occurred_at,
-            date('Y-m-d H:i:s', $event->occurred_at)
+            $event->timestamp,
+            date('Y-m-d H:i:s', $event->timestamp)
         ]);
     }
     
@@ -311,7 +311,7 @@ $params = [];
 if (!empty($date_from)) {
     $from_timestamp = strtotime($date_from . ' 00:00:00');
     if ($from_timestamp) {
-        $where_conditions[] = 'ae.occurred_at >= ?';
+        $where_conditions[] = 'ae.timestamp >= ?';
         $params[] = $from_timestamp;
     }
 }
@@ -319,7 +319,7 @@ if (!empty($date_from)) {
 if (!empty($date_to)) {
     $to_timestamp = strtotime($date_to . ' 23:59:59');
     if ($to_timestamp) {
-        $where_conditions[] = 'ae.occurred_at <= ?';
+        $where_conditions[] = 'ae.timestamp <= ?';
         $params[] = $to_timestamp;
     }
 }
@@ -345,7 +345,7 @@ if (!empty($resource_type)) {
 }
 
 if (!empty($search_text)) {
-    $where_conditions[] = '(ae.metadata LIKE ? OR u.username LIKE ? OR u.firstname LIKE ? OR u.lastname LIKE ?)';
+    $where_conditions[] = '(ae.resource_metadata LIKE ? OR u.username LIKE ? OR u.firstname LIKE ? OR u.lastname LIKE ?)';
     $search_param = '%' . $search_text . '%';
     $params[] = $search_param;
     $params[] = $search_param;
@@ -371,7 +371,7 @@ $sql = "SELECT ae.*, u.username, u.firstname, u.lastname, u.email
         FROM {block_exaport_audit_events} ae
         LEFT JOIN {user} u ON ae.user_id = u.id
         $where_clause
-        ORDER BY ae.occurred_at DESC";
+        ORDER BY ae.timestamp DESC";
 
 $events = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
 
@@ -409,7 +409,7 @@ $events = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
                                 <tbody>
                                     <?php foreach ($events as $event): ?>
                                         <?php
-                                        $metadata = json_decode($event->metadata, true);
+                                        $metadata = isset($event->resource_metadata) && !empty($event->resource_metadata) ? json_decode($event->resource_metadata, true) : array();
                                         $resource_name = isset($metadata['resource_name']) ? $metadata['resource_name'] : 'ID: ' . $event->resource_id;
                                         $description = isset($metadata['description']) ? $metadata['description'] : '';
                                         
@@ -429,7 +429,7 @@ $events = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
                                         ?>
                                         <tr>
                                             <td>
-                                                <small><?php echo date('Y-m-d H:i:s', $event->occurred_at); ?></small>
+                                                <small><?php echo date('Y-m-d H:i:s', $event->timestamp); ?></small>
                                             </td>
                                             <td>
                                                 <?php if ($event->username): ?>

@@ -199,6 +199,19 @@ if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
             $DB->delete_records('block_exaportitem', array('categoryid' => $id));
         }
 
+        // Record audit event before deletion
+        try {
+            $auditService = new \block_exaport\audit\application\AuditService();
+            $auditService->recordFolderDeleted(
+                $category->id,
+                $category->name,
+                ['parent_id' => $category->pid, 'course_id' => $category->courseid]
+            );
+        } catch (Exception $e) {
+            // Log audit error but don't prevent deletion
+            error_log("Audit error in category.php delete: " . $e->getMessage());
+        }
+
         block_exaport_recursive_delete_category($category->id);
 
         if (!$DB->delete_records('block_exaportcate', array('id' => $category->id))) {
@@ -569,10 +582,28 @@ if ($mform->is_cancelled()) {
         $newentry->source = $courseid_for_evidencias;
     }
 
+    $isNewCategory = !$newentry->id;
+    
     if ($newentry->id) {
         $DB->update_record("block_exaportcate", $newentry);
     } else {
         $newentry->id = $DB->insert_record("block_exaportcate", $newentry);
+    }
+    
+    // Record audit event for new categories
+    if ($isNewCategory) {
+        try {
+            $auditService = new \block_exaport\audit\application\AuditService();
+            $auditService->recordFolderCreated(
+                $newentry->id,
+                $newentry->name,
+                $newentry->pid ?: null,
+                ['course_id' => $newentry->courseid]
+            );
+        } catch (Exception $e) {
+            // Log audit error but don't prevent category creation
+            error_log("Audit error in category.php: " . $e->getMessage());
+        }
     }
 
     // Delete all shared users.

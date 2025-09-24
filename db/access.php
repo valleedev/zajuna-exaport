@@ -75,4 +75,30 @@ $capabilities = array(
         ),
         'clonepermissionsfrom' => 'moodle/site:manageblocks',
     ),
+    'block/exaport:viewaudit' => array(
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'editingteacher' => CAP_ALLOW,
+            'teacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ),
+    ),
+        'block/exaport:auditview' => array(
+        'riskbitmask' => RISK_PERSONAL | RISK_CONFIG,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+        ),
+    ),
+    'block/exaport:exportaudit' => array(
+        'riskbitmask' => RISK_PERSONAL | RISK_CONFIG,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+        ),
+    ),
 );

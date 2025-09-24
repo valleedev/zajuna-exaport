@@ -345,3 +345,90 @@ $string['block_exaport_maxbytes'] = 'Tamaño máximo de archivo a subir en Zajun
 $string['block_exaport_maxbytes_body'] = 'Esto especifica un tamaño máximo para archivos subidos que pueden procesarse en Zajuna Portfolio.<br> El valor para el sitio completo es: {$a->sitemaxbytes}. Vea <a href="{$a->settingsurl}">configuraciones</a>';
 $string['block_exaport_userquota'] = 'Cuota del usuario para Zajuna Portfolio';
 $string['block_exaport_userquota_body'] = 'El máximo número de bytes que un usuario puede almacenar en su propio Zajuna Portfolio.<br> Valor para el sitio completo es: {$a->bytes}. Vea <a href="{$a->settingsurl}">configuraciones</a>';
+
+// Audit System Strings
+$string['audit'] = 'Auditoría';
+$string['audit_log'] = 'Registro de Auditoría';
+$string['audit_events'] = 'Eventos de Auditoría';
+$string['audit_dashboard'] = 'Panel de Auditoría';
+$string['audit_search'] = 'Buscar en Auditoría';
+$string['audit_filters'] = 'Filtros de Auditoría';
+$string['audit_export'] = 'Exportar Auditoría';
+$string['audit_statistics'] = 'Estadísticas de Auditoría';
+
+// Event Types
+$string['audit_event_folder_created'] = 'Carpeta creada';
+$string['audit_event_folder_deleted'] = 'Carpeta eliminada';
+$string['audit_event_folder_renamed'] = 'Carpeta renombrada';
+$string['audit_event_folder_moved'] = 'Carpeta movida';
+$string['audit_event_folder_blocked'] = 'Carpeta bloqueada';
+$string['audit_event_folder_unblocked'] = 'Carpeta desbloqueada';
+$string['audit_event_item_uploaded'] = 'Elemento subido';
+$string['audit_event_item_deleted'] = 'Elemento eliminado';
+$string['audit_event_item_updated'] = 'Elemento actualizado';
+$string['audit_event_item_shared'] = 'Elemento compartido';
+$string['audit_event_item_unshared'] = 'Elemento descompartido';
+$string['audit_event_item_viewed'] = 'Elemento visualizado';
+$string['audit_event_item_downloaded'] = 'Elemento descargado';
+$string['audit_event_category_created'] = 'Categoría creada';
+$string['audit_event_category_deleted'] = 'Categoría eliminada';
+$string['audit_event_category_updated'] = 'Categoría actualizada';
+$string['audit_event_view_created'] = 'Vista creada';
+$string['audit_event_view_deleted'] = 'Vista eliminada';
+$string['audit_event_view_shared'] = 'Vista compartida';
+$string['audit_event_view_accessed'] = 'Vista accedida';
+$string['audit_event_permission_granted'] = 'Permiso otorgado';
+$string['audit_event_permission_revoked'] = 'Permiso revocado';
+$string['audit_event_data_exported'] = 'Datos exportados';
+$string['audit_event_data_imported'] = 'Datos importados';
+
+// Risk Levels
+$string['audit_risk_low'] = 'Bajo';
+$string['audit_risk_medium'] = 'Medio';
+$string['audit_risk_high'] = 'Alto';
+$string['audit_risk_critical'] = 'Crítico';
+
+// Audit Form Fields
+$string['audit_date_from'] = 'Fecha desde';
+$string['audit_date_to'] = 'Fecha hasta';
+$string['audit_user'] = 'Usuario';
+$string['audit_event_type'] = 'Tipo de evento';
+$string['audit_risk_level'] = 'Nivel de riesgo';
+$string['audit_resource_type'] = 'Tipo de recurso';
+$string['audit_search_text'] = 'Buscar texto';
+$string['audit_apply_filters'] = 'Aplicar filtros';
+$string['audit_clear_filters'] = 'Limpiar filtros';
+$string['audit_results_per_page'] = 'Resultados por página';
+
+// Audit Table Headers
+$string['audit_timestamp'] = 'Fecha y Hora';
+$string['audit_user_name'] = 'Usuario';
+$string['audit_description'] = 'Descripción';
+$string['audit_resource'] = 'Recurso';
+$string['audit_details'] = 'Detalles';
+$string['audit_ip_address'] = 'Dirección IP';
+$string['audit_session'] = 'Sesión';
+
+// Audit Statistics
+$string['audit_total_events'] = 'Total de eventos';
+$string['audit_events_today'] = 'Eventos de hoy';
+$string['audit_events_this_week'] = 'Eventos de esta semana';
+$string['audit_events_this_month'] = 'Eventos de este mes';
+$string['audit_high_risk_events'] = 'Eventos de alto riesgo';
+$string['audit_high_risk_percentage'] = 'Porcentaje de alto riesgo';
+$string['audit_most_active_user'] = 'Usuario más activo';
+$string['audit_most_common_event'] = 'Evento más común';
+$string['audit_recent_activity'] = 'Actividad reciente';
+
+// Messages
+$string['audit_no_events'] = 'No se encontraron eventos de auditoría';
+$string['audit_access_denied'] = 'No tienes permisos para acceder a la auditoría';
+$string['audit_loading'] = 'Cargando datos de auditoría...';
+$string['audit_export_success'] = 'Auditoría exportada exitosamente';
+$string['audit_export_error'] = 'Error al exportar la auditoría';
+$string['audit_invalid_date_range'] = 'Rango de fechas inválido';
+$string['audit_filter_applied'] = 'Filtros aplicados correctamente';
+
+// Permissions
+$string['exaport:viewaudit'] = 'Ver registro de auditoría';
+$string['exaport:exportaudit'] = 'Exportar datos de auditoría';

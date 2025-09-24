@@ -646,6 +646,21 @@ function block_exaport_do_add($post, $blogeditform, $returnurl, $courseid, $text
 
     // Insert the new entry.
     if ($post->id = $DB->insert_record('block_exaportitem', $post)) {
+        
+        // Record audit event for new item
+        try {
+            $auditService = new \block_exaport\audit\application\AuditService();
+            $auditService->recordItemUploaded(
+                $post->id,
+                $post->name,
+                $post->type,
+                $post->categoryid ?: null,
+                ['course_id' => $post->courseid]
+            );
+        } catch (Exception $e) {
+            // Log audit error but don't prevent item creation
+            error_log("Audit error in item.php create: " . $e->getMessage());
+        }
         $postupdate = false;
         foreach ($usetextareas as $fieldname => $usetextarea) {
             if (!$usetextarea) {
@@ -724,6 +739,19 @@ function block_exaport_do_add($post, $blogeditform, $returnurl, $courseid, $text
 function block_exaport_do_delete($post, $returnurl = "", $courseid = 0) {
 
     global $DB, $USER;
+
+    // Record audit event before deletion
+    try {
+        $auditService = new \block_exaport\audit\application\AuditService();
+        $auditService->recordItemDeleted(
+            $post->id,
+            $post->name,
+            ['type' => $post->type, 'category_id' => $post->categoryid, 'course_id' => $post->courseid]
+        );
+    } catch (Exception $e) {
+        // Log audit error but don't prevent deletion
+        error_log("Audit error in item.php delete: " . $e->getMessage());
+    }
 
     // Try to delete the item file.
     block_exaport_file_remove($post);

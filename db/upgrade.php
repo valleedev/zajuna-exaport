@@ -1192,5 +1192,50 @@ function xmldb_block_exaport_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2024102200, 'exaport');
     }
 
+    // Create audit events table.
+    if ($oldversion < 2025092302) {
+        $table = new xmldb_table('block_exaport_audit_events');
+        
+        // Add fields.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('event_type', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('user_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('username', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('user_email', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('user_fullname', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('user_roles', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('user_ip', XMLDB_TYPE_CHAR, '45', null, null, null, null);
+        $table->add_field('user_session_id', XMLDB_TYPE_CHAR, '128', null, null, null, null);
+        $table->add_field('resource_type', XMLDB_TYPE_CHAR, '50', null, null, null, null);
+        $table->add_field('resource_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('resource_name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('resource_url', XMLDB_TYPE_CHAR, '500', null, null, null, null);
+        $table->add_field('resource_parent_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('description', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('metadata', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('risk_level', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'low');
+        $table->add_field('course_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('timestamp', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('created_at', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        
+        // Add keys.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        
+        // Add indexes.
+        $table->add_index('idx_event_type', XMLDB_INDEX_NOTUNIQUE, array('event_type'));
+        $table->add_index('idx_user_id', XMLDB_INDEX_NOTUNIQUE, array('user_id'));
+        $table->add_index('idx_timestamp', XMLDB_INDEX_NOTUNIQUE, array('timestamp'));
+        $table->add_index('idx_risk_level', XMLDB_INDEX_NOTUNIQUE, array('risk_level'));
+        $table->add_index('idx_resource', XMLDB_INDEX_NOTUNIQUE, array('resource_type', 'resource_id'));
+        
+        // Create table if it doesn't exist.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        
+        // Exaport savepoint reached.
+        upgrade_block_savepoint(true, 2025092302, 'exaport');
+    }
+
     return $result;
 }

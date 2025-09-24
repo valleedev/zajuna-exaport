@@ -161,6 +161,21 @@ if ($form->is_cancelled()) {
     // Insert the item
     $insert->id = $DB->insert_record('block_exaportitem', $insert);
     
+    // Record audit event
+    try {
+        $auditService = new \block_exaport\audit\application\AuditService();
+        $auditService->recordItemUploaded(
+            $insert->id,
+            $insert->name,
+            $insert->type,
+            $categoryid,
+            ['file_size' => $filesize, 'original_filename' => $originalfilename]
+        );
+    } catch (Exception $e) {
+        // Log audit error but don't prevent upload
+        error_log("Audit error in upload_file.php: " . $e->getMessage());
+    }
+    
     // Handle file upload using the same method as item.php
     if ($insert->type == 'file' && !empty($data->attachment)) {
         error_log("UPLOAD FILE DEBUG: Saving file with context->id={$context->id}, user_context=" . context_user::instance($USER->id)->id);

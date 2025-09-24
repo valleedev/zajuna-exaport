@@ -792,3 +792,90 @@ $string['course_section'] = 'Course Section';
 $string['course_folder'] = 'Course';
 $string['course_file'] = 'Course File';
 $string['section_files'] = 'Section Files';
+
+// Audit System Strings
+$string['audit'] = 'Audit';
+$string['audit_log'] = 'Audit Log';
+$string['audit_events'] = 'Audit Events';
+$string['audit_dashboard'] = 'Audit Dashboard';
+$string['audit_search'] = 'Audit Search';
+$string['audit_filters'] = 'Audit Filters';
+$string['audit_export'] = 'Export Audit';
+$string['audit_statistics'] = 'Audit Statistics';
+
+// Event Types
+$string['audit_event_folder_created'] = 'Folder created';
+$string['audit_event_folder_deleted'] = 'Folder deleted';
+$string['audit_event_folder_renamed'] = 'Folder renamed';
+$string['audit_event_folder_moved'] = 'Folder moved';
+$string['audit_event_folder_blocked'] = 'Folder blocked';
+$string['audit_event_folder_unblocked'] = 'Folder unblocked';
+$string['audit_event_item_uploaded'] = 'Item uploaded';
+$string['audit_event_item_deleted'] = 'Item deleted';
+$string['audit_event_item_updated'] = 'Item updated';
+$string['audit_event_item_shared'] = 'Item shared';
+$string['audit_event_item_unshared'] = 'Item unshared';
+$string['audit_event_item_viewed'] = 'Item viewed';
+$string['audit_event_item_downloaded'] = 'Item downloaded';
+$string['audit_event_category_created'] = 'Category created';
+$string['audit_event_category_deleted'] = 'Category deleted';
+$string['audit_event_category_updated'] = 'Category updated';
+$string['audit_event_view_created'] = 'View created';
+$string['audit_event_view_deleted'] = 'View deleted';
+$string['audit_event_view_shared'] = 'View shared';
+$string['audit_event_view_accessed'] = 'View accessed';
+$string['audit_event_permission_granted'] = 'Permission granted';
+$string['audit_event_permission_revoked'] = 'Permission revoked';
+$string['audit_event_data_exported'] = 'Data exported';
+$string['audit_event_data_imported'] = 'Data imported';
+
+// Risk Levels
+$string['audit_risk_low'] = 'Low';
+$string['audit_risk_medium'] = 'Medium';
+$string['audit_risk_high'] = 'High';
+$string['audit_risk_critical'] = 'Critical';
+
+// Audit Form Fields
+$string['audit_date_from'] = 'Date from';
+$string['audit_date_to'] = 'Date to';
+$string['audit_user'] = 'User';
+$string['audit_event_type'] = 'Event type';
+$string['audit_risk_level'] = 'Risk level';
+$string['audit_resource_type'] = 'Resource type';
+$string['audit_search_text'] = 'Search text';
+$string['audit_apply_filters'] = 'Apply filters';
+$string['audit_clear_filters'] = 'Clear filters';
+$string['audit_results_per_page'] = 'Results per page';
+
+// Audit Table Headers
+$string['audit_timestamp'] = 'Date & Time';
+$string['audit_user_name'] = 'User';
+$string['audit_description'] = 'Description';
+$string['audit_resource'] = 'Resource';
+$string['audit_details'] = 'Details';
+$string['audit_ip_address'] = 'IP Address';
+$string['audit_session'] = 'Session';
+
+// Audit Statistics
+$string['audit_total_events'] = 'Total events';
+$string['audit_events_today'] = 'Events today';
+$string['audit_events_this_week'] = 'Events this week';
+$string['audit_events_this_month'] = 'Events this month';
+$string['audit_high_risk_events'] = 'High risk events';
+$string['audit_high_risk_percentage'] = 'High risk percentage';
+$string['audit_most_active_user'] = 'Most active user';
+$string['audit_most_common_event'] = 'Most common event';
+$string['audit_recent_activity'] = 'Recent activity';
+
+// Messages
+$string['audit_no_events'] = 'No audit events found';
+$string['audit_access_denied'] = 'You do not have permission to access audit functionality';
+$string['audit_loading'] = 'Loading audit data...';
+$string['audit_export_success'] = 'Audit exported successfully';
+$string['audit_export_error'] = 'Error exporting audit data';
+$string['audit_invalid_date_range'] = 'Invalid date range';
+$string['audit_filter_applied'] = 'Filters applied successfully';
+
+// Permissions
+$string['exaport:viewaudit'] = 'View audit log';
+$string['exaport:exportaudit'] = 'Export audit data';

@@ -162,19 +162,8 @@ if ($form->is_cancelled()) {
     $insert->id = $DB->insert_record('block_exaportitem', $insert);
     
     // Record audit event
-    try {
-        $auditService = new \block_exaport\audit\application\AuditService();
-        $auditService->recordItemUploaded(
-            $insert->id,
-            $insert->name,
-            $insert->type,
-            $categoryid,
-            ['file_size' => $filesize, 'original_filename' => $originalfilename]
-        );
-    } catch (Exception $e) {
-        // Log audit error but don't prevent upload
-        error_log("Audit error in upload_file.php: " . $e->getMessage());
-    }
+    require_once(__DIR__ . '/lib/audit_simple.php');
+    exaport_log_item_uploaded($insert->id, $insert->name, $insert->type, $categoryid, $courseid);
     
     // Handle file upload using the same method as item.php
     if ($insert->type == 'file' && !empty($data->attachment)) {

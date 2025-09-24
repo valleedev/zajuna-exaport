@@ -648,19 +648,8 @@ function block_exaport_do_add($post, $blogeditform, $returnurl, $courseid, $text
     if ($post->id = $DB->insert_record('block_exaportitem', $post)) {
         
         // Record audit event for new item
-        try {
-            $auditService = new \block_exaport\audit\application\AuditService();
-            $auditService->recordItemUploaded(
-                $post->id,
-                $post->name,
-                $post->type,
-                $post->categoryid ?: null,
-                ['course_id' => $post->courseid]
-            );
-        } catch (Exception $e) {
-            // Log audit error but don't prevent item creation
-            error_log("Audit error in item.php create: " . $e->getMessage());
-        }
+        require_once(__DIR__ . '/lib/audit_simple.php');
+        exaport_log_item_uploaded($post->id, $post->name, $post->type, $post->categoryid ?: null, $post->courseid);
         $postupdate = false;
         foreach ($usetextareas as $fieldname => $usetextarea) {
             if (!$usetextarea) {

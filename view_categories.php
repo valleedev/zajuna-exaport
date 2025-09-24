@@ -72,6 +72,11 @@ if ($cataction) {
                     error("Could not insert this category");
                 } else {
                     block_exaport_add_to_log($courseid, "bookmark", "add category", "", $newentry->id);
+                    
+                    // Record audit event for new category
+                    require_once(__DIR__ . '/lib/audit_simple.php');
+                    exaport_log_folder_created($newentry->id, $newentry->name, $newentry->pid ?: null, $courseid);
+                    
                     $message = get_string("categorysaved", "block_exaport");
                 }
                 break;

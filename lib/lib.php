@@ -361,13 +361,21 @@ function block_exaport_import_categories($categoriesstring) {
             $newentry->name = trim($category, '-');
             $newentry->pid = $lastmainid;
             if (!$DB->record_exists('block_exaportcate', array("name" => trim($category, '-')))) {
-                $DB->insert_record("block_exaportcate", $newentry);
+                $subcategory_id = $DB->insert_record("block_exaportcate", $newentry);
+                
+                // Record audit event for default subcategory
+                require_once(__DIR__ . '/audit_simple.php');
+                exaport_log_folder_created($subcategory_id, trim($category, '-'), $lastmainid, 1);
             }
         } else {
             $newentry->name = $category;
             $newentry->pid = 0;
             if (!$DB->record_exists('block_exaportcate', array("name" => $category))) {
                 $lastmainid = $DB->insert_record("block_exaportcate", $newentry);
+                
+                // Record audit event for default main category
+                require_once(__DIR__ . '/audit_simple.php');
+                exaport_log_folder_created($lastmainid, $category, null, 1);
             } else {
                 $lastmainid = $DB->get_field('block_exaportcate', 'id', array("name" => $category));
             }
@@ -1190,6 +1198,10 @@ function block_exaport_create_user_category($title, $userid, $parentid = 0, $cou
         }
         
         $id = $DB->insert_record('block_exaportcate', $new_category);
+
+        // Record audit event for programmatically created category
+        require_once(__DIR__ . '/audit_simple.php');
+        exaport_log_folder_created($id, $title, $parentid ?: null, $courseid);
 
         return $DB->get_record('block_exaportcate', array('id' => $id));
     }

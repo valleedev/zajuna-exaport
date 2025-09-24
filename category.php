@@ -592,18 +592,8 @@ if ($mform->is_cancelled()) {
     
     // Record audit event for new categories
     if ($isNewCategory) {
-        try {
-            $auditService = new \block_exaport\audit\application\AuditService();
-            $auditService->recordFolderCreated(
-                $newentry->id,
-                $newentry->name,
-                $newentry->pid ?: null,
-                ['course_id' => $newentry->courseid]
-            );
-        } catch (Exception $e) {
-            // Log audit error but don't prevent category creation
-            error_log("Audit error in category.php: " . $e->getMessage());
-        }
+        require_once(__DIR__ . '/lib/audit_simple.php');
+        exaport_log_folder_created($newentry->id, $newentry->name, $newentry->pid ?: null, $newentry->courseid);
     }
 
     // Delete all shared users.

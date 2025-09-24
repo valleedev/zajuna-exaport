@@ -438,6 +438,11 @@ $string['audit_next'] = 'Siguiente';
 $string['audit_showing'] = 'Mostrando {$a->from} a {$a->to} de {$a->total}';
 $string['audit_results'] = 'Resultados de Auditoría';
 $string['audit_date'] = 'Fecha';
+$string['audit_all_users'] = 'Todos los Usuarios';
+$string['audit_all_events'] = 'Todos los Eventos';
+$string['audit_all_risks'] = 'Todos los Niveles de Riesgo';
+$string['audit_all_resources'] = 'Todos los Tipos de Recurso';
+$string['audit_no_results'] = 'No se encontraron eventos de auditoría con los filtros seleccionados.';
 
 // Permissions
 $string['exaport:viewaudit'] = 'Ver registro de auditoría';

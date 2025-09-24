@@ -884,6 +884,11 @@ $string['audit_next'] = 'Next';
 $string['audit_showing'] = 'Showing {$a->from} to {$a->to} of {$a->total}';
 $string['audit_results'] = 'Audit Results';
 $string['audit_date'] = 'Date';
+$string['audit_all_users'] = 'All Users';
+$string['audit_all_events'] = 'All Events';
+$string['audit_all_risks'] = 'All Risk Levels';
+$string['audit_all_resources'] = 'All Resource Types';
+$string['audit_no_results'] = 'No audit events found with the selected filters.';
 
 // Permissions
 $string['exaport:viewaudit'] = 'View audit log';

@@ -819,10 +819,16 @@ if ($type == 'mine') {
 use block_exaport\audit\application\AuditService;
 if (AuditService::canUserAccessAudit()) {
     echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/audit.php?courseid=' . $courseid . '">'
-        . '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-        . '<path d="M9 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3"></path>'
-        . '<path d="M9 15h3l8.5-8.5a2.1 2.1 0 0 0-3-3L9 12v3z"></path>'
-        . '<path d="M16 5l3 3"></path>'
+        . '<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">'
+        . '<g>'
+        . '<path class="cls-1" fill="#00304d" d="M16.92,14.81c.38.42.79.82,1.19,1.23.16-.1.62-.75.8-.65l10.58,10.64-3.63,3.74-10.75-10.62s-.02-.07,0-.12c.06-.12.63-.57.63-.63l-1.32-1.32c-.66.17-1.29.51-2.01.57-7.2.59-8.7-9.23-2.36-11.09,4.88-1.44,9.02,3.59,6.7,8.08,0,.1.1.12.16.17ZM11.36,7.74c-5.52.48-4.92,8.81.58,8.53s5.13-9.03-.58-8.53ZM15.9,15.86l-.34.32,2.21,2.21c0,.06-.57.51-.63.63-.02.05-.04.07,0,.12l8.72,8.59,1.68-1.68-8.71-8.7-.71.65-2.22-2.14Z"/>'
+        . '<path class="cls-1" fill="#00304d" d="M5.75,1.03v1.2h-3.32c-.22,0-.7.38-.75.63-.11,8.11-.07,16.25-.02,24.36.16.42.5.63.95.67h17.85s.47-.11.47-.11l.88.86c-.3.25-.72.42-1.1.45H2.42c-.97-.08-1.72-.75-1.98-1.67-.15-8.2-.13-16.46-.01-24.66.07-.68,1.08-1.72,1.75-1.72h3.56Z"/>'
+        . '<path class="cls-1" fill="#00304d" d="M22.69,17.17c-.26-.28-1.2-1.01-1.25-1.35V3.03c.02-.32-.54-.81-.81-.81h-3.32v-1.2h3.56c.74,0,1.83,1.21,1.83,1.94v14.2Z"/>'
+        . '<rect class="cls-2" fill="#39a900" x="6.05" y="24.11" width="7.78" height="1.02"/>'
+        . '<rect class="cls-2" fill="#39a900" x="6.05" y="22.2" width="7.01" height="1.02"/>'
+        . '<rect class="cls-2" fill="#39a900" x="6.05" y="20.28" width="5.33" height="1.02"/>'
+        . '</g>'
+        . '<rect class="cls-2" fill="#39a900" x="7.12" y=".64" width="8.81" height="2.28"/>'
         . '</svg>'
         . '<br />' . get_string("audit", "block_exaport") . "</a></span>";
 }

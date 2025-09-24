@@ -353,7 +353,8 @@ $string['audit_events'] = 'Eventos de Auditoría';
 $string['audit_dashboard'] = 'Panel de Auditoría';
 $string['audit_search'] = 'Buscar en Auditoría';
 $string['audit_filters'] = 'Filtros de Auditoría';
-$string['audit_export'] = 'Exportar Auditoría';
+$string['audit_export'] = 'Exportar CSV';
+$string['audit'] = 'Auditoría';
 $string['audit_statistics'] = 'Estadísticas de Auditoría';
 
 // Event Types
@@ -429,6 +430,18 @@ $string['audit_export_error'] = 'Error al exportar la auditoría';
 $string['audit_invalid_date_range'] = 'Rango de fechas inválido';
 $string['audit_filter_applied'] = 'Filtros aplicados correctamente';
 
+// Additional audit strings
+$string['audit_search_placeholder'] = 'Buscar en descripción, recurso o usuario...';
+$string['audit_pagination'] = 'Paginación de auditoría';
+$string['audit_previous'] = 'Anterior';
+$string['audit_next'] = 'Siguiente';
+$string['audit_showing'] = 'Mostrando {$a->from} a {$a->to} de {$a->total}';
+$string['audit_results'] = 'Resultados de Auditoría';
+$string['audit_date'] = 'Fecha';
+
 // Permissions
 $string['exaport:viewaudit'] = 'Ver registro de auditoría';
 $string['exaport:exportaudit'] = 'Exportar datos de auditoría';
+
+// Navigation
+$string['audit'] = 'Auditoría';

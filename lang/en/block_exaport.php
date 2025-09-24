@@ -876,6 +876,18 @@ $string['audit_export_error'] = 'Error exporting audit data';
 $string['audit_invalid_date_range'] = 'Invalid date range';
 $string['audit_filter_applied'] = 'Filters applied successfully';
 
+// Additional audit strings
+$string['audit_search_placeholder'] = 'Search in description, resource or user...';
+$string['audit_pagination'] = 'Audit pagination';
+$string['audit_previous'] = 'Previous';
+$string['audit_next'] = 'Next';
+$string['audit_showing'] = 'Showing {$a->from} to {$a->to} of {$a->total}';
+$string['audit_results'] = 'Audit Results';
+$string['audit_date'] = 'Date';
+
 // Permissions
 $string['exaport:viewaudit'] = 'View audit log';
 $string['exaport:exportaudit'] = 'Export audit data';
+
+// Navigation
+$string['audit'] = 'Audit';

@@ -3605,7 +3605,12 @@ function block_exaport_get_user_course_folders($userid = null, $courseid = null)
         $folder->pid = 0; // Course folders are always at root level
         $folder->item_cnt = 0; // Will be updated later if needed
         $folder->type = 'course_folder';
-        $folder->icon = 'fa-graduation-cap'; // Course icon
+        // Course folder - use custom SVG icon
+        error_log("ICON DEBUG: Applying COURSE SVG icon to course folder {$folder->id} (Course: {$course->fullname})");
+        $folder->icon = '<svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100">'
+            . '<path fill="#00304d" d="M90.1,38.9h6.6c1.3,0,3.4,2.5,3.3,3.9v40.5c-.6,6.1-5.2,10.9-11.4,11.4H11.2c-6-.7-10.6-5.2-11.2-11.2V31.6c-.2-1.4,2-3.9,3.3-3.9h6.2l.3-.3V10.2c0-2.2,3.6-5,5.8-4.9h68.3c2.1,0,4.3,1.2,5.4,3.1.1.2.8,1.8.8,1.9v28.7h0ZM86.9,15.9v-5.3c0-.6-1.5-2.1-2.2-2H16c-.9-.3-2.9,1.2-2.9,2v5.3h73.8ZM86.9,19.2H13.1v1.6h73.8v-1.6ZM86.9,23.8H13.1v3.8h15.8l.8.6,9.3,10.7h47.9v-15.1h0ZM4,30.9l-.8,1.1v51.4c.5,4.3,4,7.8,8.4,8.2h76.8c4.4-.3,8-4,8.4-8.4v-40.4c-.1,0-.6-.5-.6-.5h-58.1c0-.1-.7-.4-.7-.4l-9.6-10.9H4Z"/>'
+            . '<rect fill="#39a900" x="13.1" y="19.2" width="73.8" height="1.6"/>'
+            . '</svg>';
         $folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $courseid . 
                       '&categoryid=course_' . $course->id;
         $coursefolders[$folder->id] = $folder;

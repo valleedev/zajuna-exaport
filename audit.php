@@ -16,119 +16,151 @@
 
 require_once(__DIR__ . '/inc.php');
 
-use block_exaport\audit\application\AuditService;
-use block_exaport\audit\domain\AuditEventSearchCriteria;
-use block_exaport\audit\domain\valueobjects\EventType;
-use block_exaport\audit\domain\valueobjects\RiskLevel;
+use block_exaport\globals as g;
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
-$action = optional_param('action', 'list', PARAM_ALPHA);
-
-// Form parameters
-$date_from = optional_param('date_from', '', PARAM_RAW);
-$date_to = optional_param('date_to', '', PARAM_RAW);
+$date_from = optional_param('date_from', '', PARAM_TEXT);
+$date_to = optional_param('date_to', '', PARAM_TEXT);
 $user_id = optional_param('user_id', 0, PARAM_INT);
-$event_type = optional_param('event_type', '', PARAM_ALPHA);
-$risk_level = optional_param('risk_level', '', PARAM_ALPHA);
-$resource_type = optional_param('resource_type', '', PARAM_ALPHA);
-$search_text = optional_param('search_text', '', PARAM_RAW);
+$event_type = optional_param('event_type', '', PARAM_TEXT);
+$risk_level = optional_param('risk_level', '', PARAM_TEXT);
+$resource_type = optional_param('resource_type', '', PARAM_TEXT);
+$search_text = optional_param('search_text', '', PARAM_TEXT);
 $page = optional_param('page', 0, PARAM_INT);
-$per_page = optional_param('per_page', 50, PARAM_INT);
+$perpage = optional_param('perpage', 50, PARAM_INT);
+$action = optional_param('action', '', PARAM_TEXT);
 
+// Login like view_items.php
 block_exaport_require_login($courseid);
 
-// Check permissions
-if (!AuditService::canUserAccessAudit()) {
-    throw new moodle_exception('audit_access_denied', 'block_exaport');
+$context = context_system::instance();
+
+// Check capability to view audit logs
+require_capability('block/exaport:viewaudit', $context);
+
+// Get courseid parameter like view_items.php - make it optional for direct access
+if (!$courseid) {
+    $courseid = optional_param('courseid', 1, PARAM_INT); // Default to course 1 if not provided
 }
 
-$context = context_system::instance();
+// Set page URL - ensure it's a local URL like view_items.php
+$page_url = '/blocks/exaport/audit.php';
+$url_params = array('courseid' => $courseid);
+$PAGE->set_url(new moodle_url($page_url, $url_params));
 $PAGE->set_context($context);
-$PAGE->set_url('/blocks/exaport/audit.php', ['courseid' => $courseid]);
-$PAGE->set_title(get_string('audit_log', 'block_exaport'));
-$PAGE->set_heading(get_string('audit_log', 'block_exaport'));
 
-// Handle export action
+// Add iconpack like view_items.php
+block_exaport_add_iconpack();
+
+// Export CSV if requested
 if ($action === 'export') {
-    require_capability('block/exaport:exportaudit', $context);
-    
-    $auditService = new AuditService();
-    
-    // Build search criteria from form
-    $criteria = new AuditEventSearchCriteria();
+    // Build WHERE conditions for export
+    $where_conditions = [];
+    $params = [];
     
     if (!empty($date_from)) {
-        $from = DateTime::createFromFormat('Y-m-d', $date_from);
-        if ($from) {
-            $criteria = $criteria->withDateRange(
-                DateTimeImmutable::createFromMutable($from->setTime(0, 0, 0)),
-                !empty($date_to) ? 
-                    DateTimeImmutable::createFromMutable(DateTime::createFromFormat('Y-m-d', $date_to)->setTime(23, 59, 59)) :
-                    new DateTimeImmutable()
-            );
+        $from_timestamp = strtotime($date_from . ' 00:00:00');
+        if ($from_timestamp) {
+            $where_conditions[] = 'ae.occurred_at >= ?';
+            $params[] = $from_timestamp;
+        }
+    }
+    
+    if (!empty($date_to)) {
+        $to_timestamp = strtotime($date_to . ' 23:59:59');
+        if ($to_timestamp) {
+            $where_conditions[] = 'ae.occurred_at <= ?';
+            $params[] = $to_timestamp;
         }
     }
     
     if ($user_id > 0) {
-        $criteria = $criteria->withUserId($user_id);
+        $where_conditions[] = 'ae.user_id = ?';
+        $params[] = $user_id;
     }
     
     if (!empty($event_type)) {
-        $criteria = $criteria->withEventType(EventType::fromString($event_type));
+        $where_conditions[] = 'ae.event_type = ?';
+        $params[] = $event_type;
     }
     
     if (!empty($risk_level)) {
-        $criteria = $criteria->withRiskLevel(RiskLevel::fromString($risk_level));
+        $where_conditions[] = 'ae.risk_level = ?';
+        $params[] = $risk_level;
     }
     
     if (!empty($resource_type)) {
-        $criteria = $criteria->withResource($resource_type);
+        $where_conditions[] = 'ae.resource_type = ?';
+        $params[] = $resource_type;
     }
     
     if (!empty($search_text)) {
-        $criteria = $criteria->withSearchText($search_text);
+        $where_conditions[] = '(ae.metadata LIKE ? OR u.username LIKE ? OR u.firstname LIKE ? OR u.lastname LIKE ?)';
+        $search_param = '%' . $search_text . '%';
+        $params[] = $search_param;
+        $params[] = $search_param;
+        $params[] = $search_param;
+        $params[] = $search_param;
     }
     
-    // Set large limit for export
-    $criteria = $criteria->withLimit(10000);
+    $where_clause = '';
+    if (!empty($where_conditions)) {
+        $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
+    }
     
-    $exportData = $auditService->exportEventsForCompliance(
-        $criteria->getFromDate() ?? new DateTimeImmutable('-30 days'),
-        $criteria->getToDate() ?? new DateTimeImmutable(),
-        $criteria->getUserId()
-    );
+    $sql = "SELECT ae.*, u.username, u.firstname, u.lastname, u.email
+            FROM {block_exaport_audit_events} ae
+            LEFT JOIN {user} u ON ae.user_id = u.id
+            $where_clause
+            ORDER BY ae.occurred_at DESC";
     
-    // Generate CSV export
-    $filename = 'audit_export_' . date('Y-m-d_H-i-s') . '.csv';
+    $events = $DB->get_records_sql($sql, $params);
     
+    // Set CSV headers
     header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Disposition: attachment; filename="audit_log_' . date('Y-m-d_H-i-s') . '.csv"');
     
     $output = fopen('php://output', 'w');
     
-    // CSV headers
+    // CSV header
     fputcsv($output, [
-        get_string('audit_timestamp', 'block_exaport'),
-        get_string('audit_event_type', 'block_exaport'),
-        get_string('audit_risk_level', 'block_exaport'),
-        get_string('audit_user_name', 'block_exaport'),
-        get_string('audit_resource', 'block_exaport'),
-        get_string('audit_description', 'block_exaport'),
-        get_string('audit_ip_address', 'block_exaport'),
-        get_string('audit_session', 'block_exaport')
+        block_exaport_get_string('audit_date'),
+        block_exaport_get_string('audit_user'),
+        block_exaport_get_string('audit_event_type'),
+        block_exaport_get_string('audit_resource_type'),
+        'Resource ID',
+        block_exaport_get_string('audit_risk_level'),
+        'Resource Name',
+        'Description',
+        'IP Address',
+        'User Agent',
+        'Session ID',
+        'Course ID',
+        'Timestamp',
+        'Formatted Date'
     ]);
     
     // CSV data
-    foreach ($exportData as $row) {
+    foreach ($events as $event) {
+        $metadata = json_decode($event->metadata, true);
+        $resource_name = isset($metadata['resource_name']) ? $metadata['resource_name'] : '';
+        $description = isset($metadata['description']) ? $metadata['description'] : '';
+        
         fputcsv($output, [
-            $row['timestamp'],
-            $row['event_type'],
-            $row['risk_level'],
-            $row['username'] . ' (' . $row['user_email'] . ')',
-            $row['resource_type'] . ': ' . $row['resource_name'],
-            $row['description'],
-            $row['ip_address'] ?? '',
-            $row['session_id'] ?? ''
+            date('Y-m-d H:i:s', $event->occurred_at),
+            $event->firstname . ' ' . $event->lastname . ' (' . $event->username . ')',
+            ucfirst(str_replace('_', ' ', $event->event_type)),
+            ucfirst($event->resource_type),
+            $event->resource_id,
+            ucfirst($event->risk_level),
+            $resource_name,
+            $description,
+            $event->ip_address,
+            $event->user_agent,
+            $event->session_id,
+            $event->course_id,
+            $event->occurred_at,
+            date('Y-m-d H:i:s', $event->occurred_at)
         ]);
     }
     
@@ -136,330 +168,369 @@ if ($action === 'export') {
     exit;
 }
 
-// Initialize audit service
-$auditService = new AuditService();
+// Use exaport header with navigation
+block_exaport_print_header("audit");
 
-// Build search criteria
-$criteria = new AuditEventSearchCriteria();
+// Get users for filter dropdown
+$users = $DB->get_records_sql("
+    SELECT DISTINCT u.id, u.username, u.firstname, u.lastname 
+    FROM {user} u 
+    INNER JOIN {block_exaport_audit_events} ae ON u.id = ae.user_id 
+    ORDER BY u.lastname, u.firstname
+");
+
+// Get event types for filter dropdown
+$event_types = $DB->get_records_sql("
+    SELECT DISTINCT event_type 
+    FROM {block_exaport_audit_events} 
+    ORDER BY event_type
+");
+
+// Get risk levels for filter dropdown
+$risk_levels = $DB->get_records_sql("
+    SELECT DISTINCT risk_level 
+    FROM {block_exaport_audit_events} 
+    ORDER BY risk_level
+");
+
+// Get resource types for filter dropdown
+$resource_types = $DB->get_records_sql("
+    SELECT DISTINCT resource_type 
+    FROM {block_exaport_audit_events} 
+    ORDER BY resource_type
+");
+
+?>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2><?php echo block_exaport_get_string('audit_log'); ?></h2>
+            
+            <!-- Filters Form -->
+            <form method="get" action="audit.php" class="mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><?php echo block_exaport_get_string('audit_filters'); ?></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="date_from"><?php echo block_exaport_get_string('audit_date_from'); ?>:</label>
+                                    <input type="date" class="form-control" id="date_from" name="date_from" value="<?php echo s($date_from); ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="date_to"><?php echo block_exaport_get_string('audit_date_to'); ?>:</label>
+                                    <input type="date" class="form-control" id="date_to" name="date_to" value="<?php echo s($date_to); ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="user_id"><?php echo block_exaport_get_string('audit_user'); ?>:</label>
+                                    <select class="form-control" id="user_id" name="user_id">
+                                        <option value="0"><?php echo block_exaport_get_string('audit_all_users'); ?></option>
+                                        <?php foreach ($users as $user): ?>
+                                            <option value="<?php echo $user->id; ?>" <?php echo ($user_id == $user->id) ? 'selected' : ''; ?>>
+                                                <?php echo s($user->firstname . ' ' . $user->lastname . ' (' . $user->username . ')'); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="event_type"><?php echo block_exaport_get_string('audit_event_type'); ?>:</label>
+                                    <select class="form-control" id="event_type" name="event_type">
+                                        <option value=""><?php echo block_exaport_get_string('audit_all_events'); ?></option>
+                                        <?php foreach ($event_types as $type): ?>
+                                            <option value="<?php echo s($type->event_type); ?>" <?php echo ($event_type == $type->event_type) ? 'selected' : ''; ?>>
+                                                <?php echo s(ucfirst(str_replace('_', ' ', $type->event_type))); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="risk_level"><?php echo block_exaport_get_string('audit_risk_level'); ?>:</label>
+                                    <select class="form-control" id="risk_level" name="risk_level">
+                                        <option value=""><?php echo block_exaport_get_string('audit_all_risks'); ?></option>
+                                        <?php foreach ($risk_levels as $risk): ?>
+                                            <option value="<?php echo s($risk->risk_level); ?>" <?php echo ($risk_level == $risk->risk_level) ? 'selected' : ''; ?>>
+                                                <?php echo s(ucfirst($risk->risk_level)); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="resource_type"><?php echo block_exaport_get_string('audit_resource_type'); ?>:</label>
+                                    <select class="form-control" id="resource_type" name="resource_type">
+                                        <option value=""><?php echo block_exaport_get_string('audit_all_resources'); ?></option>
+                                        <?php foreach ($resource_types as $resource): ?>
+                                            <option value="<?php echo s($resource->resource_type); ?>" <?php echo ($resource_type == $resource->resource_type) ? 'selected' : ''; ?>>
+                                                <?php echo s(ucfirst($resource->resource_type)); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="search_text"><?php echo block_exaport_get_string('audit_search_text'); ?>:</label>
+                                    <input type="text" class="form-control" id="search_text" name="search_text" value="<?php echo s($search_text); ?>" placeholder="<?php echo block_exaport_get_string('audit_search_placeholder'); ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary"><?php echo block_exaport_get_string('audit_search'); ?></button>
+                                        <button type="submit" name="action" value="export" class="btn btn-secondary"><?php echo block_exaport_get_string('audit_export'); ?></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+<?php
+
+// Build WHERE conditions for search
+$where_conditions = [];
+$params = [];
 
 if (!empty($date_from)) {
-    $from = DateTime::createFromFormat('Y-m-d', $date_from);
-    if ($from) {
-        $to = !empty($date_to) ? DateTime::createFromFormat('Y-m-d', $date_to) : new DateTime();
-        $criteria = $criteria->withDateRange(
-            DateTimeImmutable::createFromMutable($from->setTime(0, 0, 0)),
-            DateTimeImmutable::createFromMutable($to->setTime(23, 59, 59))
-        );
+    $from_timestamp = strtotime($date_from . ' 00:00:00');
+    if ($from_timestamp) {
+        $where_conditions[] = 'ae.occurred_at >= ?';
+        $params[] = $from_timestamp;
+    }
+}
+
+if (!empty($date_to)) {
+    $to_timestamp = strtotime($date_to . ' 23:59:59');
+    if ($to_timestamp) {
+        $where_conditions[] = 'ae.occurred_at <= ?';
+        $params[] = $to_timestamp;
     }
 }
 
 if ($user_id > 0) {
-    $criteria = $criteria->withUserId($user_id);
+    $where_conditions[] = 'ae.user_id = ?';
+    $params[] = $user_id;
 }
 
 if (!empty($event_type)) {
-    $criteria = $criteria->withEventType(EventType::fromString($event_type));
+    $where_conditions[] = 'ae.event_type = ?';
+    $params[] = $event_type;
 }
 
 if (!empty($risk_level)) {
-    $criteria = $criteria->withRiskLevel(RiskLevel::fromString($risk_level));
+    $where_conditions[] = 'ae.risk_level = ?';
+    $params[] = $risk_level;
 }
 
 if (!empty($resource_type)) {
-    $criteria = $criteria->withResource($resource_type);
+    $where_conditions[] = 'ae.resource_type = ?';
+    $params[] = $resource_type;
 }
 
 if (!empty($search_text)) {
-    $criteria = $criteria->withSearchText($search_text);
+    $where_conditions[] = '(ae.metadata LIKE ? OR u.username LIKE ? OR u.firstname LIKE ? OR u.lastname LIKE ?)';
+    $search_param = '%' . $search_text . '%';
+    $params[] = $search_param;
+    $params[] = $search_param;
+    $params[] = $search_param;
+    $params[] = $search_param;
 }
 
-// Set pagination
-$criteria = $criteria->withLimit($per_page)->withOffset($page * $per_page);
-
-// Get filtered results
-$searchResult = $auditService->getFilteredEvents($criteria);
-$events = $searchResult->getEvents();
-$totalCount = $searchResult->getTotalCount();
-
-// Get statistics for dashboard
-$statistics = $auditService->getStatistics();
-
-block_exaport_print_header('audit_log');
-
-echo $OUTPUT->heading(get_string('audit_log', 'block_exaport'));
-
-// Statistics dashboard
-echo '<div class="row mb-4">';
-echo '<div class="col-md-3"><div class="card text-center"><div class="card-body">';
-echo '<h5 class="card-title">' . $statistics->getTotalEvents() . '</h5>';
-echo '<p class="card-text">' . get_string('audit_total_events', 'block_exaport') . '</p>';
-echo '</div></div></div>';
-
-echo '<div class="col-md-3"><div class="card text-center"><div class="card-body">';
-echo '<h5 class="card-title">' . $statistics->getEventsToday() . '</h5>';
-echo '<p class="card-text">' . get_string('audit_events_today', 'block_exaport') . '</p>';
-echo '</div></div></div>';
-
-echo '<div class="col-md-3"><div class="card text-center"><div class="card-body">';
-echo '<h5 class="card-title">' . $statistics->getHighRiskEvents() . '</h5>';
-echo '<p class="card-text">' . get_string('audit_high_risk_events', 'block_exaport') . '</p>';
-echo '</div></div></div>';
-
-echo '<div class="col-md-3"><div class="card text-center"><div class="card-body">';
-echo '<h5 class="card-title">' . number_format($statistics->getHighRiskPercentage(), 1) . '%</h5>';
-echo '<p class="card-text">' . get_string('audit_high_risk_percentage', 'block_exaport') . '</p>';
-echo '</div></div></div>';
-echo '</div>';
-
-// Search form
-echo '<div class="card mb-4">';
-echo '<div class="card-header">';
-echo '<h5>' . get_string('audit_filters', 'block_exaport') . '</h5>';
-echo '</div>';
-echo '<div class="card-body">';
-
-echo '<form method="get" action="' . $CFG->wwwroot . '/blocks/exaport/audit.php">';
-echo '<input type="hidden" name="courseid" value="' . $courseid . '">';
-
-echo '<div class="row">';
-
-// Date from
-echo '<div class="col-md-3">';
-echo '<label for="date_from">' . get_string('audit_date_from', 'block_exaport') . '</label>';
-echo '<input type="date" class="form-control" id="date_from" name="date_from" value="' . s($date_from) . '">';
-echo '</div>';
-
-// Date to
-echo '<div class="col-md-3">';
-echo '<label for="date_to">' . get_string('audit_date_to', 'block_exaport') . '</label>';
-echo '<input type="date" class="form-control" id="date_to" name="date_to" value="' . s($date_to) . '">';
-echo '</div>';
-
-// Event type
-echo '<div class="col-md-3">';
-echo '<label for="event_type">' . get_string('audit_event_type', 'block_exaport') . '</label>';
-echo '<select class="form-control" id="event_type" name="event_type">';
-echo '<option value="">' . get_string('all') . '</option>';
-$eventTypes = EventType::getAllValidTypes();
-foreach ($eventTypes as $type) {
-    $selected = $event_type === $type ? 'selected' : '';
-    $eventTypeObj = EventType::fromString($type);
-    echo '<option value="' . $type . '" ' . $selected . '>' . $eventTypeObj->getDescription() . '</option>';
-}
-echo '</select>';
-echo '</div>';
-
-// Risk level
-echo '<div class="col-md-3">';
-echo '<label for="risk_level">' . get_string('audit_risk_level', 'block_exaport') . '</label>';
-echo '<select class="form-control" id="risk_level" name="risk_level">';
-echo '<option value="">' . get_string('all') . '</option>';
-$riskLevels = ['low', 'medium', 'high', 'critical'];
-foreach ($riskLevels as $risk) {
-    $selected = $risk_level === $risk ? 'selected' : '';
-    echo '<option value="' . $risk . '" ' . $selected . '>' . get_string('audit_risk_' . $risk, 'block_exaport') . '</option>';
-}
-echo '</select>';
-echo '</div>';
-
-echo '</div>'; // End row
-
-echo '<div class="row mt-3">';
-
-// Search text
-echo '<div class="col-md-6">';
-echo '<label for="search_text">' . get_string('audit_search_text', 'block_exaport') . '</label>';
-echo '<input type="text" class="form-control" id="search_text" name="search_text" value="' . s($search_text) . '" placeholder="' . get_string('search') . '...">';
-echo '</div>';
-
-// Results per page
-echo '<div class="col-md-3">';
-echo '<label for="per_page">' . get_string('audit_results_per_page', 'block_exaport') . '</label>';
-echo '<select class="form-control" id="per_page" name="per_page">';
-$perPageOptions = [25, 50, 100, 200];
-foreach ($perPageOptions as $option) {
-    $selected = $per_page == $option ? 'selected' : '';
-    echo '<option value="' . $option . '" ' . $selected . '>' . $option . '</option>';
-}
-echo '</select>';
-echo '</div>';
-
-echo '<div class="col-md-3 d-flex align-items-end">';
-echo '<button type="submit" class="btn btn-primary mr-2">' . get_string('audit_apply_filters', 'block_exaport') . '</button>';
-echo '<a href="' . $CFG->wwwroot . '/blocks/exaport/audit.php?courseid=' . $courseid . '" class="btn btn-secondary">' . get_string('audit_clear_filters', 'block_exaport') . '</a>';
-echo '</div>';
-
-echo '</div>'; // End row
-
-echo '</form>';
-echo '</div>'; // End card-body
-echo '</div>'; // End card
-
-// Export button (if user has permission)
-if (has_capability('block/exaport:exportaudit', $context)) {
-    echo '<div class="mb-3">';
-    echo '<a href="' . $CFG->wwwroot . '/blocks/exaport/audit.php?action=export&courseid=' . $courseid . 
-         '&date_from=' . urlencode($date_from) . '&date_to=' . urlencode($date_to) . 
-         '&user_id=' . $user_id . '&event_type=' . urlencode($event_type) . 
-         '&risk_level=' . urlencode($risk_level) . '&resource_type=' . urlencode($resource_type) . 
-         '&search_text=' . urlencode($search_text) . '" class="btn btn-success">';
-    echo get_string('audit_export', 'block_exaport') . '</a>';
-    echo '</div>';
+$where_clause = '';
+if (!empty($where_conditions)) {
+    $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
 }
 
-// Results table
-echo '<div class="card">';
-echo '<div class="card-header d-flex justify-content-between align-items-center">';
-echo '<h5>' . get_string('audit_events', 'block_exaport') . ' (' . $totalCount . ')</h5>';
-echo '</div>';
+// Count total records for pagination
+$count_sql = "SELECT COUNT(*)
+              FROM {block_exaport_audit_events} ae
+              LEFT JOIN {user} u ON ae.user_id = u.id
+              $where_clause";
 
-if (empty($events)) {
-    echo '<div class="card-body text-center">';
-    echo '<p class="text-muted">' . get_string('audit_no_events', 'block_exaport') . '</p>';
-    echo '</div>';
-} else {
-    echo '<div class="table-responsive">';
-    echo '<table class="table table-striped table-hover">';
-    echo '<thead class="thead-light">';
-    echo '<tr>';
-    echo '<th>' . get_string('audit_timestamp', 'block_exaport') . '</th>';
-    echo '<th>' . get_string('audit_event_type', 'block_exaport') . '</th>';
-    echo '<th>' . get_string('audit_risk_level', 'block_exaport') . '</th>';
-    echo '<th>' . get_string('audit_user_name', 'block_exaport') . '</th>';
-    echo '<th>' . get_string('audit_resource', 'block_exaport') . '</th>';
-    echo '<th>' . get_string('audit_description', 'block_exaport') . '</th>';
-    echo '<th>' . get_string('audit_details', 'block_exaport') . '</th>';
-    echo '</tr>';
-    echo '</thead>';
-    echo '<tbody>';
-    
-    foreach ($events as $event) {
-        echo '<tr>';
-        
-        // Timestamp
-        echo '<td>';
-        echo '<small>' . $event->getTimestamp()->format('Y-m-d H:i:s') . '</small>';
-        echo '</td>';
-        
-        // Event type
-        echo '<td>';
-        echo '<span class="badge badge-info">' . $event->getEventType()->getDescription() . '</span>';
-        echo '</td>';
-        
-        // Risk level
-        echo '<td>';
-        $riskBadgeClass = [
-            'low' => 'success',
-            'medium' => 'warning',
-            'high' => 'danger',
-            'critical' => 'dark'
-        ][$event->getRiskLevel()->value()] ?? 'secondary';
-        echo '<span class="badge badge-' . $riskBadgeClass . '">' . 
-             get_string('audit_risk_' . $event->getRiskLevel()->value(), 'block_exaport') . '</span>';
-        echo '</td>';
-        
-        // User
-        echo '<td>';
-        echo '<strong>' . s($event->getUserContext()->getFullName()) . '</strong><br>';
-        echo '<small class="text-muted">' . s($event->getUserContext()->getUsername()) . '</small>';
-        echo '</td>';
-        
-        // Resource
-        echo '<td>';
-        echo '<strong>' . s($event->getResourceContext()->getResourceName()) . '</strong><br>';
-        echo '<small class="text-muted">' . s($event->getResourceContext()->getResourceType()) . '</small>';
-        echo '</td>';
-        
-        // Description
-        echo '<td>';
-        echo s($event->getDescription());
-        echo '</td>';
-        
-        // Details
-        echo '<td>';
-        if ($event->getUserContext()->getIpAddress()) {
-            echo '<small><strong>IP:</strong> ' . s($event->getUserContext()->getIpAddress()) . '</small><br>';
-        }
-        if ($event->getSessionId()) {
-            echo '<small><strong>Session:</strong> ' . substr(s($event->getSessionId()), 0, 8) . '...</small>';
-        }
-        echo '</td>';
-        
-        echo '</tr>';
-    }
-    
-    echo '</tbody>';
-    echo '</table>';
-    echo '</div>'; // End table-responsive
-}
+$total_count = $DB->count_records_sql($count_sql, $params);
 
-echo '</div>'; // End card
+// Get audit events with pagination
+$sql = "SELECT ae.*, u.username, u.firstname, u.lastname, u.email
+        FROM {block_exaport_audit_events} ae
+        LEFT JOIN {user} u ON ae.user_id = u.id
+        $where_clause
+        ORDER BY ae.occurred_at DESC";
 
-// Pagination
-if ($totalCount > $per_page) {
-    $totalPages = ceil($totalCount / $per_page);
-    
-    echo '<nav aria-label="Audit pagination" class="mt-3">';
-    echo '<ul class="pagination justify-content-center">';
-    
-    // Previous button
-    if ($page > 0) {
-        $prevUrl = $CFG->wwwroot . '/blocks/exaport/audit.php?' . http_build_query([
-            'courseid' => $courseid,
-            'date_from' => $date_from,
-            'date_to' => $date_to,
-            'user_id' => $user_id,
-            'event_type' => $event_type,
-            'risk_level' => $risk_level,
-            'resource_type' => $resource_type,
-            'search_text' => $search_text,
-            'per_page' => $per_page,
-            'page' => $page - 1
-        ]);
-        echo '<li class="page-item"><a class="page-link" href="' . $prevUrl . '">' . get_string('previous') . '</a></li>';
-    }
-    
-    // Page numbers
-    $startPage = max(0, $page - 2);
-    $endPage = min($totalPages - 1, $page + 2);
-    
-    for ($i = $startPage; $i <= $endPage; $i++) {
-        $pageUrl = $CFG->wwwroot . '/blocks/exaport/audit.php?' . http_build_query([
-            'courseid' => $courseid,
-            'date_from' => $date_from,
-            'date_to' => $date_to,
-            'user_id' => $user_id,
-            'event_type' => $event_type,
-            'risk_level' => $risk_level,
-            'resource_type' => $resource_type,
-            'search_text' => $search_text,
-            'per_page' => $per_page,
-            'page' => $i
-        ]);
-        
-        $activeClass = $i == $page ? ' active' : '';
-        echo '<li class="page-item' . $activeClass . '"><a class="page-link" href="' . $pageUrl . '">' . ($i + 1) . '</a></li>';
-    }
-    
-    // Next button
-    if ($page < $totalPages - 1) {
-        $nextUrl = $CFG->wwwroot . '/blocks/exaport/audit.php?' . http_build_query([
-            'courseid' => $courseid,
-            'date_from' => $date_from,
-            'date_to' => $date_to,
-            'user_id' => $user_id,
-            'event_type' => $event_type,
-            'risk_level' => $risk_level,
-            'resource_type' => $resource_type,
-            'search_text' => $search_text,
-            'per_page' => $per_page,
-            'page' => $page + 1
-        ]);
-        echo '<li class="page-item"><a class="page-link" href="' . $nextUrl . '">' . get_string('next') . '</a></li>';
-    }
-    
-    echo '</ul>';
-    echo '</nav>';
-}
+$events = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
 
-echo $OUTPUT->footer();
+?>
+
+            <!-- Results Card -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><?php echo block_exaport_get_string('audit_results'); ?> (<?php echo $total_count; ?>)</h5>
+                    <?php if ($total_count > 0): ?>
+                        <div class="btn-group">
+                            <a href="<?php echo $PAGE->url->out(false, array('action' => 'export') + $_GET); ?>" class="btn btn-sm btn-outline-secondary">
+                                <i class="fa fa-download"></i> <?php echo block_exaport_get_string('audit_export'); ?>
+                            </a>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($events)): ?>
+                        <p class="text-muted"><?php echo block_exaport_get_string('audit_no_results'); ?></p>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th><?php echo block_exaport_get_string('audit_date'); ?></th>
+                                        <th><?php echo block_exaport_get_string('audit_user'); ?></th>
+                                        <th><?php echo block_exaport_get_string('audit_event_type'); ?></th>
+                                        <th><?php echo block_exaport_get_string('audit_resource_type'); ?></th>
+                                        <th>Resource</th>
+                                        <th><?php echo block_exaport_get_string('audit_risk_level'); ?></th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($events as $event): ?>
+                                        <?php
+                                        $metadata = json_decode($event->metadata, true);
+                                        $resource_name = isset($metadata['resource_name']) ? $metadata['resource_name'] : 'ID: ' . $event->resource_id;
+                                        $description = isset($metadata['description']) ? $metadata['description'] : '';
+                                        
+                                        // Risk level badge classes
+                                        $risk_class = 'badge-secondary';
+                                        switch ($event->risk_level) {
+                                            case 'high':
+                                                $risk_class = 'badge-danger';
+                                                break;
+                                            case 'medium':
+                                                $risk_class = 'badge-warning';
+                                                break;
+                                            case 'low':
+                                                $risk_class = 'badge-success';
+                                                break;
+                                        }
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <small><?php echo date('Y-m-d H:i:s', $event->occurred_at); ?></small>
+                                            </td>
+                                            <td>
+                                                <?php if ($event->username): ?>
+                                                    <strong><?php echo s($event->firstname . ' ' . $event->lastname); ?></strong><br>
+                                                    <small class="text-muted"><?php echo s($event->username); ?></small>
+                                                <?php else: ?>
+                                                    <em class="text-muted">User ID: <?php echo $event->user_id; ?></em>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-primary"><?php echo s(ucfirst(str_replace('_', ' ', $event->event_type))); ?></span>
+                                            </td>
+                                            <td>
+                                                <?php echo s(ucfirst($event->resource_type)); ?>
+                                            </td>
+                                            <td>
+                                                <strong><?php echo s($resource_name); ?></strong>
+                                                <?php if ($description): ?>
+                                                    <br><small class="text-muted"><?php echo s($description); ?></small>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <span class="badge <?php echo $risk_class; ?>"><?php echo s(ucfirst($event->risk_level)); ?></span>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    IP: <?php echo s($event->ip_address); ?><br>
+                                                    Course: <?php echo $event->course_id; ?>
+                                                    
+                                                    <?php if ($event->session_id): ?>
+                                                        <br>Session: <?php echo s(substr($event->session_id, 0, 8)); ?>...
+                                                    <?php endif; ?>
+                                                </small>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <?php if ($total_count > $perpage): ?>
+                            <nav aria-label="Audit log pagination">
+                                <ul class="pagination justify-content-center">
+                                    <?php
+                                    $total_pages = ceil($total_count / $perpage);
+                                    $current_page = $page + 1;
+                                    
+                                    // Previous page
+                                    if ($page > 0):
+                                        $prev_params = $_GET;
+                                        $prev_params['page'] = $page - 1;
+                                    ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?php echo $PAGE->url->out(false, $prev_params); ?>">&laquo; Previous</a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">&laquo; Previous</span>
+                                        </li>
+                                    <?php endif; ?>
+                                    
+                                    <?php
+                                    // Page numbers
+                                    $start_page = max(1, $current_page - 2);
+                                    $end_page = min($total_pages, $current_page + 2);
+                                    
+                                    for ($i = $start_page; $i <= $end_page; $i++):
+                                        $page_params = $_GET;
+                                        $page_params['page'] = $i - 1;
+                                    ?>
+                                        <li class="page-item <?php echo ($i == $current_page) ? 'active' : ''; ?>">
+                                            <a class="page-link" href="<?php echo $PAGE->url->out(false, $page_params); ?>"><?php echo $i; ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+                                    
+                                    <?php
+                                    // Next page
+                                    if ($page < $total_pages - 1):
+                                        $next_params = $_GET;
+                                        $next_params['page'] = $page + 1;
+                                    ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?php echo $PAGE->url->out(false, $next_params); ?>">Next &raquo;</a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Next &raquo;</span>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php
+echo block_exaport_wrapperdivend();
+block_exaport_print_footer();
+?>

@@ -50,6 +50,36 @@
     transition: margin-left 0.3s ease-in-out;
 }
 
+/* ===== Fix for Modal Dialogs Hiding Aside ===== */
+/* Force aside/sidebar to stay visible during modal confirmations */
+body.modal-open [data-region="drawer"],
+body.modal-open #nav-drawer,
+body.modal-open #navwrap {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* Ensure modal backdrop doesn't interfere with aside */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+/* Keep aside above modal backdrop */
+[data-region="drawer"],
+#nav-drawer,
+#navwrap {
+    z-index: 1050 !important;
+}
+
+/* Prevent aside from being hidden by Moodle's modal system */
+.path-blocks-exaport [data-region="drawer"],
+.path-blocks-exaport #nav-drawer,
+.path-blocks-exaport #navwrap {
+    display: block !important;
+}
+
 /* ===== Original Exaport Styles ===== */
 #exaport .block_eportfolio_center {
     text-align: center;

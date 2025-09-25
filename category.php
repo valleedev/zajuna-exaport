@@ -18,6 +18,31 @@
 require_once(__DIR__ . '/inc.php');
 $courseid = optional_param('courseid', 0, PARAM_INT);
 
+/**
+ * Recursively delete a category and all its subcategories and items
+ */
+function block_exaport_recursive_delete_category($id) {
+    global $DB;
+
+    // Delete subcategories.
+    if ($entries = $DB->get_records('block_exaportcate', array("pid" => $id))) {
+        foreach ($entries as $entry) {
+            block_exaport_recursive_delete_category($entry->id);
+        }
+    }
+    $DB->delete_records('block_exaportcate', array('pid' => $id));
+
+    // Delete itemsharing.
+    if ($entries = $DB->get_records('block_exaportitem', array("categoryid" => $id))) {
+        foreach ($entries as $entry) {
+            $DB->delete_records('block_exaportitemshar', array('itemid' => $entry->id));
+        }
+    }
+
+    // Delete items.
+    $DB->delete_records('block_exaportitem', array('categoryid' => $id));
+}
+
 // Authentication disabled for this block
 // require_login($courseid);
 
@@ -177,35 +202,16 @@ if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
     if (optional_param('confirm', 0, PARAM_INT)) {
         confirm_sesskey();
 
-        function block_exaport_recursive_delete_category($id) {
-            global $DB;
-
-            // Delete subcategories.
-            if ($entries = $DB->get_records('block_exaportcate', array("pid" => $id))) {
-                foreach ($entries as $entry) {
-                    block_exaport_recursive_delete_category($entry->id);
-                }
-            }
-            $DB->delete_records('block_exaportcate', array('pid' => $id));
-
-            // Delete itemsharing.
-            if ($entries = $DB->get_records('block_exaportitem', array("categoryid" => $id))) {
-                foreach ($entries as $entry) {
-                    $DB->delete_records('block_exaportitemshar', array('itemid' => $entry->id));
-                }
-            }
-
-            // Delete items.
-            $DB->delete_records('block_exaportitem', array('categoryid' => $id));
-        }
-
-        // Record audit event before deletion
+        // Record audit event before deletion - using simple audit system
         try {
-            $auditService = new \block_exaport\audit\application\AuditService();
-            $auditService->recordFolderDeleted(
+            require_once(__DIR__ . '/lib/audit_simple.php');
+            exaport_log_audit_event(
+                'folder_deleted',
                 $category->id,
+                'folder',
                 $category->name,
-                ['parent_id' => $category->pid, 'course_id' => $category->courseid]
+                ['parent_id' => $category->pid, 'course_id' => $category->courseid],
+                'medium'
             );
         } catch (Exception $e) {
             // Log audit error but don't prevent deletion
@@ -269,7 +275,39 @@ if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
         new moodle_url('category.php', $optionsyes),
         new moodle_url('view_items.php', $optionsno));
     echo block_exaport_wrapperdivend();
-    $OUTPUT->footer();
+    echo $OUTPUT->footer();
+    
+    // JavaScript to restore drawer visibility after modal is shown
+    echo '<script type="text/javascript">
+    (function() {
+        function restoreDrawer() {
+            // Find drawer elements
+            var drawer = document.querySelector("[data-region=\"drawer\"]");
+            var navDrawer = document.querySelector("#nav-drawer");
+            var navWrap = document.querySelector("#navwrap");
+            
+            function showElement(element) {
+                if (element) {
+                    element.style.display = "block";
+                    element.style.visibility = "visible";
+                    element.style.opacity = "1";
+                    element.style.transform = "none";
+                    element.style.zIndex = "1050";
+                }
+            }
+            
+            showElement(drawer);
+            showElement(navDrawer);
+            showElement(navWrap);
+        }
+        
+        // Restore immediately
+        restoreDrawer();
+        
+        // And keep restoring periodically 
+        setInterval(restoreDrawer, 100);
+    })();
+    </script>';
 
     exit;
 }

@@ -896,3 +896,6 @@ $string['exaport:exportaudit'] = 'Export audit data';
 
 // Navigation
 $string['audit'] = 'Audit';
+
+// Course Folder Management
+$string['course_folder_edit_warning'] = 'This action can only be performed from Personal Area / My Courses';

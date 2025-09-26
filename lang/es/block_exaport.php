@@ -457,3 +457,6 @@ $string['coursefoldercannotbeedited'] = 'Las carpetas de curso no se pueden elim
 
 // File upload messages
 $string['fileuploaded'] = 'Archivo subido exitosamente';
+
+// Error messages
+$string['wrongid'] = 'ID de elemento incorrecto';

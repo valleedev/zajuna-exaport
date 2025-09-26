@@ -906,3 +906,6 @@ $string['coursefoldercannotbeedited'] = 'Course folders cannot be deleted or edi
 
 // File upload messages
 $string['fileuploaded'] = 'File uploaded successfully';
+
+// Error messages
+$string['wrongid'] = 'Wrong item ID';

@@ -580,6 +580,15 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
     if ($itemname[0] == '[') {
         $itemname = get_string($navitemidentifier);
     }
+    // If a subitemidentifier is provided, insert it as an intermediate breadcrumb before the current item
+    if (!empty($subitemidentifier)) {
+        $subitemname = get_string($subitemidentifier, 'block_exaport');
+        if ($subitemname[0] == '[') {
+            $subitemname = get_string($subitemidentifier);
+        }
+        $navlinks[] = array('name' => $subitemname,
+            'link' => $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id, 'type' => 'misc');
+    }
     $navlinks[] = array('name' => $itemname, 'link' => null, 'type' => 'misc');
 
     /* $navigation = build_navigation($navlinks); */

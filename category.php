@@ -387,7 +387,15 @@ class simplehtml_form extends block_exaport_moodleform {
         // Check if this is a student creating in evidencias - simplified form for students
         $is_student_in_evidencias = $is_evidencias && block_exaport_user_is_student();
         
-        error_log("DEBUG FORM: pid='$pid', is_evidencias=" . ($is_evidencias ? 'true' : 'false') . ", is_student=" . (block_exaport_user_is_student() ? 'true' : 'false') . ", is_student_in_evidencias=" . ($is_student_in_evidencias ? 'true' : 'false'));
+        // For administrators, treat all contexts as "evidencias" for form display purposes
+        // This ensures they always see the simplified form like instructors in evidencias
+        $is_admin_using_simplified_form = block_exaport_user_is_admin();
+        if ($is_admin_using_simplified_form) {
+            $is_evidencias = true; // Force evidencias context for form display
+            error_log("DEBUG FORM: Administrator detected, forcing simplified form (is_evidencias=true for display)");
+        }
+        
+        error_log("DEBUG FORM: pid='$pid', is_evidencias=" . ($is_evidencias ? 'true' : 'false') . ", is_student=" . (block_exaport_user_is_student() ? 'true' : 'false') . ", is_student_in_evidencias=" . ($is_student_in_evidencias ? 'true' : 'false') . ", is_admin=" . ($is_admin_using_simplified_form ? 'true' : 'false'));
         
         error_log("DEBUG FORM: Final is_evidencias=" . ($is_evidencias ? 'true' : 'false') . ", is_student_in_evidencias=" . ($is_student_in_evidencias ? 'true' : 'false'));
         

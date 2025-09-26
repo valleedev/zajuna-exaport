@@ -293,7 +293,7 @@ $resource_types = $DB->get_records_sql("
                                     <label>&nbsp;</label>
                                     <div>
                                         <button type="submit" class="btn btn-primary"><?php echo block_exaport_get_string('audit_search'); ?></button>
-                                        <button type="submit" name="action" value="export" class="btn btn-secondary"><?php echo block_exaport_get_string('audit_export'); ?></button>
+                                        <a href="<?php echo $PAGE->url->out(false, array()); ?>" class="btn btn-outline-secondary">Limpiar filtros</a>
                                     </div>
                                 </div>
                             </div>

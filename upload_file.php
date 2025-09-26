@@ -181,7 +181,7 @@ if ($form->is_cancelled()) {
     
     // Redirect back to the category view
     redirect(new moodle_url('/blocks/exaport/view_items.php', ['courseid' => $courseid, 'categoryid' => $categoryid]),
-        get_string('filesaved', 'moodle'), null, \core\output\notification::NOTIFY_SUCCESS);
+        get_string('fileuploaded', 'block_exaport'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
 // Display the page

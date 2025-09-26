@@ -903,3 +903,6 @@ $string['course_folder_edit_warning'] = 'This action can only be performed from 
 
 // Course folder messages
 $string['coursefoldercannotbeedited'] = 'Course folders cannot be deleted or edited from here. These folders are managed from the courses section. Please go to course administration to make changes.';
+
+// File upload messages
+$string['fileuploaded'] = 'File uploaded successfully';

@@ -454,3 +454,6 @@ $string['audit'] = 'Auditoría';
 
 // Course folder messages
 $string['coursefoldercannotbeedited'] = 'Las carpetas de curso no se pueden eliminar ni editar desde aquí. Estas carpetas se gestionan desde la sección de cursos. Por favor, vaya a la administración del curso para realizar cambios.';
+
+// File upload messages
+$string['fileuploaded'] = 'Archivo subido exitosamente';

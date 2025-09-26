@@ -768,17 +768,15 @@ function block_exaport_do_delete($post, $returnurl = "", $courseid = 0) {
 
     global $DB, $USER;
 
-    // Record audit event before deletion
+    // Record audit event before deletion (use simple logger to avoid autoload/compat issues)
     try {
-        $auditService = new \block_exaport\audit\application\AuditService();
-        $auditService->recordItemDeleted(
-            $post->id,
-            $post->name,
-            ['type' => $post->type, 'category_id' => $post->categoryid, 'course_id' => $post->courseid]
-        );
-    } catch (Exception $e) {
+        require_once(__DIR__ . '/lib/audit_simple.php');
+        if (function_exists('exaport_log_item_deleted')) {
+            exaport_log_item_deleted($post->id, $post->name, $post->type, $post->courseid);
+        }
+    } catch (Throwable $e) {
         // Log audit error but don't prevent deletion
-        error_log("Audit error in item.php delete: " . $e->getMessage());
+        error_log("Audit error in item.php delete (simple): " . $e->getMessage());
     }
 
     // Try to delete the item file.

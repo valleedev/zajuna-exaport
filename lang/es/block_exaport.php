@@ -48,6 +48,7 @@ $string['nocategorycreatepermission'] = 'Los estudiantes no pueden crear, editar
 $string['noitemcreatepermission'] = 'Los estudiantes no pueden crear, editar o eliminar artefactos';
 $string['norootcategorycreate'] = 'No se pueden crear categorías en la carpeta raíz. Ingresa a una carpeta primero';
 $string['noevidenciascategorycreate'] = 'Los instructores solo pueden crear categorías dentro de las carpetas de Evidencias';
+$string['course_folders_not_editable'] = 'Las carpetas de curso no se pueden eliminar ni editar desde aquí. Estas carpetas se gestionan desde la sección de cursos. Por favor, vaya a la administración del curso para realizar cambios.';
 $string['norootitemcreate'] = 'No se pueden crear artefactos en la carpeta raíz. Ingresa a una carpeta primero';
 $string['attachment'] = 'Adjunto';
 $string['attachincluded'] = 'Adjuntar?';
@@ -450,3 +451,6 @@ $string['exaport:exportaudit'] = 'Exportar datos de auditoría';
 
 // Navigation
 $string['audit'] = 'Auditoría';
+
+// Course folder messages
+$string['coursefoldercannotbeedited'] = 'Las carpetas de curso no se pueden eliminar ni editar desde aquí. Estas carpetas se gestionan desde la sección de cursos. Por favor, vaya a la administración del curso para realizar cambios.';

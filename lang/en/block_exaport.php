@@ -48,6 +48,7 @@ $string['nocategorycreatepermission'] = 'Students are not allowed to create, edi
 $string['noitemcreatepermission'] = 'Students are not allowed to create, edit or delete artefacts';
 $string['norootcategorycreate'] = 'Cannot create categories in root folder. Please enter a folder first';
 $string['noevidenciascategorycreate'] = 'Instructors can only create categories within Evidencias folders';
+$string['course_folders_not_editable'] = 'Course folders cannot be deleted or edited from here. These folders are managed from the courses section. Please go to course administration to make changes.';
 $string['norootitemcreate'] = 'Cannot create artefacts in root folder. Please enter a folder first';
 $string['attachment'] = 'attachment';
 $string['attachincluded'] = 'attachment?';
@@ -899,3 +900,6 @@ $string['audit'] = 'Audit';
 
 // Course Folder Management
 $string['course_folder_edit_warning'] = 'This action can only be performed from Personal Area / My Courses';
+
+// Course folder messages
+$string['coursefoldercannotbeedited'] = 'Course folders cannot be deleted or edited from here. These folders are managed from the courses section. Please go to course administration to make changes.';

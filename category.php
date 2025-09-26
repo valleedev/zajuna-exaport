@@ -48,8 +48,48 @@ function block_exaport_recursive_delete_category($id) {
 
 // Check if user can create/edit categories
 $action = optional_param('action', '', PARAM_ALPHA);
-$id = optional_param('id', 0, PARAM_INT);
+$id = optional_param('id', 0, PARAM_RAW); // Changed to RAW to handle virtual folders like course_XX
 $pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123 format
+
+// Check if trying to edit/delete virtual course folders
+if (($action == 'edit' || $action == 'delete') && !empty($id)) {
+    if (is_string($id) && strpos($id, 'course_') === 0) {
+        // Trying to edit/delete a virtual course folder
+        $strbookmarks = get_string("myportfolio", "block_exaport");
+        block_exaport_print_header("myportfolio");
+        
+        echo '<div class="alert alert-info">';
+        echo '<h4>Información</h4>';
+        echo '<p>' . get_string('coursefoldercannotbeedited', 'block_exaport') . '</p>';
+        echo '<p><a href="view_items.php?courseid=' . $courseid . '" class="btn btn-primary">' . get_string('back') . '</a></p>';
+        echo '</div>';
+        
+        echo block_exaport_wrapperdivend();
+        echo $OUTPUT->footer();
+        exit;
+    }
+    
+    // Check for other virtual folders (sections, evidencias root, etc.)
+    if (is_string($id) && (strpos($id, 'section_') === 0 || strpos($id, 'evidencias_') === 0)) {
+        $strbookmarks = get_string("myportfolio", "block_exaport");
+        block_exaport_print_header("myportfolio");
+        
+        echo '<div class="alert alert-info">';
+        echo '<h4>Información</h4>';
+        echo '<p>Esta carpeta es generada automáticamente y no se puede editar ni eliminar desde aquí.</p>';
+        echo '<p><a href="view_items.php?courseid=' . $courseid . '" class="btn btn-primary">' . get_string('back') . '</a></p>';
+        echo '</div>';
+        
+        echo block_exaport_wrapperdivend();
+        echo $OUTPUT->footer();
+        exit;
+    }
+    
+    // Convert back to int for numeric IDs
+    if (is_numeric($id)) {
+        $id = intval($id);
+    }
+}
 
 // Administrators have full permissions, skip all checks
 if (!block_exaport_user_is_admin()) {
@@ -70,7 +110,7 @@ if (!block_exaport_user_is_admin()) {
             }
         } else if ($action == 'edit' || $action == 'delete') {
             // Students can edit/delete categories within instructor folders
-            $context_id = optional_param('id', 0, PARAM_INT);
+            $context_id = $id; // Use the processed $id variable
             if (!block_exaport_student_can_act_in_instructor_folder($context_id)) {
                 print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
             }
@@ -82,7 +122,7 @@ if (!block_exaport_user_is_admin()) {
         // For instructors, check if they have permission for this action
         $context_id = null;
         if ($action == 'edit' || $action == 'delete') {
-            $context_id = optional_param('id', 0, PARAM_INT);
+            $context_id = $id; // Use the processed $id variable
         } else if ($action == 'add' || $action == 'addstdcat') {
             $context_id = $pid;
         }
@@ -178,7 +218,10 @@ if (optional_param('action', '', PARAM_ALPHA) == 'movetocategory') {
 }
 
 if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
-    $id = required_param('id', PARAM_INT);
+    // Use the already processed $id variable from above
+    if (!is_numeric($id)) {
+        throw new \block_exaport\moodle_exception('category_not_found');
+    }
 
     // First check if user has permission to delete this category
     if (!block_exaport_instructor_has_permission('delete', $id)) {

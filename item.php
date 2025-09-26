@@ -25,14 +25,15 @@ $confirm = optional_param("confirm", "", PARAM_BOOL);
 $backtype = optional_param('backtype', 'all', PARAM_ALPHA);
 $compids = optional_param('compids', '', PARAM_TEXT);
 $backtype = block_exaport_check_item_type($backtype, true);
-$categoryid = optional_param('categoryid', 0, PARAM_INT);
+$categoryid = optional_param('categoryid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123 format
 $cattype = optional_param('cattype', '', PARAM_ALPHA);
 $descriptorselection = optional_param('descriptorselection', true, PARAM_BOOL);
 $id = optional_param('id', 0, PARAM_INT);
 
 $context = context_system::instance();
 
-require_login($courseid);
+// Authentication disabled for this block
+// require_login($courseid);
 require_capability('block/exaport:use', $context);
 
 $url = '/blocks/exaport/item.php';
@@ -41,11 +42,86 @@ $PAGE->set_url($url, ['courseid' => $courseid, 'id' => $id, 'action' => $action]
 $conditions = array("id" => $courseid);
 
 if (!$course = $DB->get_record("course", $conditions)) {
-    print_error("invalidcourseid", "block_exaport");
+    throw new moodle_exception("invalidcourseid", "block_exaport");
 }
 
 if ($CFG->branch < 31) {
     include($CFG->dirroot . '/tag/lib.php');
+}
+
+// Check if user can create/edit items
+// Administrators have full permissions, skip all checks
+if (!block_exaport_user_is_admin()) {
+    error_log("ITEM PERMISSION DEBUG: User is not admin, checking detailed permissions");
+    error_log("ITEM PERMISSION DEBUG: is_student = " . (block_exaport_user_is_student() ? 'true' : 'false'));
+    error_log("ITEM PERMISSION DEBUG: is_teacher = " . (block_exaport_user_is_teacher() ? 'true' : 'false'));
+    
+    // Give priority to teacher role - if user is teacher, treat as instructor regardless of student role
+    if (block_exaport_user_is_teacher()) {
+        error_log("ITEM PERMISSION DEBUG: Processing as instructor/teacher (has priority)");
+        // For instructors: Allow creating in evidencias hierarchy, but not in root
+        if ($action == 'add') {
+            error_log("INSTRUCTOR ITEM DEBUG: categoryid = '$categoryid', action = '$action'");
+            error_log("INSTRUCTOR ITEM DEBUG: is_root_category = " . (block_exaport_is_root_category($categoryid) ? 'true' : 'false'));
+            error_log("INSTRUCTOR ITEM DEBUG: can_create_in_category = " . (block_exaport_instructor_can_create_in_category($categoryid) ? 'true' : 'false'));
+            
+            // Additional check: Instructors cannot create items in actual root category (0 or empty)
+            if (block_exaport_is_root_category($categoryid)) {
+                error_log("INSTRUCTOR ITEM DEBUG: Attempting to create in root category, blocking");
+                throw new moodle_exception('nopermissions', 'error', '', get_string('norootitemcreate', 'block_exaport'));
+            }
+            
+            // Then check if they can create in this category (this includes evidencias check)
+            if (!block_exaport_instructor_can_create_in_category($categoryid)) {
+                error_log("INSTRUCTOR ITEM DEBUG: Cannot create in category, showing error");
+                throw new moodle_exception('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            }
+        }
+    } else if (block_exaport_user_is_student()) {
+        error_log("ITEM PERMISSION DEBUG: Processing as student (pure student role)");
+        // Students can work with items in evidencias categories where they have permissions
+        if ($action == 'copytoself') {
+            // Allow copying shared items to own portfolio
+        } else if ($action == 'add' || (empty($id) && $action != 'copytoself')) {
+            // Students can create artefacts only in their own personal folders
+            error_log("DEBUG ITEM: Student trying to create item in category {$categoryid}");
+            
+            if (block_exaport_student_owns_category($categoryid)) {
+                error_log("DEBUG ITEM: Student can create item in their own personal folder (category {$categoryid})");
+                // Allow creation in own personal folder
+            } else {
+                error_log("DEBUG ITEM: Student trying to create item outside personal area - DENIED");
+                throw new moodle_exception('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            }
+        } else if (!empty($id) && ($action == 'edit' || $action == 'delete')) {
+            // Check if student can edit/delete items (check if item is in instructor folder and belongs to student)
+            $item = $DB->get_record('block_exaportitem', array('id' => $id));
+            if (!$item || !block_exaport_student_can_act_in_instructor_folder($item->categoryid)) {
+                throw new moodle_exception('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            }
+        }
+    } else {
+        error_log("ITEM PERMISSION DEBUG: User is neither student nor detected teacher - treating as instructor by default");
+        // For undetected instructors: Allow creating in evidencias hierarchy, but not in root
+        if ($action == 'add') {
+            error_log("DEFAULT INSTRUCTOR DEBUG: categoryid = '$categoryid', action = '$action'");
+            
+            // Default instructors cannot create items in actual root category (0 or empty)
+            if (block_exaport_is_root_category($categoryid)) {
+                error_log("DEFAULT INSTRUCTOR DEBUG: Attempting to create in root category, blocking");
+                throw new moodle_exception('nopermissions', 'error', '', get_string('norootitemcreate', 'block_exaport'));
+            }
+            
+            // Allow creating in evidencias folders
+            if (strpos($categoryid, 'evidencias_') === 0) {
+                error_log("DEFAULT INSTRUCTOR DEBUG: Creating in evidencias folder, allowing");
+                // Continue with item creation
+            } else {
+                error_log("DEFAULT INSTRUCTOR DEBUG: Cannot create outside evidencias, showing error");
+                throw new moodle_exception('nopermissions', 'error', '', get_string('noitemcreatepermission', 'block_exaport'));
+            }
+        }
+    }
 }
 
 $allowedit = block_exaport_item_is_editable($id);
@@ -97,9 +173,25 @@ if ($action == 'copytoself') {
 }
 
 if ($id) {
-    $conditions = array("id" => $id, "userid" => $USER->id);
-    if (!$existing = $DB->get_record('block_exaportitem', $conditions)) {
-        print_error("wrong" . $type . "id", "block_exaport");
+    // First try to get the item regardless of userid
+    if (!$existing = $DB->get_record('block_exaportitem', array("id" => $id))) {
+        throw new moodle_exception("wrongid", "block_exaport");
+    }
+    
+    // Then check if user has permission to access this item
+    // Own items are always accessible
+    if ($existing->userid != $USER->id) {
+        // For items not owned by user, check if they have permission based on context
+        $category = $DB->get_record('block_exaportcate', array('id' => $existing->categoryid));
+        if (!$category) {
+            throw new moodle_exception("wrongid", "block_exaport");
+        }
+        
+        // Check if this is an evidencias context where student can edit instructor items
+        if (block_exaport_user_is_student() && !block_exaport_student_can_act_in_instructor_folder($existing->categoryid)) {
+            throw new moodle_exception("wrongid", "block_exaport");
+        }
+        // For instructors, additional checks could be added here if needed
     }
 } else {
     $existing = false;
@@ -112,7 +204,7 @@ if ($existing) {
     $type = optional_param('type', 'all', PARAM_ALPHA);
     $type = block_exaport_check_item_type($type, false);
     if (!$type) {
-        print_error("badtype", "block_exaport");
+        throw new moodle_exception("badtype", "block_exaport");
     }
 }
 
@@ -139,7 +231,7 @@ $returnurl = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $cours
 // Delete item.
 if ($action == 'delete' && $allowedit) {
     if (!$existing) {
-        print_error("bookmarknotfound", "block_exaport");
+        throw new moodle_exception("bookmarknotfound", "block_exaport");
     }
     if (data_submitted() && $confirm && confirm_sesskey()) {
         require_sesskey();
@@ -197,7 +289,7 @@ $textfieldoptions = array('trusttext' => true, 'subdirs' => true, 'maxfiles' => 
 $usetextareas = [];
 foreach (POSSIBLE_IFRAME_FIELDS as $itemfield) {
     $usetextareas[$itemfield] = false;
-    if ($existing && $existing->{$itemfield} && preg_match('!<iframe!i', $existing->{$itemfield})) {
+    if ($existing && property_exists($existing, $itemfield) && $existing->{$itemfield} && preg_match('!<iframe!i', $existing->{$itemfield})) {
         $usetextareas[$itemfield] = true;
     }
 }
@@ -228,14 +320,14 @@ if ($editform->is_cancelled()) {
         case 'edit':
             $fromform->type = $type;
             if (!$existing) {
-                print_error("bookmarknotfound", "block_exaport");
+                throw new moodle_exception("bookmarknotfound", "block_exaport");
             }
 
             block_exaport_do_edit($fromform, $editform, $returnurl, $courseid, $textfieldoptions, $usetextareas);
             break;
 
         default:
-            print_error("unknownaction", "block_exaport");
+            throw new moodle_exception("unknownaction", "block_exaport");
     }
 
     redirect($returnurl);
@@ -261,7 +353,7 @@ switch ($action) {
         break;
     case 'edit':
         if (!$existing) {
-            print_error("bookmarknotfound", "block_exaport");
+            throw new moodle_exception("bookmarknotfound", "block_exaport");
         }
         $post->id = $existing->id;
         $post->name = $existing->name;
@@ -343,7 +435,7 @@ switch ($action) {
 
         break;
     default :
-        print_error("unknownaction", "block_exaport");
+        throw new moodle_exception("unknownaction", "block_exaport");
 }
 
 $exacompactive = block_exaport_check_competence_interaction() && $descriptorselection;
@@ -455,15 +547,38 @@ echo $OUTPUT->footer($course);
 function block_exaport_do_edit($post, $blogeditform, $returnurl, $courseid, $textfieldoptions, $usetextareas) {
     global $CFG, $USER, $DB;
 
+    // Handle missing fields for simplified forms
+    if (!isset($post->intro)) {
+        $post->intro = '';
+    }
+    if (!isset($post->project_description)) {
+        $post->project_description = '';
+    }
+    if (!isset($post->project_process)) {
+        $post->project_process = '';
+    }
+    if (!isset($post->project_result)) {
+        $post->project_result = '';
+    }
+    if (!isset($post->iconfile)) {
+        $post->iconfile = 0;
+    }
+
     // Convert the type into the type by post data:
     block_exaport_convert_item_type($post);
 
     $post->timemodified = time();
     foreach ($usetextareas as $fieldname => $usetextarea) {
         if (!$usetextarea) {
-            $post->{$fieldname . 'format'} = FORMAT_HTML;
-            $post = file_postupdate_standard_editor($post, $fieldname, $textfieldoptions, context_user::instance($USER->id),
-                'block_exaport', 'item_content_' . $fieldname, $post->id);
+            // Check if the editor field exists before processing
+            if (property_exists($post, $fieldname . '_editor')) {
+                $post->{$fieldname . 'format'} = FORMAT_HTML;
+                $post = file_postupdate_standard_editor($post, $fieldname, $textfieldoptions, context_user::instance($USER->id),
+                    'block_exaport', 'item_content_' . $fieldname, $post->id);
+            } else {
+                // For simplified forms, ensure the field has a proper format
+                $post->{$fieldname . 'format'} = FORMAT_HTML;
+            }
         }
     }
 
@@ -502,7 +617,7 @@ function block_exaport_do_edit($post, $blogeditform, $returnurl, $courseid, $tex
         block_exaport_add_to_log(SITEID, 'bookmark', 'update', 'item.php?courseid=' . $courseid . '&id=' . $post->id . '&action=edit',
             $post->name);
     } else {
-        print_error('updateposterror', 'block_exaport', $returnurl);
+        throw new moodle_exception('updateposterror', 'block_exaport', $returnurl);
     }
     $interaction = block_exaport_check_competence_interaction();
     if ($interaction) {
@@ -570,6 +685,10 @@ function block_exaport_do_add($post, $blogeditform, $returnurl, $courseid, $text
 
     // Insert the new entry.
     if ($post->id = $DB->insert_record('block_exaportitem', $post)) {
+        
+        // Record audit event for new item
+        require_once(__DIR__ . '/lib/audit_simple.php');
+        exaport_log_item_uploaded($post->id, $post->name, $post->type, $post->categoryid ?: null, $post->courseid);
         $postupdate = false;
         foreach ($usetextareas as $fieldname => $usetextarea) {
             if (!$usetextarea) {
@@ -638,7 +757,7 @@ function block_exaport_do_add($post, $blogeditform, $returnurl, $courseid, $text
                 $post->tags);
         }
     } else {
-        print_error('addposterror', 'block_exaport', $returnurl);
+        throw new moodle_exception('addposterror', 'block_exaport', $returnurl);
     }
 }
 
@@ -648,6 +767,17 @@ function block_exaport_do_add($post, $blogeditform, $returnurl, $courseid, $text
 function block_exaport_do_delete($post, $returnurl = "", $courseid = 0) {
 
     global $DB, $USER;
+
+    // Record audit event before deletion (use simple logger to avoid autoload/compat issues)
+    try {
+        require_once(__DIR__ . '/lib/audit_simple.php');
+        if (function_exists('exaport_log_item_deleted')) {
+            exaport_log_item_deleted($post->id, $post->name, $post->type, $post->courseid);
+        }
+    } catch (Throwable $e) {
+        // Log audit error but don't prevent deletion
+        error_log("Audit error in item.php delete (simple): " . $e->getMessage());
+    }
 
     // Try to delete the item file.
     block_exaport_file_remove($post);
@@ -667,7 +797,7 @@ function block_exaport_do_delete($post, $returnurl = "", $courseid = 0) {
         $post->name);
 
     if (!$status) {
-        print_error('deleteposterror', 'block_exaport', $returnurl);
+        throw new moodle_exception('deleteposterror', 'block_exaport', $returnurl);
     }
 }
 

@@ -87,12 +87,14 @@ if ($wstoken) {
 } else if ($userhash) {
     $user = block_exaport_epop_checkhash($userhash);
     if ($user == false) {
-        require_login();
+        // Authentication disabled for this block
+        // require_login();
     } else {
         $epopaccess = true;
     }
 } else {
-    require_login();
+    // Authentication disabled for this block
+    // require_login();
 }
 
 if ($itemid) {

@@ -548,7 +548,7 @@ namespace {
             $courses[$course->id] = $course;
         }
         // Move active course to first position.
-        if (isset($courses[$COURSE->id]) && ($type != 'shared_views')) {
+        if (isset($courses[$COURSE->id])) {
             $course = $courses[$COURSE->id];
             unset($courses[$COURSE->id]);
             // $courses = array_merge(array($course->id => $course), $courses);
@@ -738,7 +738,6 @@ namespace {
 
         if ($onlyitems) {
             $shareditems = [];
-            // Only items for customise blocks. for views_mod.php. Or for check is shared.
             $selectfunc = function($userid, $catlist) {
                 global $DB;
                 if (!$catlist) {
@@ -863,6 +862,12 @@ namespace {
 
     function block_exaport_user_can_see_artifacts_of_students() {
         global $CFG, $USER;
+        
+        // Administrators have full permissions everywhere
+        if (is_siteadmin() || has_capability('moodle/site:config', context_system::instance())) {
+            return true;
+        }
+        
         if ($CFG->block_exaport_teachercanseeartifactsofstudents) {
             // The $USER->profile['blockexaporttrustedteacher'] is not working, because it is session data
             // And it is not updating in real time

@@ -28,9 +28,6 @@ $string['blocktitle'] = 'Exabis ePortfolio';
 $string['exaport:use'] = 'Nutzung';
 $string['exaport:addinstance'] = 'Exabis ePortfolio zum Kurs hinzuf&uumlgen';
 $string['exaport:myaddinstance'] = 'Exabis ePortfolie zur Startseite hinzuf&uumlgen';
-$string['exaport:export'] = 'Export von SCORM-Files';
-$string['exaport:import'] = 'Import von SCORM-Files';
-$string['exaport:importfrommoodle'] = 'Import von Moodle';
 $string['exaport:shareintern'] = 'Internes Teilen von Views';
 $string['exaport:shareextern'] = 'Externes Teilen von Views';
 $string['exaport:allowposts'] = 'Kommentare erlauben';
@@ -93,7 +90,7 @@ $string['nobookmarksnote'] = '(bisher gibt es noch keine Notizen)';
 $string['noentry'] = 'Kein Eintrag';
 $string['note'] = 'Notiz';
 $string['notetitle'] = 'Notiz';
-$string['shared_views'] = 'Geteilte Views';
+$string['sharedviews'] = 'Geteilte Views';
 $string['showall'] = 'auch andere Kurse anzeigen';
 $string['showcourse'] = 'nur diesen Kurs anzeigen';
 $string['showsummary'] = '(Gesamtaufstellung einblenden)';
@@ -132,26 +129,6 @@ $string['grouptitle'] = 'Gruppentitel';
 $string['membercount'] = 'Anzahl von Mitgliedern';
 $string['nogroupsfound'] = 'Keine Gruppen gefunden';
 $string['make_it_yours'] = 'Mach\' es zu deinem Eigenen';
-
-// === Export/import.
-$string['import'] = 'Import SCORM-Datei';
-$string['import_short'] = 'Import';
-$string['explainexport'] = '<span class=\'block_eportfolio_center\'><span class=\'block_eportfolio_bold\'>Export:</span> hier kannst du dein ePortfolio exportieren</span>';
-$string['createexport'] = 'SCORM-Datei erstellen';
-$string['createexportxapi'] = 'XAPI-Datei erstellen';
-$string['clicktodownloadscorm'] = 'Folgenden Button drücken, um SCORM-Datei herunterzuladen:';
-$string['add_directory_structure'] = 'Mit Unterverzeichnissen exportieren';
-$string['download'] = 'Herunterladen';
-$string['endedit'] = 'Editieren beenden';
-$string['change'] = '&auml;ndern';
-$string['explainpersonal'] = '<span class=\'block_eportfolio_bold\'>Pers&ouml;nliche Informationen</span>';
-$string['personal'] = 'Informationen';
-$string['descriptionsaved'] = 'Beschreibung gespeichert';
-$string['course'] = 'Kurs';
-$string['importexport'] = 'Import/Export';
-$string['explainimport'] = 'hier kannst du SCORM-Dateien ins Portfolio importieren. Wenn Marker gefunden werden, die darauf hinweisen, dass diese SCORM-Datei zuvor aus dem Portfolio-Modul exportiert wurde, so wird versucht, die Struktur entsprechend zu importieren.';
-$string['makeimport'] = 'Import';
-$string['add_this_file'] = 'Diese Datei hinzufügen';
 $string['bookmarksall'] = 'Alle Eintr&auml;ge';
 $string['bookmarkslinks'] = 'Links';
 $string['bookmarksfiles'] = 'Dateien';
@@ -786,34 +763,6 @@ $string['privacy:metadata:block_exaportresume:skillspersonal'] = 'Persönliche F
 $string['privacy:metadata:block_exaportresume:skillsacademic'] = 'akademische Fähigkeiten';
 $string['privacy:metadata:block_exaportresume:skillscareers'] = 'Karriere Fähigkeiten';
 $string['privacy:metadata:core_files'] = 'Exabis ePortfolio speichert Dateien, die vom Benutzer hochgeladen wurden, um Teil von Artefakten, Lebenslaufeinträgen und Kommentaren zu werden.';
-$string['whyEportfolio'] = 'Warum ein ePortfolio?';
-$string['whyEportfolio_description'] = '<h4>Lass deine harte Arbeit nicht verschwinden: Erstelle dein digitales Portfolio</h4>
-				<br>
-				<p>Stell dir vor, all die Mühe, die du in Aufgaben, Präsentationen und Projekte steckst. Hast du jemals das Gefühl, dass es nach der Abgabe einfach in einer Schublade verschwindet?</p>
-				<p>Aber hier ist die gute Nachricht: Diese Projekte sind <strong>Beweise für deine Fähigkeiten und dein Wissen</strong>, und du kannst sie nutzen, um potenzielle Arbeitgeber oder Kunden zu beeindrucken!</p>
-				<p><strong>Erstelle dein digitales Portfolio</strong> und präsentiere deine besten Arbeiten, von Präsentationen, Aufgaben und Projekten bis hin zu Videos. Es ist einfacher, als du denkst!</p>
-				<br>
-				<h4>Was ist ein ePortfolio?</h4>
-				<br>
-				<p>Ein <strong>ePortfolio</strong> (elektronisches Portfolio) ist eine <strong>digitale Sammlung</strong>, die deine <strong>Fähigkeiten, dein Wissen und deine Erfahrungen</strong> präsentiert.
-					Während dein Lebenslauf sich auf deine Ausbildung und Berufserfahrung konzentriert, geht dein ePortfolio darüber hinaus und bietet <strong>Beweise und Kontext</strong> für deine Fähigkeiten.
-					Es ermöglicht dir, Arbeitsproben zu zeigen und dein <strong>Talent schnell und effektiv zu demonstrieren</strong>.
-					Letztendlich ist dein ePortfolio ein mächtiges Werkzeug, um deine <strong>Qualifikationen hervorzuheben</strong> und dich abzuheben.
-				</p>
-				<p><strong>Denke daran, dass verschiedene Rollen unterschiedliche Arten von ePortfolios erfordern können.</strong>
-					Einige Schlüsselelemente bleiben jedoch konstant.
-					Mit <strong>Exabis ePortfolio</strong> kannst du <strong>mehrere Ansichten erstellen</strong>, die auf bestimmte Positionen, Jobchancen oder andere Zwecke zugeschnitten sind.
-				</p>
-				<br>
-				<h4>Wie erstelle ich mein ePortfolio?</h4>
-				<br>
-				<ol>
-					<li><strong>Sammle deine Arbeiten</strong>: Beginne damit, alle deine Projekte, Präsentationen und Aufgaben zu überprüfen.</li>
-					<li><strong>Wähle deine besten Arbeiten aus</strong>: Wähle die Stücke aus, die deine stärksten Fähigkeiten zeigen und die positives Feedback erhalten haben.</li>
-					<li><strong>Reflektiere und beschreibe</strong>: Überlege, welche Fähigkeiten und Kompetenzen jedes Stück demonstriert. Schreibe eine kurze Beschreibung, um Kontext zu bieten.</li>
-					<li><strong>Erstelle und iteriere</strong>: Scheue dich nicht davor, zu experimentieren und dein ePortfolio im Laufe der Zeit zu verfeinern, während du lernst und wächst.</li>
-				</ol>
-				<p><strong>Exabis ePortfolio</strong> kann dich durch jeden Schritt führen und den Prozess der Erstellung deines ePortfolios reibungslos und effizient gestalten.</p>';
 $string['cofigureblock_cvinfo_help'] = 'Du wirst den aktuellen Status der ausgewählten Elemente in deinem Lebenslauf sehen. Der Blockinhalt wird aktualisiert, wenn du später Änderungen an irgendwelchen Elementen in deinem Lebenslauf vornimmst.';
 $string['cofigureblock_cvinfo_cover'] = 'Über mich';
 $string['cofigureblock_cvinfo_cover_actual'] = 'Aktuellen Lebenslauf "Über mich" Inhalt hinzufügen';

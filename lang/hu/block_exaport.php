@@ -94,7 +94,6 @@ $string['nobookmarksfile'] = '(nincsenek állományok)';
 $string['nobookmarksnote'] = '(nincsenek feljegyzések)';
 $string['note'] = 'Feljegyzés';
 $string['notetitle'] = 'Feljegyzés';
-$string['shared_views'] = 'Megosztott Portfóliók';
 $string['showall'] = 'Többi kurzus mutatása';
 $string['showcourse'] = 'Csak ez a kurzus mutatása';
 $string['showsummary'] = '(összegzés mutatása)';

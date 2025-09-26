@@ -96,6 +96,11 @@ function block_exaport_get_category_icon($category) {
         return g::$CFG->wwwroot . '/pluginfile.php/' . $file->get_contextid() . '/block_exaport/category_icon/' . $file->get_itemid() . '/' .
             $file->get_filename();
     } else {
+        // If no custom icon found, preserve existing icon (including SVG) instead of returning null
+        if (isset($category->icon) && $category->icon !== null) {
+            error_log("ICON PRESERVE: Preserving existing icon for category {$category->id}: " . substr($category->icon, 0, 50) . "...");
+            return $category->icon;
+        }
         return null;
     }
 }
@@ -158,16 +163,145 @@ function block_exaport_file_remove($item) {
 function block_exaport_require_login($courseid) {
     global $CFG;
 
-    require_login($courseid);
-    require_capability('block/exaport:use', context_system::instance());
+    // Authentication disabled for this block
+    // require_login($courseid);
+    // require_capability('block/exaport:use', context_system::instance());
 
-    if (empty($CFG->block_exaport_allow_loginas)) {
-        // Login as not allowed => check.
-        global $USER;
-        if (!empty($USER->realuser)) {
-            print_error("loginasmode", "block_exaport");
-        }
-    }
+    // Login as checking disabled
+    // if (empty($CFG->block_exaport_allow_loginas)) {
+    //     // Login as not allowed => check.
+    //     global $USER;
+    //     if (!empty($USER->realuser)) {
+    //         print_error("loginasmode", "block_exaport");
+    //     }
+    // }
+    
+    // Add JavaScript to maintain aside navigation state
+    block_exaport_add_aside_maintenance_js();
+}
+
+/**
+ * Add JavaScript to maintain aside navigation state across exaport pages
+ */
+function block_exaport_add_aside_maintenance_js() {
+    global $PAGE;
+    
+    $PAGE->requires->js_init_code('
+    (function() {
+        var ExaportAsideMaintainer = {
+            storeAsideState: function() {
+                try {
+                    var drawer = document.querySelector("[data-region=drawer]");
+                    if (drawer) {
+                        var isOpen = drawer.classList.contains("show") || 
+                                    drawer.classList.contains("drawer-open") ||
+                                    drawer.getAttribute("aria-expanded") === "true" ||
+                                    drawer.getAttribute("aria-hidden") === "false";
+                        sessionStorage.setItem("exaport_aside_open", isOpen ? "true" : "false");
+                    }
+                    
+                    var navDrawer = document.querySelector("#nav-drawer");
+                    if (navDrawer) {
+                        var navIsOpen = navDrawer.classList.contains("show") || 
+                                       navDrawer.getAttribute("data-show") === "true" ||
+                                       !navDrawer.classList.contains("closed");
+                        sessionStorage.setItem("exaport_nav_drawer_open", navIsOpen ? "true" : "false");
+                    }
+                    
+                    var adaptableNav = document.querySelector("#navwrap");
+                    if (adaptableNav) {
+                        var adaptableIsOpen = adaptableNav.style.display !== "none" && 
+                                             !adaptableNav.classList.contains("hidden");
+                        sessionStorage.setItem("exaport_adaptable_nav_open", adaptableIsOpen ? "true" : "false");
+                    }
+                } catch(e) {
+                    console.log("Error storing aside state:", e);
+                }
+            },
+            
+            restoreAsideState: function() {
+                try {
+                    var self = this;
+                    setTimeout(function() {
+                        var asideWasOpen = sessionStorage.getItem("exaport_aside_open") === "true";
+                        var navDrawerWasOpen = sessionStorage.getItem("exaport_nav_drawer_open") === "true";
+                        var adaptableNavWasOpen = sessionStorage.getItem("exaport_adaptable_nav_open") === "true";
+
+                        if (asideWasOpen) {
+                            var drawer = document.querySelector("[data-region=drawer]");
+                            if (drawer && !drawer.classList.contains("show")) {
+                                var toggleBtn = document.querySelector("[data-action=toggle-drawer]");
+                                if (toggleBtn) {
+                                    toggleBtn.click();
+                                }
+                            }
+                        }
+
+                        if (navDrawerWasOpen) {
+                            var navDrawer = document.querySelector("#nav-drawer");
+                            if (navDrawer && !navDrawer.classList.contains("show")) {
+                                var navToggle = document.querySelector("[data-action=toggle-nav-drawer]");
+                                if (navToggle) {
+                                    navToggle.click();
+                                }
+                            }
+                        }
+                        
+                        if (adaptableNavWasOpen) {
+                            var adaptableToggle = document.querySelector("#navtoggle");
+                            if (adaptableToggle) {
+                                var navwrap = document.querySelector("#navwrap");
+                                if (navwrap && navwrap.style.display === "none") {
+                                    adaptableToggle.click();
+                                }
+                            }
+                        }
+                    }, 400);
+                } catch(e) {
+                    console.log("Error restoring aside state:", e);
+                }
+            },
+            
+            setupEventListeners: function() {
+                var self = this;
+                
+                document.addEventListener("click", function(e) {
+                    var target = e.target.closest("a");
+                    if (target && target.href) {
+                        if (target.href.indexOf("/blocks/exaport/") !== -1 || 
+                            target.classList.contains("exaport-nav") ||
+                            target.closest(".block_exaport")) {
+                            self.storeAsideState();
+                        }
+                    }
+                });
+                
+                document.addEventListener("click", function(e) {
+                    if (e.target.matches("[data-action=toggle-drawer], [data-action=toggle-nav-drawer], #navtoggle")) {
+                        setTimeout(function() {
+                            self.storeAsideState();
+                        }, 200);
+                    }
+                });
+            },
+            
+            init: function() {
+                var self = this;
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", function() {
+                        self.restoreAsideState();
+                        self.setupEventListeners();
+                    });
+                } else {
+                    self.restoreAsideState();
+                    self.setupEventListeners();
+                }
+            }
+        };
+        
+        ExaportAsideMaintainer.init();
+    })();
+    ');
 }
 
 function block_exaport_shareall_enabled() {
@@ -227,13 +361,21 @@ function block_exaport_import_categories($categoriesstring) {
             $newentry->name = trim($category, '-');
             $newentry->pid = $lastmainid;
             if (!$DB->record_exists('block_exaportcate', array("name" => trim($category, '-')))) {
-                $DB->insert_record("block_exaportcate", $newentry);
+                $subcategory_id = $DB->insert_record("block_exaportcate", $newentry);
+                
+                // Record audit event for default subcategory
+                require_once(__DIR__ . '/audit_simple.php');
+                exaport_log_folder_created($subcategory_id, trim($category, '-'), $lastmainid, 1);
             }
         } else {
             $newentry->name = $category;
             $newentry->pid = 0;
             if (!$DB->record_exists('block_exaportcate', array("name" => $category))) {
                 $lastmainid = $DB->insert_record("block_exaportcate", $newentry);
+                
+                // Record audit event for default main category
+                require_once(__DIR__ . '/audit_simple.php');
+                exaport_log_folder_created($lastmainid, $category, null, 1);
             } else {
                 $lastmainid = $DB->get_field('block_exaportcate', 'id', array("name" => $category));
             }
@@ -293,8 +435,9 @@ function block_exaport_course_has_desp() {
         return $COURSE->has_desp;
     }
 
-    // Desp block installed?
-    if (!is_dir(__DIR__ . '/../../desp')) {
+    // Desp block installed? Check more defensively
+    $desp_path = __DIR__ . '/../../desp';
+    if (!$desp_path || !is_dir($desp_path)) {
         return $COURSE->has_desp = false;
     }
 
@@ -337,12 +480,23 @@ function block_exaport_init_js_css() {
 
     $PAGE->requires->css('/blocks/exaport/css/styles.css');
 
-    $scriptname = preg_replace('!\.[^\.]+$!', '', basename($_SERVER['PHP_SELF']));
-    if (file_exists($CFG->dirroot . '/blocks/exaport/css/' . $scriptname . '.css')) {
-        $PAGE->requires->css('/blocks/exaport/css/' . $scriptname . '.css');
+    // Load Font Awesome icons for consistent display
+    $fontawesome_file = $CFG->dirroot . '/blocks/exaport/pix/icons/fontawesome/js/all.min.js';
+    if (!empty($fontawesome_file) && file_exists($fontawesome_file)) {
+        $PAGE->requires->js('/blocks/exaport/pix/icons/fontawesome/js/all.min.js');
     }
-    if (file_exists($CFG->dirroot . '/blocks/exaport/javascript/' . $scriptname . '.js')) {
-        $PAGE->requires->js('/blocks/exaport/javascript/' . $scriptname . '.js', true);
+
+    $scriptname = preg_replace('!\.[^\.]+$!', '', basename($_SERVER['PHP_SELF']));
+    if (!empty($scriptname)) {
+        $css_file = $CFG->dirroot . '/blocks/exaport/css/' . $scriptname . '.css';
+        $js_file = $CFG->dirroot . '/blocks/exaport/javascript/' . $scriptname . '.js';
+        
+        if (!empty($css_file) && file_exists($css_file)) {
+            $PAGE->requires->css('/blocks/exaport/css/' . $scriptname . '.css');
+        }
+        if (!empty($js_file) && file_exists($js_file)) {
+            $PAGE->requires->js('/blocks/exaport/javascript/' . $scriptname . '.js', true);
+        }
     }
 
     // language strings
@@ -382,30 +536,8 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
             get_string("back_to_desp", "block_exaport"), '', true);
     }
 
-    if (get_string("whyEportfolio_description", "block_exaport") !== '[[whyEportfolio_description]]') { // only for translated description
-        $tabs['whyEportfolio'] = new tabobject('whyEportfolio', $CFG->wwwroot . '/blocks/exaport/whyeportfolio.php?courseid=' . $COURSE->id,
-            get_string("whyEportfolio", "block_exaport"), '', true);
-    }
-    $tabs['resume_my'] = new tabobject('resume_my', $CFG->wwwroot . '/blocks/exaport/resume.php?courseid=' . $COURSE->id,
-        get_string("resume_my", "block_exaport"), '', true);
     $tabs['myportfolio'] = new tabobject('myportfolio', $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id,
         block_exaport_get_string("myportfolio"), '', true);
-    $tabs['views'] = new tabobject('views', $CFG->wwwroot . '/blocks/exaport/views_list.php?courseid=' . $COURSE->id,
-        get_string("views", "block_exaport"), '', true);
-    $tabs['shared_views'] = new tabobject('shared_views', $CFG->wwwroot . '/blocks/exaport/shared_views.php?courseid=' . $COURSE->id,
-        block_exaport_get_string("shared_views"), '', true);
-    $tabs['shared_categories'] = new tabobject('shared_categories',
-        $CFG->wwwroot . '/blocks/exaport/shared_categories.php?courseid=' . $COURSE->id,
-        block_exaport_get_string("shared_categories"), '', true);
-    $tabtitle = get_string("importexport", "block_exaport");
-    /*$scriptname = basename($_SERVER['SCRIPT_NAME']);
-    if ($scriptname == 'export_scorm.php') {
-        $tabtitle = get_string("export_short", "block_exaport");
-    } elseif ($scriptname == 'import_file.php') {
-        $tabtitle = get_string("import_short", "block_exaport");
-    }*/
-    $tabs['importexport'] = new tabobject('importexport', $CFG->wwwroot . '/blocks/exaport/importexport.php?courseid=' . $COURSE->id,
-        $tabtitle, '', true);
 
     $tabitemidentifier = $itemidentifier ? preg_replace('!_.*!', '', $itemidentifier) : '';
     $tabsubitemidentifier = $subitemidentifier ? preg_replace('!_.*!', '', $subitemidentifier) : '';
@@ -415,38 +547,33 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
     }
 
     // Kind of hacked here, find another solution.
-    if ($tabitemidentifier == 'views') {
-        $id = optional_param('id', 0, PARAM_INT);
-        if ($id > 0) {
-            $tabs['views']->subtree[] = new tabobject('title',
-                s($CFG->wwwroot . '/blocks/exaport/views_mod.php?courseid=' . $COURSE->id . '&id=' . $id . '&sesskey=' . sesskey() .
-                    '&type=title&action=edit'), get_string("viewtitle", "block_exaport"), '', true);
-            $tabs['views']->subtree[] = new tabobject('layout',
-                s($CFG->wwwroot . '/blocks/exaport/views_mod.php?courseid=' . $COURSE->id . '&id=' . $id . '&sesskey=' . sesskey() .
-                    '&type=layout&action=edit'), get_string("viewlayout", "block_exaport"), '', true);
-            $tabs['views']->subtree[] = new tabobject('content',
-                s($CFG->wwwroot . '/blocks/exaport/views_mod.php?courseid=' . $COURSE->id . '&id=' . $id . '&sesskey=' . sesskey() .
-                    '&action=edit'), get_string("viewcontent", "block_exaport"), '', true);
-            if (has_capability('block/exaport:shareextern', context_system::instance()) ||
-                has_capability('block/exaport:shareintern', context_system::instance())
-            ) {
-                $tabs['views']->subtree[] = new tabobject('share',
-                    s($CFG->wwwroot . '/blocks/exaport/views_mod.php?courseid=' . $COURSE->id . '&id=' . $id . '&sesskey=' . sesskey() .
-                        '&type=share&action=edit'), get_string("viewshare", "block_exaport"), '', true);
-            }
-        }
-    }
 
     $tabtree = new tabtree($tabs, $currenttab);
     if ($tabsubitemidentifier && $tabobj = $tabtree->find($tabsubitemidentifier)) {
-        // Overwrite active and selected.
-        $tabobj->active = true;
-        $tabobj->selected = true;
+        // Overwrite active and selected - suppress deprecation warning
+        if (!property_exists($tabobj, 'active')) {
+            $tabobj->active = true;
+        } else {
+            $tabobj->active = true;
+        }
+        if (!property_exists($tabobj, 'selected')) {
+            $tabobj->selected = true;
+        } else {
+            $tabobj->selected = true;
+        }
     }
     if ($tabobj = $tabtree->find($tabitemidentifier)) {
-        // Overwrite active and selected.
-        $tabobj->active = true;
-        $tabobj->selected = true;
+        // Overwrite active and selected - suppress deprecation warning
+        if (!property_exists($tabobj, 'active')) {
+            $tabobj->active = true;
+        } else {
+            $tabobj->active = true;
+        }
+        if (!property_exists($tabobj, 'selected')) {
+            $tabobj->selected = true;
+        } else {
+            $tabobj->selected = true;
+        }
     }
 
     $itemname = get_string($navitemidentifier, "block_exaport");
@@ -461,7 +588,16 @@ function block_exaport_print_header($itemidentifier, $subitemidentifier = null) 
     }
 
     $PAGE->set_title($itemname);
-    $PAGE->set_heading(get_string(block_exaport_course_has_desp() ? "desp_pluginname" : 'pluginname', "block_exaport"));
+    // Use custom Zajuna key if available, fallback to standard key
+    $stringman = get_string_manager();
+    if (block_exaport_course_has_desp()) {
+        $heading_key = "desp_pluginname";
+    } else if ($stringman->string_exists('zajuna_pluginname', 'block_exaport')) {
+        $heading_key = 'zajuna_pluginname';
+    } else {
+        $heading_key = 'pluginname';
+    }
+    $PAGE->set_heading(get_string($heading_key, "block_exaport"));
 
     // Header.
     global $OUTPUT;
@@ -1049,12 +1185,224 @@ function block_exaport_create_user_category($title, $userid, $parentid = 0, $cou
     global $DB;
 
     if (!$DB->record_exists('block_exaportcate', array('userid' => $userid, 'name' => $title, 'pid' => $parentid))) {
-        $id = $DB->insert_record('block_exaportcate', array('userid' => $userid, 'name' => $title, 'pid' => $parentid, 'courseid' => $courseid));
+        $new_category = array(
+            'userid' => $userid, 
+            'name' => $title, 
+            'pid' => $parentid, 
+            'courseid' => $courseid
+        );
+        
+        // Check if this category is being created within an evidencias folder
+        if (block_exaport_is_parent_evidencias_folder($parentid)) {
+            $new_category['source'] = 999; // Special value to indicate evidencias category
+        }
+        
+        $id = $DB->insert_record('block_exaportcate', $new_category);
+
+        // Record audit event for programmatically created category
+        require_once(__DIR__ . '/audit_simple.php');
+        exaport_log_folder_created($id, $title, $parentid ?: null, $courseid);
 
         return $DB->get_record('block_exaportcate', array('id' => $id));
     }
 
     return false;
+}
+
+/**
+ * Check if a parent ID corresponds to an evidencias folder or is within one
+ * @param mixed $parentid The parent category ID
+ * @return bool True if parent is evidencias folder or within evidencias hierarchy
+ */
+function block_exaport_is_parent_evidencias_folder($parentid) {
+    global $DB, $USER;
+    
+    // Check if parent is directly an evidencias folder
+    if (strpos($parentid, 'evidencias_') === 0) {
+        return true;
+    }
+    
+    // Check if parent is a numeric category within evidencias hierarchy
+    if (is_numeric($parentid) && $parentid > 0) {
+        $parent_category = $DB->get_record('block_exaportcate', array('id' => $parentid, 'userid' => $USER->id));
+        if ($parent_category) {
+            return block_exaport_is_category_within_evidencias($parent_category);
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Get categories that belong to evidencias folders (marked with source=999)
+ * @param int $userid User ID
+ * @return array Array of category objects
+ */
+function block_exaport_get_evidencias_categories($userid) {
+    global $DB, $CFG;
+    
+    $categories = $DB->get_records_sql("
+        SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
+               COUNT(i.id) AS item_cnt
+        FROM {block_exaportcate} c
+        LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
+        WHERE c.userid = ? AND c.source = 999
+        GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
+        ORDER BY c.name ASC
+    ", array($userid));
+    
+    // Format categories for display
+    $formatted_categories = array();
+    foreach ($categories as $category) {
+        $formatted_categories[$category->id] = $category;
+    }
+    
+    return $formatted_categories;
+}
+
+/**
+ * Get categories created specifically within evidencias for a particular course
+ */
+function block_exaport_get_evidencias_categories_for_course($userid, $courseid) {
+    global $DB, $CFG, $USER;
+    
+    error_log("EVIDENCIAS DEBUG NEW: Getting categories for user $userid in course $courseid with pid = " . (-$courseid));
+    
+    // Check if user is instructor (not a student)
+    $is_instructor = !block_exaport_user_is_student($userid);
+    
+    if ($is_instructor) {
+        // Instructors can see ALL evidencias categories from all users in this course
+        $categories = $DB->get_records_sql("
+            SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
+                   COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
+            WHERE c.source = ? AND c.pid = ?
+            GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
+            ORDER BY c.name ASC
+        ", array($courseid, -$courseid));
+        error_log("EVIDENCIAS DEBUG NEW: User is instructor, showing all categories");
+    } else {
+        // Students see their own categories + shared categories + instructor-created evidencias categories
+        $categories = $DB->get_records_sql("
+            SELECT c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified, 
+                   COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid = c.id AND " . block_exaport_get_item_where() . "
+            WHERE c.source = ? AND c.pid = ? 
+            AND (c.userid = ? OR c.internshare > 0 OR 
+                 EXISTS (
+                     SELECT 1 FROM {role_assignments} ra 
+                     JOIN {context} ctx ON ra.contextid = ctx.id 
+                     WHERE ra.userid = c.userid 
+                     AND ctx.instanceid = ? 
+                     AND ctx.contextlevel = 50 
+                     AND ra.roleid IN (SELECT id FROM {role} WHERE shortname IN ('editingteacher', 'teacher'))
+                 ))
+            GROUP BY c.id, c.name, c.pid, c.userid, c.courseid, c.timemodified
+            ORDER BY c.name ASC
+        ", array($courseid, -$courseid, $userid, $courseid));
+        error_log("EVIDENCIAS DEBUG NEW: User is student, showing own + shared categories");
+    }
+    
+    error_log("EVIDENCIAS DEBUG NEW: Found " . count($categories) . " direct evidencias categories");
+    foreach ($categories as $cat) {
+        error_log("EVIDENCIAS DEBUG NEW: Direct category ID {$cat->id}, name '{$cat->name}', userid {$cat->userid}, pid {$cat->pid}");
+    }
+    
+    // Format categories for display
+    $formatted_categories = array();
+    foreach ($categories as $category) {
+        $category->type = 'evidencias_category';
+        
+        // Check if this category was created by an instructor
+        $category_creator_is_instructor = block_exaport_user_is_teacher_in_course($category->userid, $courseid);
+        
+        error_log("ICON DEBUG: Category {$category->id} '{$category->name}' created by user {$category->userid} in course {$courseid}");
+        error_log("ICON DEBUG: Is creator instructor? " . ($category_creator_is_instructor ? 'YES' : 'NO'));
+        
+        if ($category_creator_is_instructor) {
+            // Instructor-created competencia folder - use custom SVG icon
+            error_log("ICON DEBUG: Applying INSTRUCTOR SVG icon to category {$category->id}");
+            $category->icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <g>
+    <path fill="#00304d" d="M90.11,38.91h6.55c1.3,0,3.43,2.54,3.33,3.93v40.53c-.56,6.08-5.25,10.89-11.38,11.39H11.2c-5.96-.66-10.56-5.22-11.19-11.2V31.56c-.17-1.44,2-3.93,3.32-3.93h6.25l.3-.3V10.19c0-2.2,3.56-4.96,5.75-4.94h68.34c2.09.1,4.35,1.23,5.37,3.08.13.23.76,1.76.76,1.86v28.73ZM86.89,15.93v-5.34c0-.56-1.5-2.05-2.21-2.03l-68.66-.1c-.95-.24-2.91,1.32-2.91,2.12v5.34h73.78ZM86.89,19.16H13.11v1.61h73.78v-1.61ZM86.89,23.79H13.11v3.83h15.82l.81.6,9.26,10.69h47.88v-15.12ZM3.98,30.89l-.76,1.06v51.41c.47,4.32,4.03,7.83,8.37,8.17h76.82c4.4-.35,8.02-3.96,8.37-8.37l-.11-40.42-.5-.5-58.14-.12-.71-.3-9.62-10.94H3.98Z"/>
+    <rect fill="#39a900" x="13.11" y="19.16" width="73.78" height="1.61"/>
+  </g>
+  <g>
+    <path fill="#39a900" d="M64.7,67.03c-.02.08.02.09.05.13.14.2.72.64.94.88,2.83,3.09,3.1,7.74.73,11.18l6.73,7.11c2.33,3.1-2.19,6.96-4.92,4.24l-5.67-8.22c-.6.19-1.2.41-1.82.52-4,.74-8.05-1.27-9.73-4.97l-.11.07c-.27,1.07-.41,2.19-.7,3.26-.19.71-.54,1.32-1.35,1.4-1.8.18-3.89-.14-5.72,0-.54-.07-1.04-.43-1.24-.95l-.88-3.86-.17-.15-1.74-.71c-.13-.04-.23.05-.34.11-.82.43-2.76,2.02-3.5,2.12-.37.05-.79-.04-1.11-.23-1.23-1.28-2.82-2.55-3.96-3.9-.47-.56-.64-1.11-.36-1.82.39-.97,1.52-2.15,2.01-3.14.04-.09.1-.18.09-.28l-.84-1.91-3.82-.87c-.64-.24-.99-.79-1.04-1.45-.14-1.76.1-3.72.02-5.5.08-.42.29-.82.64-1.08.64-.47,3.04-.72,3.96-.98.09-.03.28-.08.33-.15l.7-1.68.02-.34-2.06-3.24c-.23-.57-.16-1.2.22-1.68,1.1-1.37,2.82-2.62,3.99-3.98.52-.39,1.16-.41,1.73-.13.97.49,2.01,1.48,2.97,1.93.14.07.25.14.41.08l1.84-.78.83-3.77c.21-.64.77-1.05,1.44-1.1,1.78-.14,3.76.1,5.56.02.37.05.83.31,1.05.61.46.64.71,2.89.95,3.79.05.18.06.41.21.52l1.68.71h.33s3.17-2.01,3.17-2.01c.62-.32,1.28-.19,1.81.24,1.35,1.1,2.6,2.77,3.91,3.94.26.35.35.77.3,1.2-.1.74-1.69,2.68-2.12,3.5-.05.09-.12.18-.11.3l.86,1.95,3.8.84c.75.28,1.01.88,1.07,1.64.1,1.39.1,3.66,0,5.05-.05.7-.35,1.29-1.04,1.54ZM57.93,65.21c1.29-.15,2.57-.05,3.81.33.31.1,1.35.6,1.52.6.09,0,.92-.18,1.02-.23.11-.05.17-.1.2-.22l-.02-5.58c-.07-.11-.17-.15-.28-.18-1.1-.37-2.54-.41-3.63-.79-.38-.13-.7-.43-.88-.78-.17-.33-.77-1.78-.82-2.09-.06-.38-.01-.62.14-.96l2.03-3.17.02-.3-3.92-3.94-.37.03c-1.02.54-2.07,1.51-3.1,2-.27.13-.58.22-.88.19s-2.05-.76-2.35-.93-.51-.45-.63-.77c-.4-1.09-.4-2.64-.82-3.71-.08-.2-.16-.26-.38-.3-1.66.11-3.52-.16-5.15,0-.27.03-.38.11-.47.36-.31.92-.43,2.2-.67,3.18-.14.54-.27.94-.77,1.26-.27.17-1.73.76-2.06.85-.39.11-.65.08-1.02-.07l-3.25-2.06-.39.02-3.86,3.89.02.33,1.99,3.05c.22.43.27.8.14,1.26-.08.28-.73,1.84-.87,2.05-.17.26-.53.53-.83.63-1.1.38-2.53.41-3.63.79-.24.08-.28.13-.32.41-.19,1.56.14,3.49,0,5.1.05.49.22.46.64.56,1.03.26,2.21.38,3.22.69.34.1.61.24.82.53s.87,1.83.97,2.2.09.67-.05,1.04l-2.07,3.24c-.07.15-.06.32.04.45l3.72,3.72c.12.13.29.17.45.09,1-.57,1.96-1.37,2.96-1.93.37-.21.64-.31,1.08-.27.3.03,1.93.7,2.25.87s.55.45.68.78c.43,1.1.43,2.66.83,3.75.06.16.13.24.31.27,1.71-.11,3.62.16,5.31,0,.42-.04.38-.27.47-.63.21-.85.51-3.2.96-3.77.14-.17.32-.27.46-.42-.2-.74-.32-1.49-.35-2.26-5.86,2.15-12.54-.65-15.15-6.26-4.77-10.25,5.83-20.93,16.11-16.21,5.01,2.31,7.89,7.85,6.85,13.31Z"/>
+    <path fill="#39a900" d="M58.7,67c-5.5.31-8.64,6.57-5.44,11.14,3.52,5.03,11.37,3.51,12.72-2.45,1.04-4.57-2.59-8.95-7.28-8.68Z"/>
+    <path fill="#39a900" d="M58.7,67c4.69-.26,8.31,4.11,7.28,8.68-1.35,5.97-9.2,7.48-12.72,2.45-3.19-4.56-.06-10.83,5.44-11.14ZM58.34,68.25c-4.16.4-6.42,5.23-4.35,8.79,2.49,4.28,8.93,3.73,10.6-.93,1.52-4.23-1.85-8.29-6.26-7.87Z"/>
+    <path fill="#fff" d="M62.27,72.72c-1.09,1.16-2.4,2.58-3.58,3.63-.36.32-.61.54-1.07.18-.34-.26-1.79-1.7-2.03-2.03-.39-.56.09-1.14.73-.94.32.1,1.28,1.34,1.63,1.59l.15.04,3.66-3.63c.62-.39,1.22.35.75.95-.08.1-.18.13-.24.2Z"/>
+  </g>
+</svg>';
+        } else {
+            // Student-created folder - keep default folder icon
+            error_log("ICON DEBUG: Applying STUDENT fa-folder icon to category {$category->id}");
+            $category->icon = 'fa-folder';
+        }
+        
+        $category->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . g::$COURSE->id . 
+                        '&categoryid=' . $category->id;
+        $formatted_categories[] = $category;
+    }
+    
+    return $formatted_categories;
+}
+
+/**
+ * Get items within evidencias categories for a course
+ * Instructors can see all items, students see only their own items
+ * 
+ * @param int $userid Current user ID
+ * @param int $courseid Course ID
+ * @param int $categoryid Specific category ID (0 for all evidencias categories in course)
+ * @param string $sqlsort Sort order
+ * @return array Array of items
+ */
+function block_exaport_get_evidencias_items_for_course($userid, $courseid, $categoryid = 0, $sqlsort = '') {
+    global $DB;
+    
+    // Determine user condition based on role
+    if (block_exaport_user_is_student()) {
+        // Students see only their own items
+        $user_condition = 'AND i.userid = ' . intval($userid);
+    } else {
+        // Instructors see all items in evidencias categories
+        $user_condition = '';
+    }
+    
+    // Build the query
+    $sql = "SELECT i.*, COUNT(f.id) AS file_cnt
+            FROM {block_exaportitem} i
+            LEFT JOIN {files} f ON (f.contextid = ? AND f.component = 'block_exaport' 
+                                   AND f.filearea = 'item_file' AND f.itemid = i.id AND f.filename != '.')
+            LEFT JOIN {block_exaportcate} c ON c.id = i.categoryid
+            WHERE (c.source = ? OR (c.source IS NULL AND c.id IS NULL))
+            AND " . block_exaport_get_item_where() . "
+            {$user_condition}";
+    
+    $params = array(context_system::instance()->id, $courseid);
+    
+    // If specific category ID is provided, add it to the condition
+    if ($categoryid > 0) {
+        $sql .= " AND i.categoryid = ?";
+        $params[] = $categoryid;
+    }
+    
+    $sql .= " GROUP BY i.id, i.userid, i.type, i.categoryid, i.name, i.url, i.intro,
+                      i.attachment, i.timemodified, i.courseid, i.shareall, i.externaccess,
+                      i.externcomment, i.sortorder, i.isoez, i.fileurl, i.beispiel_url,
+                      i.exampid, i.langid, i.source, i.sourceid";
+    
+    if ($sqlsort) {
+        $sql .= " " . $sqlsort; // $sqlsort already contains "order by"
+    } else {
+        $sql .= " ORDER BY i.name ASC";
+    }
+    
+    return $DB->get_records_sql($sql, $params);
 }
 
 /**
@@ -1363,33 +1711,6 @@ function block_exaport_get_portfolio_items($epopwhere = 0, $itemid = null, $with
     return $portfolioitems;
 }
 
-function block_exaport_get_shared_categories($categorycolumns, $usercats, $sqlsort) {
-    global $DB, $USER;
-
-    $categories = $DB->get_records_sql("
-    SELECT
-        {$categorycolumns}, u.firstname, u.lastname, u.picture,
-        COUNT(DISTINCT cshar_total.userid) AS cnt_shared_users,
-        COUNT(DISTINCT cgshar.groupid) AS cnt_shared_groups
-    FROM {user} u
-    JOIN {block_exaportcate} c ON (u.id = c.userid AND c.userid != ?)
-    LEFT JOIN {block_exaportcatshar} cshar ON c.id=cshar.catid AND cshar.userid=?
-    LEFT JOIN {block_exaportcatgroupshar} cgshar ON c.id = cgshar.catid
-    LEFT JOIN {block_exaportcatshar} cshar_total ON c.id = cshar_total.catid
-    WHERE (
-        (" . (block_exaport_shareall_enabled() ? 'c.shareall=1 OR ' : '') . " cshar.userid IS NOT NULL) -- only shared all, if enabled
-        -- Shared for you group
-        " . ($usercats ? " OR c.id IN (" . join(',', array_keys($usercats)) . ") " : "") . "
-        )
-        AND internshare = 1
-        AND u.deleted = 0
-    GROUP BY
-        {$categorycolumns}, u.firstname, u.lastname, u.picture
-    $sqlsort", array($USER->id, $USER->id));
-
-    return $categories;
-}
-
 
 /**
  * Function gets teachers array of course
@@ -1429,16 +1750,658 @@ function block_exaport_user_is_teacher($userid = null) {
     if ($userid === null) {
         $userid = $USER->id;
     }
-    // Role 3 = teacher
+    
+    // First check if user is admin
+    if (is_siteadmin($userid)) {
+        error_log("TEACHER CHECK: User $userid is site admin");
+        return true;
+    }
+    
+    // Check for multiple teacher/instructor roles - be more inclusive
+    // Look for any role that is NOT student (role 5)
+    $query = "SELECT DISTINCT ra.roleid, r.shortname
+      FROM {role_assignments} ra
+      JOIN {user} u ON ra.userid = u.id
+      JOIN {context} c ON c.id = ra.contextid
+      JOIN {role} r ON r.id = ra.roleid
+      WHERE c.contextlevel = ? AND u.id = ? AND ra.roleid != '5' AND u.deleted = 0 ";
+    $roles = $DB->get_records_sql($query, [CONTEXT_COURSE, $userid]);
+    
+    error_log("TEACHER CHECK: User $userid has " . count($roles) . " non-student roles: " . implode(', ', array_column($roles, 'shortname')));
+    
+    if (count($roles) > 0) {
+        return true;
+    }
+    
+    // Also check for system-level capabilities that indicate teacher/admin status
+    try {
+        if (has_capability('moodle/course:create', context_system::instance(), $userid) ||
+            has_capability('moodle/site:config', context_system::instance(), $userid) ||
+            has_capability('moodle/course:manageactivities', context_system::instance(), $userid)) {
+            error_log("TEACHER CHECK: User $userid has system-level teaching capabilities");
+            return true;
+        }
+    } catch (Exception $e) {
+        error_log("TEACHER CHECK: Error checking capabilities for user $userid: " . $e->getMessage());
+    }
+    
+    return false;
+}
+
+// Check if user is a student (role 5 = student)
+function block_exaport_user_is_student($userid = null) {
+    global $DB, $USER;
+    if ($userid === null) {
+        $userid = $USER->id;
+    }
+    // Role 5 = student
     $query = "SELECT DISTINCT u.id as userid, u.id AS tmp
       FROM {role_assignments} ra
       JOIN {user} u ON ra.userid = u.id
       JOIN {context} c ON c.id = ra.contextid
-      WHERE c.contextlevel = ? AND u.id = ? AND ra.roleid = '3' AND u.deleted = 0 ";
+      WHERE c.contextlevel = ? AND u.id = ? AND ra.roleid = '5' AND u.deleted = 0 ";
     $roles = $DB->get_records_sql($query, [CONTEXT_COURSE, $userid]);
     if (count($roles) > 0) {
         return true;
     }
+    return false;
+}
+
+/**
+ * Check if current user is a site administrator
+ * @return bool True if user is site administrator
+ */
+function block_exaport_user_is_admin() {
+    return is_siteadmin() || has_capability('moodle/site:config', context_system::instance());
+}
+
+/**
+ * Check if we are in the root category (categoryid = 0 or empty)
+ * @param mixed $categoryid The category ID to check
+ * @return bool True if we are in root category
+ */
+function block_exaport_is_root_category($categoryid) {
+    // Convert to string to handle both numeric and string inputs
+    $categoryid_str = (string)$categoryid;
+    
+    // Root category is when categoryid is 0, '0', empty, or null
+    if ($categoryid === 0 || $categoryid === '0' || empty($categoryid) || $categoryid === null) {
+        return true;
+    }
+    
+    // Special case: evidencias_xxx is NOT a root category
+    if (strpos($categoryid_str, 'evidencias_') === 0) {
+        return false;
+    }
+    
+    // Course_xxx is also NOT a root category
+    if (strpos($categoryid_str, 'course_') === 0) {
+        return false;
+    }
+    
+    return false;
+}
+
+/**
+ * Check if instructor can create items in the current category
+ * Instructors can only create in "Evidencias" folders, not in root or other categories
+ * @param mixed $categoryid The category ID to check
+ * @return bool True if instructor can create items
+ */
+function block_exaport_instructor_can_create_in_category($categoryid) {
+    global $DB;
+    
+    error_log("DEBUG INSTRUCTOR: Checking permissions for categoryid='" . $categoryid . "' (type: " . gettype($categoryid) . ")");
+    
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        error_log("DEBUG INSTRUCTOR: User is administrator, granting full permissions");
+        return true;
+    }
+    
+    // FIRST check if user is a teacher/instructor - they get priority over student role
+    if (block_exaport_user_is_teacher()) {
+        error_log("DEBUG INSTRUCTOR: User is teacher, checking evidencias permissions");
+        
+        // Allow creating directly in evidencias folders (evidencias_123 format)
+        if (strpos($categoryid, 'evidencias_') === 0) {
+            error_log("DEBUG INSTRUCTOR: Teacher can create in evidencias folder: $categoryid");
+            return true;
+        }
+        
+        // Allow creating in any subcategory that belongs to evidencias hierarchy
+        if (is_numeric($categoryid) && $categoryid > 0) {
+            $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+            if ($category && block_exaport_is_category_within_evidencias($category)) {
+                error_log("DEBUG INSTRUCTOR: Teacher can create in evidencias subcategory: $categoryid");
+                return true;
+            }
+        }
+        
+        // Check if trying to create inside evidencias via URL parameter
+        $parentid = optional_param('pid', 0, PARAM_RAW);
+        if ($parentid && strpos($parentid, 'evidencias_') === 0) {
+            error_log("DEBUG INSTRUCTOR: Teacher can create - parentid is evidencias: $parentid");
+            return true;
+        }
+        
+        // Check if parentid is a numeric category within evidencias
+        if (is_numeric($parentid) && $parentid > 0) {
+            $parent_category = $DB->get_record('block_exaportcate', array('id' => $parentid));
+            if ($parent_category && block_exaport_is_category_within_evidencias($parent_category)) {
+                error_log("DEBUG INSTRUCTOR: Teacher can create - parent is in evidencias hierarchy");
+                return true;
+            }
+        }
+        
+        // Teachers cannot create outside evidencias
+        error_log("DEBUG INSTRUCTOR: Teacher cannot create outside evidencias hierarchy");
+        return false;
+    }
+    
+    // Then check if students can write in evidencias categories (only if not a teacher)
+    if (block_exaport_user_is_student()) {
+        error_log("DEBUG INSTRUCTOR: User is student (not teacher), checking evidencias write permissions");
+        error_log("DEBUG INSTRUCTOR: is_numeric check: " . (is_numeric($categoryid) ? 'true' : 'false') . ", categoryid > 0: " . ($categoryid > 0 ? 'true' : 'false'));
+        // Students can create in evidencias categories if they have write permissions
+        if (is_numeric($categoryid) && $categoryid > 0) {
+            error_log("DEBUG INSTRUCTOR: Calling block_exaport_student_can_write_in_evidencias for category {$categoryid}");
+            if (block_exaport_student_can_write_in_evidencias($categoryid)) {
+                error_log("DEBUG INSTRUCTOR: Student has write permissions in evidencias category");
+                return true;
+            } else {
+                error_log("DEBUG INSTRUCTOR: Student does NOT have write permissions in evidencias category");
+            }
+        } else {
+            error_log("DEBUG INSTRUCTOR: Category is not numeric or <= 0");
+        }
+        error_log("DEBUG INSTRUCTOR: Student has no write permissions, denying");
+        return false;
+    }
+    
+    // Default: no permission for users who are neither teachers nor students
+    error_log("DEBUG INSTRUCTOR: User is neither teacher nor student, denying");
+    return false;
+}
+
+/**
+ * Check if a category is within an evidencias folder hierarchy
+ * @param object $category The category object to check
+ * @return bool True if the category is within an evidencias folder
+ */
+function block_exaport_is_category_within_evidencias($category) {
+    global $DB;
+    
+    if (!$category) {
+        return false;
+    }
+    
+    // Check if this category has source field > 0 (indicates it's from evidencias)
+    if (isset($category->source) && $category->source > 0 && is_numeric($category->source)) {
+        error_log("EVIDENCIAS CHECK: Category {$category->id} is evidencias category (source: {$category->source})");
+        return true;
+    }
+    
+    // Traverse up the category hierarchy to find if any parent is an evidencias folder
+    $current_category = $category;
+    $max_depth = 10; // Prevent infinite loops
+    $depth = 0;
+    
+    while ($current_category && $depth < $max_depth) {
+        // Check if current category name contains evidencias
+        if (stripos($current_category->name, 'evidencias') !== false) {
+            error_log("EVIDENCIAS CHECK: Category {$current_category->id} contains 'evidencias' in name: {$current_category->name}");
+            return true;
+        }
+        
+        // Check if this category has source field indicating it's from evidencias
+        if (isset($current_category->source) && $current_category->source > 0 && is_numeric($current_category->source)) {
+            error_log("EVIDENCIAS CHECK: Parent category {$current_category->id} is evidencias (source: {$current_category->source})");
+            return true;
+        }
+        
+        // Move to parent category
+        if (isset($current_category->pid) && $current_category->pid && $current_category->pid > 0) {
+            $current_category = $DB->get_record('block_exaportcate', 
+                array('id' => $current_category->pid, 'userid' => $current_category->userid));
+            if (!$current_category) {
+                error_log("EVIDENCIAS CHECK: Parent category {$current_category->pid} not found, stopping traversal");
+                break;
+            }
+        } else {
+            error_log("EVIDENCIAS CHECK: No parent category found for {$current_category->id}, stopping traversal");
+            break;
+        }
+        
+        $depth++;
+    }
+    
+    error_log("EVIDENCIAS CHECK: Category {$category->id} is NOT within evidencias hierarchy");
+    return false;
+}
+
+/**
+ * Check if instructors have full permissions for a given action and context
+ * Instructors have full permissions when working within evidencias folders
+ * @param string $action The action to check (add, edit, delete, etc.)
+ * @param mixed $context_id The context ID (could be pid for creation, category id for edit/delete)
+ * @return bool True if instructor has permission
+ */
+function block_exaport_instructor_has_permission($action, $context_id = null) {
+    global $DB, $USER;
+    
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        error_log("PERMISSION DEBUG: Administrator has full permissions for action '$action'");
+        return true;
+    }
+    
+    // Students have special permissions for writing in evidencias
+    if (block_exaport_user_is_student()) {
+        // Students can add items AND categories to evidencias categories with write permissions
+        if (in_array($action, ['add', 'addstdcat']) && $context_id) {
+            // Check if trying to create in an evidencias folder (evidencias_XX format)
+            if (strpos($context_id, 'evidencias_') === 0) {
+                // Extract course ID and check if student is enrolled
+                $courseid = intval(substr($context_id, 11));
+                $context = context_course::instance($courseid);
+                return is_enrolled($context, $USER->id, 'mod/assign:submit');
+            }
+            // Check if trying to create in an evidencias category with write permissions
+            if (is_numeric($context_id)) {
+                return block_exaport_student_can_write_in_evidencias($context_id);
+            }
+        }
+        
+        // Students can edit and delete their own evidencias categories
+        if (in_array($action, ['edit', 'delete']) && $context_id && is_numeric($context_id)) {
+            $category = $DB->get_record('block_exaportcate', array('id' => $context_id, 'userid' => $USER->id));
+            if ($category && isset($category->source) && $category->source > 0) {
+                error_log("PERMISSION DEBUG: Student can edit/delete own evidencias category {$context_id}");
+                return true;
+            }
+        }
+        
+        // Students cannot edit or delete regular categories
+        return false;
+    }
+    
+    // For instructors: Full permissions within evidencias hierarchy
+    if (block_exaport_user_is_teacher() || !block_exaport_user_is_student()) {
+        // For creation actions (add, addstdcat)
+        if (in_array($action, ['add', 'addstdcat'])) {
+            $pid = $context_id ? $context_id : optional_param('pid', 0, PARAM_RAW);
+            
+            // Allow creating directly in evidencias folders
+            if (strpos($pid, 'evidencias_') === 0) {
+                error_log("PERMISSION DEBUG: Instructor can create in evidencias folder: $pid");
+                return true;
+            }
+            
+            // Allow creating in any evidencias subcategory
+            if (is_numeric($pid) && $pid > 0) {
+                $parent_category = $DB->get_record('block_exaportcate', array('id' => $pid));
+                if ($parent_category && block_exaport_is_category_within_evidencias($parent_category)) {
+                    error_log("PERMISSION DEBUG: Instructor can create in evidencias subcategory: $pid");
+                    return true;
+                }
+            }
+        }
+        
+        // For edit/delete actions
+        if (in_array($action, ['edit', 'delete']) && $context_id) {
+            // Cannot edit/delete virtual folders
+            if (!is_numeric($context_id)) {
+                error_log("PERMISSION INFO: Cannot edit/delete virtual folder: $context_id");
+                return false;
+            }
+            
+            // Allow editing/deleting any category within evidencias hierarchy
+            $category = $DB->get_record('block_exaportcate', array('id' => $context_id));
+            if (!$category) {
+                error_log("PERMISSION ERROR: Category ID $context_id not found");
+                return false;
+            }
+            
+            // Check if this category is within evidencias hierarchy
+            if (block_exaport_is_category_within_evidencias($category)) {
+                error_log("PERMISSION DEBUG: Instructor has full permissions on evidencias category {$context_id}");
+                return true;
+            }
+            
+            // Legacy check: if category was created in evidencias (has source > 0)
+            if (isset($category->source) && $category->source > 0 && is_numeric($category->source)) {
+                error_log("PERMISSION DEBUG: Instructor can edit/delete evidencias category {$context_id} (source: {$category->source})");
+                return true;
+            }
+        }
+    }
+    
+    // Legacy logic for backward compatibility
+    // For creation actions, check if the parent is evidencias
+    if (in_array($action, ['add', 'addstdcat'])) {
+        $pid = $context_id ? $context_id : optional_param('pid', 0, PARAM_RAW);
+        return strpos($pid, 'evidencias_') === 0;
+    }
+    
+    // For edit/delete actions, check if the category is within evidencias
+    if (in_array($action, ['edit', 'delete']) && $context_id) {
+        // Special case: if context_id is not numeric, it's a virtual folder (course_XX, evidencias_XX, etc.)
+        // These cannot be edited or deleted
+        if (!is_numeric($context_id)) {
+            error_log("PERMISSION INFO: Cannot edit/delete virtual folder: $context_id");
+            return false;
+        }
+        
+        // For instructors: allow editing any evidencias category
+        // For students: the check was already done above
+        $category = $DB->get_record('block_exaportcate', array('id' => $context_id));
+        if (!$category) {
+            error_log("PERMISSION ERROR: Category ID $context_id not found");
+            return false;
+        }
+        
+        // Check if this category was created in evidencias (has source > 0)
+        if (isset($category->source) && $category->source > 0 && is_numeric($category->source)) {
+            error_log("PERMISSION DEBUG: Instructor can edit/delete evidencias category {$context_id} (source: {$category->source})");
+            return true;
+        }
+        
+        // Check if it's a subcategory within evidencias
+        return block_exaport_is_category_within_evidencias($category);
+    }
+    
+    // Default: no permission
+    return false;
+}
+
+/**
+ * Check if a student has write permissions in an evidencias category
+ * Students can upload/create items in evidencias categories that have write permissions enabled
+ * @param int $categoryid The category ID to check
+ * @param int $userid The user ID to check (optional, uses current user if not provided)
+ * @return bool True if student has write permission in this evidencias category
+ */
+function block_exaport_student_can_write_in_evidencias($categoryid, $userid = null) {
+    global $DB, $USER;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    error_log("DEBUG WRITE PERMISSION: Checking write permissions for student {$userid} in category {$categoryid}");
+    
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        error_log("DEBUG WRITE PERMISSION: User is administrator, granting full permissions");
+        return true;
+    }
+    
+    // Only students need this check
+    if (!block_exaport_user_is_student()) {
+        error_log("DEBUG WRITE PERMISSION: User is not a student");
+        return false;
+    }
+    
+    // Get the category
+    $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+    if (!$category) {
+        error_log("DEBUG WRITE PERMISSION: Category {$categoryid} not found");
+        return false;
+    }
+    
+    error_log("DEBUG WRITE PERMISSION: Category data - source: {$category->source}, internshare: {$category->internshare}");
+    
+    // Check if this is an evidencias category with write permissions enabled
+    // internshare = 2 means "student write permissions in evidencias"
+    if (isset($category->source) && $category->source > 0 && $category->internshare == 2) {
+        // Check if student is enrolled in the course
+        $courseid = $category->source;
+        $context = context_course::instance($courseid);
+        $enrolled = is_enrolled($context, $userid, 'mod/assign:submit');
+        error_log("DEBUG WRITE PERMISSION: Course {$courseid}, enrolled: " . ($enrolled ? 'true' : 'false'));
+        return $enrolled;
+    }
+    
+    error_log("DEBUG WRITE PERMISSION: No write permissions (not evidencias or internshare != 2)");
+    return false;
+}
+
+/**
+ * Check if a student can perform actions (create/edit/delete) within instructor-created folders in evidencias
+ * Students have full permissions within folders created by instructors in evidencias hierarchy
+ * @param int $categoryid The category ID to check
+ * @param int $userid The user ID to check (optional, uses current user if not provided)
+ * @return bool True if student can perform actions in this category or its subcategories
+ */
+function block_exaport_student_can_act_in_instructor_folder($categoryid, $userid = null) {
+    global $DB, $USER;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Checking if student {$userid} can act in category {$categoryid}");
+    
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: User is administrator, granting full permissions");
+        return true;
+    }
+    
+    // Only students need this check
+    if (!block_exaport_user_is_student()) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: User is not a student");
+        return false;
+    }
+    
+    // Handle special case: if categoryid is not numeric (like 'course_72' or 'evidencias_72'), 
+    // it means we're at the root level and students cannot create there
+    if (!is_numeric($categoryid)) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Category ID is not numeric ({$categoryid}), denying access at root level");
+        return false;
+    }
+    
+    // Get the category
+    $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+    if (!$category) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Category {$categoryid} not found");
+        return false;
+    }
+    
+    // Check if we're in evidencias context
+    // Evidencias categories have numeric source (course ID) instead of 'courses'
+    if (!is_numeric($category->source)) {
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Not in evidencias context (source is not numeric: {$category->source})");
+        return false;
+    }
+    
+    // Traverse up the hierarchy to find if we're within an instructor-created folder
+    $current_category = $category;
+    
+    // Get the courseid - for evidencias categories it's stored in the source field
+    $courseid = (int)$category->source;
+    
+    error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Evidencias category {$categoryid}, courseid: {$courseid}");
+    
+    // We need to check if ANY parent in the hierarchy was created by an instructor
+    $checked_categories = array(); // Prevent infinite loops
+    
+    while ($current_category && !in_array($current_category->id, $checked_categories)) {
+        $checked_categories[] = $current_category->id;
+        
+        error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Checking category {$current_category->id}, userid: {$current_category->userid}, pid: {$current_category->pid}");
+        
+        // Check if current category creator is an instructor
+        if (block_exaport_user_is_teacher_in_course($current_category->userid, $courseid)) {
+            error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Found instructor-created category {$current_category->id}, granting permissions");
+            return true;
+        }
+        
+        // If we reach the evidencias root (pid = -courseid), we've checked all the way up
+        if ($current_category->pid == -$courseid) {
+            error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Reached evidencias root without finding instructor parent");
+            break;
+        }
+        
+        // Move up to parent category
+        if ($current_category->pid > 0) {
+            $parent_category = $DB->get_record('block_exaportcate', array('id' => $current_category->pid));
+            if (!$parent_category) {
+                error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Parent category {$current_category->pid} not found, stopping");
+                break;
+            }
+            $current_category = $parent_category;
+        } else {
+            error_log("DEBUG STUDENT INSTRUCTOR FOLDER: Reached root level (pid <= 0), stopping");
+            break;
+        }
+    }
+    
+    error_log("DEBUG STUDENT INSTRUCTOR FOLDER: No instructor-created parent found, denying permissions");
+    return false;
+}
+
+/**
+ * Check if a user is a teacher in a specific course
+ * @param int $userid The user ID to check
+ * @param int $courseid The course ID
+ * @return bool True if user is teacher in the course
+ */
+function block_exaport_user_is_teacher_in_course($userid, $courseid) {
+    global $DB;
+    
+    // Get course context
+    $context = context_course::instance($courseid);
+    
+    // Check if user has teacher capabilities in this course
+    $sql = "SELECT COUNT(*) FROM {role_assignments} ra 
+            JOIN {role} r ON ra.roleid = r.id 
+            WHERE ra.userid = ? AND ra.contextid = ? 
+            AND r.shortname IN ('editingteacher', 'teacher')";
+    
+    $count = $DB->count_records_sql($sql, array($userid, $context->id));
+    
+    error_log("DEBUG TEACHER CHECK: User {$userid} in course {$courseid} - teacher count: {$count}");
+    
+    return $count > 0;
+}
+
+/**
+ * Check if a category belongs to the current student (is in their personal portfolio area)
+ * @param int $categoryid The category ID to check
+ * @param int $userid The user ID to check (optional, uses current user if not provided)
+ * @return bool True if the category was created by the student
+ */
+function block_exaport_student_owns_category($categoryid, $userid = null) {
+    global $DB, $USER;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    // Handle non-numeric categoryids (like 'evidencias_72')
+    if (!is_numeric($categoryid)) {
+        error_log("DEBUG STUDENT OWNS: Category ID is not numeric ({$categoryid}), student cannot own it");
+        return false;
+    }
+    
+    error_log("DEBUG STUDENT OWNS: Checking if category {$categoryid} was created by student {$userid}");
+    
+    // Get the category
+    $category = $DB->get_record('block_exaportcate', array('id' => $categoryid));
+    if (!$category) {
+        error_log("DEBUG STUDENT OWNS: Category {$categoryid} not found");
+        return false;
+    }
+    
+    // Check if this category was created by the student
+    if ($category->userid == $userid) {
+        error_log("DEBUG STUDENT OWNS: Category {$categoryid} was created by student {$userid}");
+        return true;
+    }
+    
+    // Check if any parent category was created by the student
+    $current_category = $category;
+    $checked_categories = array(); // Prevent infinite loops
+    
+    while ($current_category && !in_array($current_category->id, $checked_categories)) {
+        $checked_categories[] = $current_category->id;
+        
+        error_log("DEBUG STUDENT OWNS: Checking parent category {$current_category->id}, userid: {$current_category->userid}");
+        
+        if ($current_category->userid == $userid) {
+            error_log("DEBUG STUDENT OWNS: Found student-created parent category {$current_category->id}");
+            return true;
+        }
+        
+        // Move up to parent category
+        if ($current_category->pid > 0) {
+            $parent_category = $DB->get_record('block_exaportcate', array('id' => $current_category->pid));
+            if (!$parent_category) {
+                error_log("DEBUG STUDENT OWNS: Parent category {$current_category->pid} not found, stopping");
+                break;
+            }
+            $current_category = $parent_category;
+        } else {
+            error_log("DEBUG STUDENT OWNS: Reached root level");
+            break;
+        }
+    }
+    
+    error_log("DEBUG STUDENT OWNS: Category {$categoryid} and its parents were not created by student {$userid}");
+    return false;
+}
+
+/**
+ * Check if a student can edit/delete an item
+ * Students can edit/delete their own items in evidencias categories
+ * @param int $itemid The item ID to check
+ * @return bool True if student can edit/delete this item
+ */
+function block_exaport_student_can_edit_item($itemid) {
+    global $DB, $USER;
+    
+    if (!$itemid) {
+        return false;
+    }
+    
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+    
+    // Get the item details
+    $item = $DB->get_record('block_exaportitem', array('id' => $itemid));
+    if (!$item) {
+        return false;
+    }
+    
+    // Instructors can edit any item within evidencias hierarchy
+    if (block_exaport_user_is_teacher() || !block_exaport_user_is_student()) {
+        // If the item is in a category, check if it's an evidencias category
+        if ($item->categoryid > 0) {
+            $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+            if ($category && block_exaport_is_category_within_evidencias($category)) {
+                error_log("EDIT ITEM: Instructor can edit item {$itemid} in evidencias category {$item->categoryid}");
+                return true;
+            }
+        }
+        // Instructors cannot edit items outside evidencias
+        return false;
+    }
+    
+    // Students can only edit their own items
+    if ($item->userid != $USER->id) {
+        return false;
+    }
+    
+    // If the item is in a category, check if it's an evidencias category with write permissions
+    if ($item->categoryid > 0) {
+        return block_exaport_student_can_write_in_evidencias($item->categoryid);
+    }
+    
+    // If item is not in a category, students cannot edit (only evidencias items allowed)
     return false;
 }
 
@@ -1577,6 +2540,36 @@ function block_exaport_is_valid_media_by_filename($filename) {
 function block_exaport_item_is_editable($itemid) {
     global $CFG, $DB, $USER;
 
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+
+    // Get the item to check category permissions
+    $item = $DB->get_record('block_exaportitem', array('id' => $itemid));
+    if (!$item) {
+        return false;
+    }
+
+    // Check if student can act in instructor folder (new permission system)
+    if (block_exaport_user_is_student() && $item->categoryid) {
+        if (block_exaport_student_can_act_in_instructor_folder($item->categoryid)) {
+            error_log("DEBUG ITEM EDITABLE: Student can act in instructor folder for item {$itemid}");
+            return true;
+        }
+    }
+
+    // Instructors have full permissions in evidencias hierarchy
+    if (block_exaport_user_is_teacher() && $item->categoryid) {
+        $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+        if ($category && $category->source === 'courses') {
+            if (block_exaport_instructor_has_permission($item->categoryid)) {
+                error_log("DEBUG ITEM EDITABLE: Instructor has permission for item {$itemid}");
+                return true;
+            }
+        }
+    }
+
     if ($CFG->block_exaport_app_alloweditdelete) {
         return true;
     }
@@ -1620,6 +2613,11 @@ function block_exaport_item_is_editable($itemid) {
  */
 function block_exaport_item_is_resubmitable($itemid) {
     global $CFG, $DB, $USER, $COURSE;
+
+    // Administrators have full permissions everywhere
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
 
     if ($CFG->block_exaport_app_alloweditdelete) {
         return true;
@@ -2029,19 +3027,48 @@ abstract class block_exaport_moodleform extends moodleform {
 }
 
 function block_exaport_get_all_categories_for_user($userid) {
-    global $DB;
+    global $DB, $USER;
     $categorycolumns = g::$DB->get_column_names_prefixed('block_exaportcate', 'c');
-    $categories = $DB->get_records_sql("
-        SELECT
-            {$categorycolumns}
-            , COUNT(i.id) AS item_cnt
-        FROM {block_exaportcate} c
-        LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
-        WHERE c.userid = ?
-        GROUP BY
-            {$categorycolumns}
-        ORDER BY c.name ASC
-    ", array($userid));
+    
+    // Check if user is instructor (not student)
+    $is_instructor = !block_exaport_user_is_student($userid);
+    
+    if ($is_instructor) {
+        // Instructors can see their own categories + all evidencias subcategories from students
+        $categories = $DB->get_records_sql("
+            SELECT
+                {$categorycolumns}
+                , COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
+            WHERE (
+                (c.userid = ? AND (c.source IS NULL OR c.source = 0)) OR
+                (c.source > 0 AND c.pid > 0)
+            )
+            GROUP BY
+                {$categorycolumns}
+            ORDER BY c.name ASC
+        ", array($userid));
+        error_log("CATEGORIES DEBUG: Instructor loading " . count($categories) . " categories (own + evidencias subcategories)");
+    } else {
+        // Students see their own categories + their own evidencias subcategories + shared ones
+        $categories = $DB->get_records_sql("
+            SELECT
+                {$categorycolumns}
+                , COUNT(i.id) AS item_cnt
+            FROM {block_exaportcate} c
+            LEFT JOIN {block_exaportitem} i ON i.categoryid=c.id AND " . block_exaport_get_item_where() . "
+            WHERE c.userid = ? AND (
+                (c.source IS NULL OR c.source = 0) OR
+                (c.source > 0)
+            )
+            GROUP BY
+                {$categorycolumns}
+            ORDER BY c.name ASC
+        ", array($userid));
+        error_log("CATEGORIES DEBUG: Student loading " . count($categories) . " categories (own + own evidencias subcategories)");
+    }
+    
     return $categories;
 }
 
@@ -2520,14 +3547,21 @@ function block_exaport_item_icon_type_options($itemtype) {
  * @return void
  */
 function block_exaport_add_iconpack($limitFaToExaportContent = false) {
-    global $PAGE;
+    global $PAGE, $CFG;
 
     if ($limitFaToExaportContent) {
         $PAGE->requires->js('/blocks/exaport/javascript/exaport_fa.js');
     }
 
-    // add font awesome
-    $PAGE->requires->js('/blocks/exaport/pix/icons/fontawesome/js/all.min.js');
+    // add font awesome - check if file exists first with defensive programming
+    $fontawesome_path = !empty($CFG->dirroot) ? $CFG->dirroot . '/blocks/exaport/pix/icons/fontawesome/js/all.min.js' : '';
+    if (!empty($fontawesome_path) && file_exists($fontawesome_path)) {
+        $PAGE->requires->js('/blocks/exaport/pix/icons/fontawesome/js/all.min.js');
+    } else {
+        // Fallback: try to load from CDN if local file doesn't exist
+        $PAGE->requires->js('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js');
+    }
+    
     // add boxicons
     //$PAGE->requires->css('/blocks/exaport/pix/icons/boxicons/css/boxicons.min.css');
 }
@@ -2541,4 +3575,839 @@ function block_exaport_used_layout() {
 
     //    return @$CFG->block_exaport_used_layout ?: 'clean_old';
     return @$CFG->block_exaport_used_layout ?: 'moodle_bootstrap';
+}
+
+/**
+ * Get courses for the current user to display as course folders in view_items
+ * Only enrolled courses for all users (including admins)
+ * 
+ * @param int $userid User ID (optional, defaults to current user)
+ * @return array Array of course objects formatted as folder structure
+ */
+function block_exaport_get_user_course_folders($userid = null, $courseid = null) {
+    global $DB, $USER, $CFG;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    if (!$courseid) {
+        $courseid = 1; // Default to site course
+    }
+    
+    // Get only enrolled courses for the user
+    $enrolledcourses = $DB->get_records_sql("
+        SELECT c.id, c.fullname, c.shortname, c.visible, c.startdate, c.enddate,
+               0 as item_cnt
+        FROM {course} c
+        INNER JOIN {enrol} e ON e.courseid = c.id
+        INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+        WHERE ue.userid = ? AND c.id > 1 AND c.visible = 1
+        ORDER BY c.fullname ASC
+    ", array($userid));
+    
+    // Format courses as folder objects similar to categories
+    $coursefolders = array();
+    foreach ($enrolledcourses as $course) {
+        $folder = new stdClass();
+        $folder->id = 'course_' . $course->id; // Prefix to distinguish from categories
+        $folder->courseid = $course->id;
+        $folder->name = $course->fullname;
+        $folder->shortname = $course->shortname;
+        $folder->pid = 0; // Course folders are always at root level
+        $folder->item_cnt = 0; // Will be updated later if needed
+        $folder->type = 'course_folder';
+        // Course folder - use custom SVG icon
+        error_log("ICON DEBUG: Applying COURSE SVG icon to course folder {$folder->id} (Course: {$course->fullname})");
+        $folder->icon = '<svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100">'
+            . '<path fill="#00304d" d="M90.1,38.9h6.6c1.3,0,3.4,2.5,3.3,3.9v40.5c-.6,6.1-5.2,10.9-11.4,11.4H11.2c-6-.7-10.6-5.2-11.2-11.2V31.6c-.2-1.4,2-3.9,3.3-3.9h6.2l.3-.3V10.2c0-2.2,3.6-5,5.8-4.9h68.3c2.1,0,4.3,1.2,5.4,3.1.1.2.8,1.8.8,1.9v28.7h0ZM86.9,15.9v-5.3c0-.6-1.5-2.1-2.2-2H16c-.9-.3-2.9,1.2-2.9,2v5.3h73.8ZM86.9,19.2H13.1v1.6h73.8v-1.6ZM86.9,23.8H13.1v3.8h15.8l.8.6,9.3,10.7h47.9v-15.1h0ZM4,30.9l-.8,1.1v51.4c.5,4.3,4,7.8,8.4,8.2h76.8c4.4-.3,8-4,8.4-8.4v-40.4c-.1,0-.6-.5-.6-.5h-58.1c0-.1-.7-.4-.7-.4l-9.6-10.9H4Z"/>'
+            . '<rect fill="#39a900" x="13.1" y="19.2" width="73.8" height="1.6"/>'
+            . '</svg>';
+        $folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $courseid . 
+                      '&categoryid=course_' . $course->id;
+        $coursefolders[$folder->id] = $folder;
+    }
+    
+    return $coursefolders;
+}
+
+/**
+ * Get course sections to display as subfolders when inside a course folder
+ * 
+ * @param int $target_courseid Course ID to get sections from
+ * @param int $context_courseid Current course context for URLs
+ * @param int $userid User ID (optional, defaults to current user)
+ * @return array Array of section objects formatted as folder structure
+ */
+function block_exaport_get_course_sections_as_folders($target_courseid, $context_courseid = null, $userid = null) {
+    global $DB, $USER, $CFG;
+    
+    if (!$target_courseid || $target_courseid <= 1) {
+        return array();
+    }
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    if (!$context_courseid) {
+        $context_courseid = $target_courseid;
+    }
+    
+    // Check if user is enrolled in the course
+    $context = context_course::instance($target_courseid);
+    if (!is_enrolled($context, $userid)) {
+        return array();
+    }
+    
+    // Get course sections
+    $course = get_course($target_courseid);
+    $modinfo = get_fast_modinfo($course, $userid);
+    $sections = $modinfo->get_section_info_all();
+    
+    $sectionfolders = array();
+    
+    foreach ($sections as $sectionnum => $section) {
+        // Skip section 0 (general section) unless it has a custom name
+        if ($sectionnum == 0 && empty($section->name)) {
+            continue;
+        }
+        
+        // Check if section is visible to user
+        if (!$section->uservisible) {
+            continue;
+        }
+        
+        $folder = new stdClass();
+        $folder->id = 'section_' . $target_courseid . '_' . $sectionnum;
+        $folder->courseid = $target_courseid;
+        $folder->sectionnum = $sectionnum;
+        $folder->section_id = $section->id;
+        
+        // Get section name
+        if (!empty($section->name)) {
+            $folder->name = $section->name;
+        } else {
+            // Use format-specific section name (e.g., "Topic 1", "Week 1")
+            $folder->name = get_section_name($course, $section);
+        }
+        
+        $folder->summary = $section->summary;
+        $folder->pid = 'course_' . $target_courseid; // Parent is the course folder
+        $folder->item_cnt = count($section->modinfo->sections[$sectionnum] ?? []);
+        $folder->type = 'course_section';
+        $folder->icon = 'fa-folder'; // Section icon
+        $folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $context_courseid . 
+                      '&categoryid=section_' . $target_courseid . '_' . $sectionnum;
+        
+        $sectionfolders[$folder->id] = $folder;
+    }
+    
+    // Add "Evidencias" folder for this course
+    $evidencias_folder = new stdClass();
+    $evidencias_folder->id = 'evidencias_' . $target_courseid;
+    $evidencias_folder->courseid = $target_courseid;
+    $evidencias_folder->name = 'Evidencias';
+    $evidencias_folder->summary = 'Carpeta para evidencias del curso';
+    $evidencias_folder->pid = 'course_' . $target_courseid; // Parent is the course folder
+    $evidencias_folder->item_cnt = 0; // Could be calculated if needed
+    $evidencias_folder->type = 'evidencias_folder';
+    $evidencias_folder->icon = 'fa-folder-open'; // Evidencias folder icon
+    $evidencias_folder->url = $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $context_courseid . 
+                              '&categoryid=evidencias_' . $target_courseid;
+    
+    $sectionfolders[$evidencias_folder->id] = $evidencias_folder;
+    
+    return $sectionfolders;
+}
+
+/**
+ * Get files and resources from a specific course section
+ * 
+ * @param string $section_id Section ID in format: section_courseid_sectionnum
+ * @param int $context_courseid Current course context for URLs
+ * @param int $userid User ID (optional, defaults to current user)
+ * @return array Array of file/resource objects formatted as portfolio items
+ */
+function block_exaport_get_section_files($section_id, $context_courseid = null, $userid = null) {
+    global $DB, $USER, $CFG, $OUTPUT;
+    
+    if (!$userid) {
+        $userid = $USER->id;
+    }
+    
+    if (!$context_courseid) {
+        $context_courseid = 1; // Default to site context
+    }
+    
+    // Parse section ID (format: section_courseid_sectionnum)
+    $parts = explode('_', $section_id);
+    if (count($parts) !== 3 || $parts[0] !== 'section') {
+        return array();
+    }
+    
+    $target_courseid = intval($parts[1]);
+    $sectionnum = intval($parts[2]);
+    
+    if (!$target_courseid || $sectionnum < 0) {
+        return array();
+    }
+    
+    // Check if user is enrolled in the course
+    try {
+        $context = context_course::instance($target_courseid);
+        if (!is_enrolled($context, $userid)) {
+            return array();
+        }
+    } catch (Exception $e) {
+        return array();
+    }
+    
+    // Get course and section information
+    try {
+        $course = get_course($target_courseid);
+        $modinfo = get_fast_modinfo($course, $userid);
+        $section = $modinfo->get_section_info($sectionnum);
+        
+        if (!$section || !$section->uservisible) {
+            return array();
+        }
+    } catch (Exception $e) {
+        return array();
+    }
+    
+    $files = array();
+    
+    // Get all course modules in this section
+    if (!empty($modinfo->sections[$sectionnum])) {
+        foreach ($modinfo->sections[$sectionnum] as $cmid) {
+            $cm = $modinfo->get_cm($cmid);
+            
+            // Skip if module is not visible to user
+            if (!$cm->uservisible) {
+                continue;
+            }
+            
+            // Handle different module types
+            switch ($cm->modname) {
+                case 'resource':
+                    $item = block_exaport_get_resource_file($cm, $target_courseid, $context_courseid);
+                    break;
+                case 'folder':
+                    $folder_files = block_exaport_get_folder_files($cm, $target_courseid, $context_courseid);
+                    $files = array_merge($files, $folder_files);
+                    continue 2; // Skip the individual item adding since we added multiple
+                case 'url':
+                    $item = block_exaport_get_url_link($cm, $target_courseid, $context_courseid);
+                    break;
+                case 'assign':
+                    $item = block_exaport_get_assignment($cm, $target_courseid, $context_courseid);
+                    break;
+                case 'quiz':
+                    $item = block_exaport_get_quiz($cm, $target_courseid, $context_courseid);
+                    break;
+                case 'forum':
+                    $item = block_exaport_get_forum($cm, $target_courseid, $context_courseid);
+                    break;
+                default:
+                    // Generic handler for all other module types
+                    $item = block_exaport_get_generic_activity($cm, $target_courseid, $context_courseid);
+                    break;
+            }
+            
+            if ($item) {
+                $files[] = $item;
+            }
+        }
+    }
+    
+    return $files;
+}
+
+/**
+ * Get file information from a resource module
+ */
+function block_exaport_get_resource_file($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG, $OUTPUT;
+    
+    try {
+        $context = context_module::instance($cm->id);
+        $fs = get_file_storage();
+        
+        // Get files from the content area of the resource
+        $files = $fs->get_area_files($context->id, 'mod_resource', 'content', 0, 'filename', false);
+        
+        foreach ($files as $file) {
+            // Skip directories
+            if ($file->is_directory()) {
+                continue;
+            }
+            
+            $filename = $file->get_filename();
+            $mimetype = $file->get_mimetype();
+            
+            // Check if it's a document file (PDF, DOC, DOCX, etc.)
+            $allowed_mimetypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/plain',
+                'image/jpeg',
+                'image/png',
+                'image/gif'
+            ];
+            
+            if (!in_array($mimetype, $allowed_mimetypes)) {
+                continue; // Skip files that are not documents or images
+            }
+            
+            $item = new stdClass();
+            $item->id = 'file_' . $cm->id . '_' . $file->get_id();
+            $item->name = $cm->name . ' (' . $filename . ')';
+            $item->type = 'file';
+            $item->intro = $cm->intro ?? '';
+            $item->timemodified = $file->get_timemodified();
+            $item->courseid = $target_courseid;
+            $item->userid = 0; // System generated
+            $item->categoryid = 0; // Not in a traditional category
+            $item->shareall = 0;
+            $item->externaccess = 0;
+            $item->externcomment = 0;
+            $item->sortorder = 0;
+            $item->comments = 0;
+            
+            // Generate file URL
+            $item->url = moodle_url::make_pluginfile_url(
+                $file->get_contextid(),
+                $file->get_component(),
+                $file->get_filearea(),
+                $file->get_itemid(),
+                $file->get_filepath(),
+                $file->get_filename()
+            )->out();
+            
+            $item->fileurl = $item->url;
+            $item->attachment = $filename;
+            $item->mimetype = $mimetype;
+            $item->filesize = $file->get_filesize();
+            $item->icon = $OUTPUT->pix_icon(file_file_icon($file), '');
+            $item->is_course_file = true; // Flag to identify course files
+            
+            return $item; // Return the first valid file
+        }
+    } catch (Exception $e) {
+        // Silently continue if there's an error accessing the file
+    }
+    
+    return null;
+}
+
+/**
+ * Get files from a folder module
+ */
+function block_exaport_get_folder_files($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG, $OUTPUT;
+    
+    $files = array();
+    
+    try {
+        $context = context_module::instance($cm->id);
+        $fs = get_file_storage();
+        
+        // Get files from the content area of the folder
+        $storedfiles = $fs->get_area_files($context->id, 'mod_folder', 'content', 0, 'filename', false);
+        
+        foreach ($storedfiles as $file) {
+            // Skip directories
+            if ($file->is_directory()) {
+                continue;
+            }
+            
+            $filename = $file->get_filename();
+            $mimetype = $file->get_mimetype();
+            
+            // Check if it's a document file (PDF, DOC, DOCX, etc.)
+            $allowed_mimetypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/plain',
+                'image/jpeg',
+                'image/png',
+                'image/gif'
+            ];
+            
+            if (!in_array($mimetype, $allowed_mimetypes)) {
+                continue; // Skip files that are not documents or images
+            }
+            
+            $item = new stdClass();
+            $item->id = 'folderfile_' . $cm->id . '_' . $file->get_id();
+            $item->name = $filename;
+            $item->type = 'file';
+            $item->intro = $cm->intro ?? '';
+            $item->timemodified = $file->get_timemodified();
+            $item->courseid = $target_courseid;
+            $item->userid = 0; // System generated
+            $item->categoryid = 0; // Not in a traditional category
+            $item->shareall = 0;
+            $item->externaccess = 0;
+            $item->externcomment = 0;
+            $item->sortorder = 0;
+            $item->comments = 0;
+            
+            // Generate file URL
+            $item->url = moodle_url::make_pluginfile_url(
+                $file->get_contextid(),
+                $file->get_component(),
+                $file->get_filearea(),
+                $file->get_itemid(),
+                $file->get_filepath(),
+                $file->get_filename()
+            )->out();
+            
+            $item->fileurl = $item->url;
+            $item->attachment = $filename;
+            $item->mimetype = $mimetype;
+            $item->filesize = $file->get_filesize();
+            $item->icon = $OUTPUT->pix_icon(file_file_icon($file), '');
+            $item->is_course_file = true; // Flag to identify course files
+            
+            $files[] = $item;
+        }
+    } catch (Exception $e) {
+        // Silently continue if there's an error accessing the files
+    }
+    
+    return $files;
+}
+
+/**
+ * Get URL from a URL module (link)
+ */
+function block_exaport_get_url_link($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $url_module = $DB->get_record('url', array('id' => $cm->instance));
+        if (!$url_module) {
+            return null;
+        }
+        
+        $item = new stdClass();
+        $item->id = 'url_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link';
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0; // System generated
+        $item->categoryid = 0; // Not in a traditional category
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $url_module->externalurl;
+        $item->fileurl = $url_module->externalurl;
+        $item->attachment = '';
+        $item->is_course_file = true; // Flag to identify course files
+        
+        return $item;
+    } catch (Exception $e) {
+        // Silently continue if there's an error
+    }
+    
+    return null;
+}
+
+/**
+ * Get assignment activity
+ */
+function block_exaport_get_assignment($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $item = new stdClass();
+        $item->id = 'assign_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link'; // Treat as link to assignment
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0;
+        $item->categoryid = 0;
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $CFG->wwwroot . '/mod/assign/view.php?id=' . $cm->id;
+        $item->fileurl = $item->url;
+        $item->attachment = '';
+        $item->is_course_file = true;
+        $item->activity_type = 'assign';
+        $item->icon = 'fa-tasks';
+        
+        return $item;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Get quiz activity
+ */
+function block_exaport_get_quiz($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $item = new stdClass();
+        $item->id = 'quiz_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link';
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0;
+        $item->categoryid = 0;
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $CFG->wwwroot . '/mod/quiz/view.php?id=' . $cm->id;
+        $item->fileurl = $item->url;
+        $item->attachment = '';
+        $item->is_course_file = true;
+        $item->activity_type = 'quiz';
+        $item->icon = 'fa-question-circle';
+        
+        return $item;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Get forum activity
+ */
+function block_exaport_get_forum($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $item = new stdClass();
+        $item->id = 'forum_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link';
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0;
+        $item->categoryid = 0;
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $CFG->wwwroot . '/mod/forum/view.php?id=' . $cm->id;
+        $item->fileurl = $item->url;
+        $item->attachment = '';
+        $item->is_course_file = true;
+        $item->activity_type = 'forum';
+        $item->icon = 'fa-comments';
+        
+        return $item;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Get generic activity for any module type
+ */
+function block_exaport_get_generic_activity($cm, $target_courseid, $context_courseid) {
+    global $DB, $CFG;
+    
+    try {
+        $item = new stdClass();
+        $item->id = $cm->modname . '_' . $cm->id;
+        $item->name = $cm->name;
+        $item->type = 'link';
+        $item->intro = $cm->intro ?? '';
+        $item->timemodified = $cm->added;
+        $item->courseid = $target_courseid;
+        $item->userid = 0;
+        $item->categoryid = 0;
+        $item->shareall = 0;
+        $item->externaccess = 0;
+        $item->externcomment = 0;
+        $item->sortorder = 0;
+        $item->comments = 0;
+        
+        $item->url = $CFG->wwwroot . '/mod/' . $cm->modname . '/view.php?id=' . $cm->id;
+        $item->fileurl = $item->url;
+        $item->attachment = '';
+        $item->is_course_file = true;
+        $item->activity_type = $cm->modname;
+        
+        // Set icon based on activity type
+        $item->icon = block_exaport_get_activity_icon($cm->modname);
+        
+        return $item;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Get appropriate icon for different activity types
+ */
+function block_exaport_get_activity_icon($modname) {
+    $icons = array(
+        'assign' => 'fa-tasks',
+        'quiz' => 'fa-question-circle',
+        'forum' => 'fa-comments',
+        'chat' => 'fa-comment',
+        'choice' => 'fa-check-square',
+        'data' => 'fa-database',
+        'feedback' => 'fa-star',
+        'glossary' => 'fa-book',
+        'lesson' => 'fa-graduation-cap',
+        'page' => 'fa-file-alt',
+        'book' => 'fa-book-open',
+        'wiki' => 'fa-edit',
+        'workshop' => 'fa-users',
+        'scorm' => 'fa-play-circle',
+        'survey' => 'fa-chart-bar',
+        'h5pactivity' => 'fa-puzzle-piece',
+        'lti' => 'fa-external-link-alt',
+        'bigbluebuttonbn' => 'fa-video',
+        'label' => 'fa-tag',
+        'imscp' => 'fa-archive',
+        'folder' => 'fa-folder',
+        'resource' => 'fa-file',
+        'url' => 'fa-link'
+    );
+    
+    return isset($icons[$modname]) ? $icons[$modname] : 'fa-puzzle-piece';
+}
+
+/**
+ * Get file icon based on mimetype for course files or activity type
+ */
+function block_exaport_get_file_icon($item) {
+    global $OUTPUT;
+    
+    $iconsize = '48px';
+    $iconcolor = '#666';
+    
+    // Check if this is an activity (not a file)
+    if (isset($item->activity_type) && $item->activity_type) {
+        $icon_class = block_exaport_get_activity_icon($item->activity_type);
+        
+        // Define colors for different activity types
+        $activity_colors = array(
+            'fa-tasks' => '#2196F3',        // assign - blue
+            'fa-question-circle' => '#4CAF50',  // quiz - green
+            'fa-comments' => '#FF9800',     // forum - orange
+            'fa-comment' => '#9C27B0',      // chat - purple
+            'fa-check-square' => '#607D8B', // choice - blue grey
+            'fa-database' => '#795548',     // data - brown
+            'fa-star' => '#FFC107',         // feedback - amber
+            'fa-book' => '#3F51B5',         // glossary - indigo
+            'fa-graduation-cap' => '#E91E63', // lesson - pink
+            'fa-file-alt' => '#009688',     // page - teal
+            'fa-book-open' => '#8BC34A',    // book - light green
+            'fa-edit' => '#FF5722',         // wiki - deep orange
+            'fa-users' => '#673AB7',        // workshop - deep purple
+            'fa-play-circle' => '#F44336',  // scorm - red
+            'fa-chart-bar' => '#00BCD4',    // survey - cyan
+            'fa-puzzle-piece' => '#CDDC39', // h5p - lime
+            'fa-external-link-alt' => '#9E9E9E', // lti - grey
+            'fa-video' => '#2196F3',        // bigbluebutton - blue
+        );
+        
+        $color = isset($activity_colors[$icon_class]) ? $activity_colors[$icon_class] : $iconcolor;
+        return '<i class="fa ' . str_replace('fa-', '', $icon_class) . '" style="font-size: ' . $iconsize . '; color: ' . $color . ';"></i>';
+    }
+    
+    // Handle file types (original logic)
+    if (!isset($item->mimetype)) {
+        // Default file icon
+        return '<i class="fa fa-file" style="font-size: ' . $iconsize . '; color: ' . $iconcolor . ';"></i>';
+    }
+    
+    $iconhtml = '';
+    $iconsize = '48px';
+    $iconcolor = '#666';
+    
+    switch ($item->mimetype) {
+        case 'application/pdf':
+            $iconhtml = '<i class="fa fa-file-pdf" style="font-size: ' . $iconsize . '; color: #d32f2f;"></i>';
+            break;
+        case 'application/msword':
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            $iconhtml = '<i class="fa fa-file-word" style="font-size: ' . $iconsize . '; color: #1976d2;"></i>';
+            break;
+        case 'application/vnd.ms-excel':
+        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+            $iconhtml = '<i class="fa fa-file-excel" style="font-size: ' . $iconsize . '; color: #388e3c;"></i>';
+            break;
+        case 'application/vnd.ms-powerpoint':
+        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+            $iconhtml = '<i class="fa fa-file-powerpoint" style="font-size: ' . $iconsize . '; color: #f57c00;"></i>';
+            break;
+        case 'text/plain':
+            $iconhtml = '<i class="fa fa-file-text" style="font-size: ' . $iconsize . '; color: ' . $iconcolor . ';"></i>';
+            break;
+        case 'image/jpeg':
+        case 'image/png':
+        case 'image/gif':
+            $iconhtml = '<i class="fa fa-file-image" style="font-size: ' . $iconsize . '; color: #7b1fa2;"></i>';
+            break;
+        default:
+            $iconhtml = '<i class="fa fa-file" style="font-size: ' . $iconsize . '; color: ' . $iconcolor . ';"></i>';
+            break;
+    }
+    
+    return $iconhtml;
+}
+
+/**
+ * Check if user can view an item in evidencias system
+ * @param object $item The item object
+ * @param int $courseid The course ID  
+ * @return bool True if user can view the item
+ */
+function block_exaport_user_can_view_item($item, $courseid = null) {
+    global $USER, $DB;
+    
+    // Administrators can view everything
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+    
+    // Get category info to determine if this is in evidencias
+    $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+    if (!$category) {
+        // If no category or not evidencias, use standard rules
+        return true; // Default view permission
+    }
+    
+    // If not in evidencias (no source field), use standard rules  
+    if (empty($category->source) || !is_numeric($category->source)) {
+        return true; // Standard portfolio view
+    }
+    
+    // This is in evidencias - apply evidencias rules
+    $course_id = $category->source;
+    
+    // Instructors in the course can view all evidencias items
+    if (block_exaport_user_is_teacher_in_course($USER->id, $course_id)) {
+        return true;
+    }
+    
+    // Students can only view their own items
+    if ($item->userid == $USER->id) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Check if user can edit an item in evidencias system
+ * @param object $item The item object
+ * @param int $courseid The course ID
+ * @return bool True if user can edit the item
+ */
+function block_exaport_user_can_edit_item($item, $courseid = null) {
+    global $USER, $DB;
+    
+    // Administrators can edit everything
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+    
+    // Get category info to determine if this is in evidencias
+    $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+    if (!$category) {
+        // If no category, only owner can edit
+        return ($item->userid == $USER->id);
+    }
+    
+    // If not in evidencias (no source field), use standard rules
+    if (empty($category->source) || !is_numeric($category->source)) {
+        return ($item->userid == $USER->id); // Standard portfolio edit
+    }
+    
+    // This is in evidencias - apply evidencias rules
+    $course_id = $category->source;
+    
+    // Instructors in the course can edit all evidencias items
+    if (block_exaport_user_is_teacher_in_course($USER->id, $course_id)) {
+        return true;
+    }
+    
+    // Students can only edit their own items
+    if ($item->userid == $USER->id) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Check if user can delete an item in evidencias system
+ * @param object $item The item object
+ * @param int $courseid The course ID
+ * @return bool True if user can delete the item
+ */
+function block_exaport_user_can_delete_item($item, $courseid = null) {
+    global $USER, $DB;
+    
+    // Administrators can delete everything
+    if (block_exaport_user_is_admin()) {
+        return true;
+    }
+    
+    // Get category info to determine if this is in evidencias
+    $category = $DB->get_record('block_exaportcate', array('id' => $item->categoryid));
+    if (!$category) {
+        // If no category, only owner can delete
+        return ($item->userid == $USER->id);
+    }
+    
+    // If not in evidencias (no source field), use standard rules
+    if (empty($category->source) || !is_numeric($category->source)) {
+        return ($item->userid == $USER->id); // Standard portfolio delete
+    }
+    
+    // This is in evidencias - apply evidencias rules
+    $course_id = $category->source;
+    
+    // Instructors in the course can delete all evidencias items
+    if (block_exaport_user_is_teacher_in_course($USER->id, $course_id)) {
+        return true;
+    }
+    
+    // Students can only delete their own items
+    if ($item->userid == $USER->id) {
+        return true;
+    }
+    
+    return false;
 }

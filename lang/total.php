@@ -56,25 +56,13 @@ return [
         'Exabis ePortfolie zur Startseite hinzuf&uumlgen',
         'add Exabis ePortfolio on My home',
     ],
-    'exaport:export' => [
-        'Export von SCORM-Files',
-        'Export of SCORM-Files',
-    ],
-    'exaport:import' => [
-        'Import von SCORM-Files',
-        'Import of SCORM-Files',
-    ],
-    'exaport:importfrommoodle' => [
-        'Import von Moodle',
-        'Import from Moodle',
-    ],
     'exaport:shareintern' => [
         'Internes Teilen von Views',
-        'Internal sharing of views',
+        'Share views internally',
     ],
     'exaport:shareextern' => [
         'Externes Teilen von Views',
-        'External sharing of views',
+        'Share views externally',
     ],
     'exaport:allowposts' => [
         'Kommentare erlauben',
@@ -306,7 +294,7 @@ return [
         'Notiz',
         'Note',
     ],
-    'shared_views' => [
+    'sharedviews' => [
         'Geteilte Views',
         'Shared Views',
     ],
@@ -380,7 +368,6 @@ return [
     ],
     'emailaccessdescription' => [
         'Gib eine Email Adresse pro Zeile ein<br />Jede Adresse erhält einen eindeutigen Link mit Zugriff auf diese View. Das Löschen der Adresse löscht den Zugriff auf diese View.',
-        'Input an email address per line<br />Each email will receive a unique link with access to this view. Deleting the email will remove access to this view.',
     ],
     'emailaccessmessagesubject' => [
         'Eine View wurde mit dir geteilt',
@@ -388,11 +375,9 @@ return [
     ],
     'emailaccessmessage' => [
         'Hallo! {$a->sendername} hat eine die View "{$a->viewname}" mit dir geteilt. Sie kann hier abgerufen werden: {$a->url}',
-        'Hello! {$a->sendername} has shared the view "{$a->viewname}" for you. You can view it here: {$a->url}',
     ],
     'emailaccessmessageHTML' => [
         'Hallo!<br />{$a->sendername} hat eine die View "{$a->viewname}" mit dir geteilt.<br />Sie ist kann <a href="{$a->url}">hier</a> aberufen werden',
-        'Hello!<br />{$a->sendername} has shared the view "{$a->viewname}" for you.<br />You can view it <a href="{$a->url}">here</a>.',
     ],
     'showallusers' => [
         'Zeige Benutzer aller meiner Kurse',
@@ -463,79 +448,6 @@ return [
         'Make it yours',
     ],
 
-    // === Export/import.
-    'import' => [
-        'Import SCORM-Datei',
-        'Import SCORM-File',
-    ],
-    'import_short' => [
-        'Import',
-        'Import',
-    ],
-    'explainexport' => [
-        '<span class=\'block_eportfolio_center\'><span class=\'block_eportfolio_bold\'>Export:</span> hier kannst du dein ePortfolio exportieren</span>',
-        'Export your portfolio here.',
-    ],
-    'createexport' => [
-        'SCORM-Datei erstellen',
-        'Create SCORM-File',
-    ],
-    'createexportxapi' => [
-        'XAPI-Datei erstellen',
-        'Create XAPI-File',
-    ],
-    'clicktodownloadscorm' => [
-        'Folgenden Button drücken, um SCORM-Datei herunterzuladen:',
-        'Press button to download the SCORM file:',
-    ],
-    'add_directory_structure' => [
-        'Mit Unterverzeichnissen exportieren',
-        'Add directory-structure',
-    ],
-    'download' => [
-        'Herunterladen',
-        'Download',
-    ],
-    'endedit' => [
-        'Editieren beenden',
-        'End editing',
-    ],
-    'change' => [
-        '&auml;ndern',
-        'Change',
-    ],
-    'explainpersonal' => [
-        '<span class=\'block_eportfolio_bold\'>Pers&ouml;nliche Informationen</span>',
-        'Personal information',
-    ],
-    'personal' => [
-        'Informationen',
-        'Information',
-    ],
-    'descriptionsaved' => [
-        'Beschreibung gespeichert',
-        'description saved',
-    ],
-    'course' => [
-        'Kurs',
-        'Course',
-    ],
-    'importexport' => [
-        'Import/Export',
-        'Import/Export',
-    ],
-    'explainimport' => [
-        'hier kannst du SCORM-Dateien ins Portfolio importieren. Wenn Marker gefunden werden, die darauf hinweisen, dass diese SCORM-Datei zuvor aus dem Portfolio-Modul exportiert wurde, so wird versucht, die Struktur entsprechend zu importieren.',
-        'Here you can import a SCORM-File into the portfolio. If markers from previous exports are found the import tries to import the data in the existing filestructure.',
-    ],
-    'makeimport' => [
-        'Import',
-        'Import',
-    ],
-    'add_this_file' => [
-        'Diese Datei hinzufügen',
-        'add this file',
-    ],
     'bookmarksall' => [
         'Alle Eintr&auml;ge',
         'All Items',
@@ -884,7 +796,7 @@ return [
     ],
     'exportviewselect' => [
         'Um alle Einträge einer bestimmten View zu exportieren, bitte diese hier w&auml;hlen',
-        'To export all items of a specific view, please select it here',
+        'To export all entries of a specific view, please select it here',
     ],
     'export_directory' => [
         'Exportiere Ordnerstruktur',
@@ -946,7 +858,7 @@ return [
     ],
     'explainingviews' => [
         'View verwalten',
-        'Manage your views.',
+        'Manage Views',
     ],
     'noviews' => [
         'Bitte Views anlegen',
@@ -1042,7 +954,6 @@ return [
     ],
     'autofillview' => [
         'Alle bestehenden Artefakte in diese View einfügen',
-        'Automatically add all available artefacts to this view',
     ],
     'sharetoteacher' => [
         'Sofort mit allen Kurs-Trainer/:innen teilen',
@@ -1464,7 +1375,6 @@ return [
         '
     stories, roleplays, essays, collagen
     curriculum vitae
-    reviews of theatre productions, exhibitions
     project reports and reflections
     audio- and videoclips
     encounters with other nationalities
@@ -1574,7 +1484,6 @@ return [
     ],
     'settings_disable_externaccess_head' => [
         'Teilen Option "Externer Zugriff" auf Portfolios deaktivieren.',
-        'Disable Sharing-Option "External Access" for views',
     ],
     'settings_disable_externaccess_body' => [
         '',
@@ -1582,7 +1491,6 @@ return [
     ],
     'settings_disable_shareemails_head' => [
         'Teilen Option "Per E-Mail teilen" von Portfolios deaktivieren.',
-        'Disable Sharing-Option "Share by Email" for views',
     ],
     'settings_disable_shareemails_body' => [
         '',
@@ -1590,7 +1498,6 @@ return [
     ],
     'settings_disable_external_comments_head' => [
         'Teilen von Kommentaren in externen Views deaktivieren',
-        'Disable sharing of comments in external view',
     ],
     'settings_disable_external_comments_body' => [
         '',
@@ -1638,7 +1545,6 @@ return [
     ],
     'block_exaport_app_alloweditdelete_head' => [
         'Schüler/:innen dürfen trotz Lehrerbeurteilungen ePortfolio Items editieren und löschen',
-        'Students are allowed to edit and delete items after teacher reviews',
     ],
     'block_exaport_app_alloweditdelete_body' => [
         'Nur in Kombination mit Exabis Competence Grid und Dakora sinnvoll',
@@ -2109,7 +2015,6 @@ return [
     // === Not Used Anymore.
     'i_shared' => [
         'Ich habe eine View mit Ihnen geteilt',
-        'I shared an eportfolio view with you',
     ],
     'addstdcat' => [
         'Standardkategorien importieren',
@@ -2117,7 +2022,6 @@ return [
     ],
     'incompatible_video' => [
         'Um dieses Video anzusehen, bitte den direkten Link benutzen: {$a->link}',
-        'To view this video please use the direct link: {$a->link}',
     ],
     'download_pdf' => [
         'Download as Pdf',
@@ -2132,7 +2036,6 @@ return [
 			Deine PDF-Einstellungen werden für diese Ansicht gespeichert.<br>Wenn deine Ansicht mit anderen Benutzern geteilt wird, sehen sie das PDF mit deinen Einstellungen.<br>
 			Nicht-standardisierte Schriftarten können einige Optionen wie Fett, Kursiv usw. verlieren.',
         'If you use some special or uncommon language characters the generated pdf can have problems. So, you can try to use different font settings<br>
-            Your PDF settings will be saved for this view.<br>So, if your view is shared with other users - they will see the pdf with your settings.<br>
             Non-standard fonts can have some lost options like bold, italic, e.t.c.',
     ],
     'pdf_settings_fontfamily' => [
@@ -2145,7 +2048,6 @@ return [
     ],
     'pdf_settings_showmetadata' => [
         'Metadaten zur Ansicht hinzufügen',
-        'Add view meta data',
     ],
     'pdf_settings_showusername' => [
         'Benutzername',
@@ -2205,15 +2107,12 @@ return [
     ],
     'block_exaport_allowcustomlayout_head' => [
         'Benutzerdefinierte Optionen für das Layout der Views für View-Eigentümer',
-        'Custom options for the view layout for view owners',
     ],
     'block_exaport_allowcustomlayout_body' => [
         'Ermöglicht die Verwendung benutzerdefinierter Layout-Einstellungen für Views (ähnlich den unten aufgeführten Optionen) für reguläre Besitzer der Views.',
-        'Allows to use custom view layout settings (similar to options below) for regular owners of the views',
     ],
     'settings_layout_settings_description' => [
         'Hier kannst du einige Layout-Optionen der View ändern oder eigene benutzerdefinierte CSS-Regeln verwenden, um die View nach deinen Wünschen zu gestalten.<br>Diese Einstellungen werden als Standardeinstellungen <strong>für alle Views</strong> verwendet.',
-        'Here you can change some view layout options or use own custom CSS rules to have the view as you want<br>These settings will be used as default settings <strong>for all views</strong>',
     ],
     'layout_settings' => [
         'Layout-Einstellungen',
@@ -2221,7 +2120,6 @@ return [
     ],
     'layout_settings_description' => [
         'Hier kannst du einige Layout-Optionen der View ändern oder eigene benutzerdefinierte CSS-Regeln verwenden, um die View nach deinen Wünschen zu gestalten.',
-        'Here you can change some view layout options or use own custom CSS rules to have the view as you want',
     ],
     'layout_settings_font_size' => [
         'Schriftgröße',
@@ -2241,11 +2139,9 @@ return [
     ],
     'layout_settings_view_headers' => [
         'Überschriften der View-Blöcke',
-        'Headers of view blocks',
     ],
     'layout_settings_view_content' => [
         'Inhalt der View-Blöcke',
-        'Content of view blocks',
     ],
     'layout_settings_custom_css' => [
         'benutzerdefinierte CSS-Regeln',
@@ -2670,7 +2566,6 @@ return [
     ],
     'privacy:metadata:block_exaportview:userid' => [
         'Besitzer der View',
-        'owner of view',
     ],
     'privacy:metadata:block_exaportview:name' => [
         'Name',
@@ -2702,7 +2597,6 @@ return [
     ],
     'privacy:metadata:block_exaportview:layout' => [
         'Layout der View',
-        'layout of the view',
     ],
     'privacy:metadata:block_exaportview:sharedemails' => [
         'Liste freigegebener E-Mails',
@@ -2761,67 +2655,6 @@ return [
         'Exabis ePortfolio speichert Dateien, die vom Benutzer hochgeladen wurden, um Teil von Artefakten, Lebenslaufeinträgen und Kommentaren zu werden.',
         'Exabis ePortfolio stores files which have been uploaded by the user to form part of artefacts, resume entries and comments.',
     ],
-    'whyEportfolio' => [
-        'Warum ein ePortfolio?',
-        'Why ePortfolio',
-    ],
-    'whyEportfolio_description' => [
-        '<h4>Lass deine harte Arbeit nicht verschwinden: Erstelle dein digitales Portfolio</h4>
-				<br>
-				<p>Stell dir vor, all die Mühe, die du in Aufgaben, Präsentationen und Projekte steckst. Hast du jemals das Gefühl, dass es nach der Abgabe einfach in einer Schublade verschwindet?</p>
-				<p>Aber hier ist die gute Nachricht: Diese Projekte sind <strong>Beweise für deine Fähigkeiten und dein Wissen</strong>, und du kannst sie nutzen, um potenzielle Arbeitgeber oder Kunden zu beeindrucken!</p>
-				<p><strong>Erstelle dein digitales Portfolio</strong> und präsentiere deine besten Arbeiten, von Präsentationen, Aufgaben und Projekten bis hin zu Videos. Es ist einfacher, als du denkst!</p>
-				<br>
-				<h4>Was ist ein ePortfolio?</h4>
-				<br>
-				<p>Ein <strong>ePortfolio</strong> (elektronisches Portfolio) ist eine <strong>digitale Sammlung</strong>, die deine <strong>Fähigkeiten, dein Wissen und deine Erfahrungen</strong> präsentiert.
-					Während dein Lebenslauf sich auf deine Ausbildung und Berufserfahrung konzentriert, geht dein ePortfolio darüber hinaus und bietet <strong>Beweise und Kontext</strong> für deine Fähigkeiten.
-					Es ermöglicht dir, Arbeitsproben zu zeigen und dein <strong>Talent schnell und effektiv zu demonstrieren</strong>.
-					Letztendlich ist dein ePortfolio ein mächtiges Werkzeug, um deine <strong>Qualifikationen hervorzuheben</strong> und dich abzuheben.
-				</p>
-				<p><strong>Denke daran, dass verschiedene Rollen unterschiedliche Arten von ePortfolios erfordern können.</strong>
-					Einige Schlüsselelemente bleiben jedoch konstant.
-					Mit <strong>Exabis ePortfolio</strong> kannst du <strong>mehrere Ansichten erstellen</strong>, die auf bestimmte Positionen, Jobchancen oder andere Zwecke zugeschnitten sind.
-				</p>
-				<br>
-				<h4>Wie erstelle ich mein ePortfolio?</h4>
-				<br>
-				<ol>
-					<li><strong>Sammle deine Arbeiten</strong>: Beginne damit, alle deine Projekte, Präsentationen und Aufgaben zu überprüfen.</li>
-					<li><strong>Wähle deine besten Arbeiten aus</strong>: Wähle die Stücke aus, die deine stärksten Fähigkeiten zeigen und die positives Feedback erhalten haben.</li>
-					<li><strong>Reflektiere und beschreibe</strong>: Überlege, welche Fähigkeiten und Kompetenzen jedes Stück demonstriert. Schreibe eine kurze Beschreibung, um Kontext zu bieten.</li>
-					<li><strong>Erstelle und iteriere</strong>: Scheue dich nicht davor, zu experimentieren und dein ePortfolio im Laufe der Zeit zu verfeinern, während du lernst und wächst.</li>
-				</ol>
-				<p><strong>Exabis ePortfolio</strong> kann dich durch jeden Schritt führen und den Prozess der Erstellung deines ePortfolios reibungslos und effizient gestalten.</p>',
-        '   <h4>Don\'t Let Your Hard Work Disappear: Build Your Digital Portfolio</h4>
-                <br>
-                <p>Imagine all the effort you put into assignments, presentations, and projects. Do you ever feel like it just gets buried in a drawer after it\'s submitted?</p>
-                <p>But here\'s the good news: those projects are <strong>proof of your skills and knowledge</strong>, and you can use them to impress potential employers or clients!</p>
-                <p><strong>Build your digital portfolio</strong> and showcase your best work, from presentations, assignments, and projects to videos. It\'s easier than you think!</p>
-                <br>
-                <h4>What is an ePortfolio?</h4>
-                <br>
-                <p>An <strong>ePortfolio</strong> (electronic portfolio) is a <strong>digital collection</strong> that showcases your <strong>skills, knowledge, and experiences</strong>.
-                    While your CV focuses on your education and work history, your ePortfolio goes beyond that, providing <strong>proof and context</strong> for your skills.
-                    It lets you showcase your work samples and <strong>demonstrate your talent</strong> quickly and effectively.
-                    Ultimately, your ePortfolio is a powerful tool to <strong>highlight your qualifications</strong> and set you apart.
-                </p>
-                <p><strong>Remember, different roles may require different types of ePortfolios.</strong>
-                    However, some key elements remain constant.
-                    <strong>Exabis ePortfolio</strong> allows you to <strong>create multiple views</strong> tailored to specific positions, job opportunities, or other purposes.
-                </p>
-                <br>
-                <h4>How to Build Your ePortfolio</h4>
-                <br>
-                <ol>
-                    <li><strong>Gather your work</strong>: Start by reviewing all your projects, presentations, and assignments.</li>
-                    <li><strong>Choose your best work</strong>: Select the pieces that showcase your strongest skills and those that have received positive feedback.</li>
-                    <li><strong>Reflect and describe</strong>: Think about the skills and competencies each piece demonstrates. Write a brief description to provide context.</li>
-                    <li><strong>Build and iterate</strong>: Don\'t be afraid to experiment and refine your ePortfolio as you learn and grow.</li>
-                </ol>
-                <p><strong>Exabis ePortfolio</strong> can guide you through each step, making the process of building your ePortfolio smooth and efficient.</p>
-',
-    ],
     'cofigureblock_cvinfo_help' => [
         'Du wirst den aktuellen Status der ausgewählten Elemente in deinem Lebenslauf sehen. Der Blockinhalt wird aktualisiert, wenn du später Änderungen an irgendwelchen Elementen in deinem Lebenslauf vornimmst.',
         'You will see the current status of the selected items in your CV. The block content will be updated if you make changes to any items in your CV later.',
@@ -2867,7 +2700,6 @@ return [
     ],
     'view_preview_help' => [
         'Vorschau der View',
-        'Preview of your view',
     ],
     'block_exaport_used_layout' => [
         'Verwendetes Layout',
@@ -2884,6 +2716,5 @@ return [
     'block_exaport_used_layout_clean_old' => [
         'Kachel-Layout (Alt - Unterstützung endet mit Version 4.6.7)',
         'Tiles layout (Old - ended of support from v4.6.7)',
-    ],
+    ]
 ];
-?>

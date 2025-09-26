@@ -65,7 +65,7 @@
 }
 
 .excomdos_cont .excomdos_listtable tr td.excomdos_listlastcol {
-    word-wrap: break-word;.
+    word-wrap: break-word;
     max-width: 300px;
     min-width: 200px;
      overflow: hidden;
@@ -287,4 +287,41 @@
     position: absolute;
     right: 0;
     top: 0;
+}
+
+/* Estilos para botones de editar y eliminar */
+#exaport a svg {
+    transition: all 0.3s ease;
+}
+
+/* Hover rojo para botones de eliminar */
+#exaport .item_delete_icon:hover svg path {
+    fill: #d32f2f !important;
+}
+
+#exaport .item_delete_icon:hover svg {
+    transform: scale(1.1);
+}
+
+/* Botones de eliminar en categorías (sin clase item_delete_icon) */
+#exaport a[href*="action=delete"]:hover svg path {
+    fill: #d32f2f !important;
+}
+
+#exaport a[href*="action=delete"]:hover svg {
+    transform: scale(1.1);
+}
+
+/* Estilos para botones de editar y eliminar */
+#exaport a svg {
+    transition: all 0.3s ease;
+}
+
+/* Hover rojo para botones de eliminar */
+#exaport .item_delete_icon:hover svg path {
+    fill: #d32f2f !important;
+}
+
+#exaport .item_delete_icon:hover svg {
+    transform: scale(1.1);
 }

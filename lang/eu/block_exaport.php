@@ -94,7 +94,6 @@ $string['nobookmarksfile'] = '(oraindik ez dago fitxategirik)';
 $string['nobookmarksnote'] = '(oraindik ez dago oharrik)';
 $string['note'] = 'Oharra';
 $string['notetitle'] = 'Oharra';
-$string['shared_views'] = 'Partekatutako Paper-zorroak';
 $string['showall'] = 'Beste ikastaroak ere erakutsi';
 $string['showcourse'] = 'Ikastaro hau soilik erakutsi';
 $string['showsummary'] = '(laburpena erakutsi)';

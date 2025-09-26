@@ -72,6 +72,11 @@ if ($cataction) {
                     error("Could not insert this category");
                 } else {
                     block_exaport_add_to_log($courseid, "bookmark", "add category", "", $newentry->id);
+                    
+                    // Record audit event for new category
+                    require_once(__DIR__ . '/lib/audit_simple.php');
+                    exaport_log_folder_created($newentry->id, $newentry->name, $newentry->pid ?: null, $courseid);
+                    
                     $message = get_string("categorysaved", "block_exaport");
                 }
                 break;
@@ -185,18 +190,21 @@ if ($edit == 1) {
     echo '</tr>';
     echo '<tr>';
     echo '<td valign="top">';
-
-    echo '<form method="post" action="' . $CFG->wwwroot . '/blocks/exaport/view_categories.php?courseid=' . $courseid . '&amp;edit=1">';
-    echo '<fieldset>';
-    echo '<input type="text" name="name" />';
-    echo '<input type="hidden" name="pid" value="-1" />';
-    echo '<input type="hidden" name="courseid" value="' . $courseid . '" />';
-    echo '<input type="submit" name="Submit" value="' . get_string("new") . '" />';
-    echo '<input type="hidden" name="cataction" value="add" />';
-    echo '<input type="hidden" name="catconfirm" value="1" />';
-    echo '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
-    echo '</fieldset>';
-    echo '</form>';
+    
+    // Only show add main category form if user is not a student
+    if (!block_exaport_user_is_student()) {
+        echo '<form method="post" action="' . $CFG->wwwroot . '/blocks/exaport/view_categories.php?courseid=' . $courseid . '&amp;edit=1">';
+        echo '<fieldset>';
+        echo '<input type="text" name="name" />';
+        echo '<input type="hidden" name="pid" value="-1" />';
+        echo '<input type="hidden" name="courseid" value="' . $courseid . '" />';
+        echo '<input type="submit" name="Submit" value="' . get_string("new") . '" />';
+        echo '<input type="hidden" name="cataction" value="add" />';
+        echo '<input type="hidden" name="catconfirm" value="1" />';
+        echo '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
+        echo '</fieldset>';
+        echo '</form>';
+    }
     echo '</td>';
     echo '<td valign="top"></td>';
     echo '</tr>';
@@ -252,14 +260,17 @@ function rekedit($outercategories, $courseid, $first, $level) {
 
         echo '<td valign="top">';
         echo format_string($curcategory->name);
-        echo '<a href="' . $CFG->wwwroot . '/blocks/exaport/view_categories.php?cataction=edit&amp;sesskey=' . sesskey() .
-            '&amp;catconfirm=1&amp;courseid=' . $courseid . '&amp;editid=' . $curcategory->id . '&amp;edit=1">' .
-            '<img src="' . $CFG->wwwroot . '/pix/i/edit.gif" width="16" height="16" alt="' . get_string("edit") . '" /></a>';
+        // Only show edit/delete buttons if user is not a student
+        if (!block_exaport_user_is_student()) {
+            echo '<a href="' . $CFG->wwwroot . '/blocks/exaport/view_categories.php?cataction=edit&amp;sesskey=' . sesskey() .
+                '&amp;catconfirm=1&amp;courseid=' . $courseid . '&amp;editid=' . $curcategory->id . '&amp;edit=1">' .
+                '<img src="' . $CFG->wwwroot . '/pix/i/edit.gif" width="16" height="16" alt="' . get_string("edit") . '" /></a>';
 
-        if ($countinnercategories == 0) {
-            echo '<a href="' . $CFG->wwwroot . '/blocks/exaport/view_categories.php?cataction=delete&amp;sesskey=' . sesskey() .
-                '&amp;catconfirm=1&amp;courseid=' . $courseid . '&amp;delid=' . $curcategory->id . '&amp;edit=1">' .
-                '<img src="' . $CFG->wwwroot . '/pix/t/delete.gif" width="11" height="11" alt="' . get_string("delete") . '" /></a>';
+            if ($countinnercategories == 0) {
+                echo '<a href="' . $CFG->wwwroot . '/blocks/exaport/view_categories.php?cataction=delete&amp;sesskey=' . sesskey() .
+                    '&amp;catconfirm=1&amp;courseid=' . $courseid . '&amp;delid=' . $curcategory->id . '&amp;edit=1">' .
+                    '<img src="' . $CFG->wwwroot . '/pix/t/delete.gif" width="11" height="11" alt="' . get_string("delete") . '" /></a>';
+            }
         }
         echo '</td>';
 
@@ -270,17 +281,20 @@ function rekedit($outercategories, $courseid, $first, $level) {
             }
         }
         echo '<td valign="top">';
-        echo '<form method="post" action="' . $CFG->wwwroot . '/blocks/exaport/view_categories.php?courseid=' . $courseid . '&amp;edit=1">';
-        echo '<fieldset>';
-        echo '<input type="text" name="name" value ="Subkategorie von ' . $curcategory->name . '"/>';
-        echo '<input type="hidden" name="pid" value="' . $curcategory->id . '" />';
-        echo '<input type="hidden" name="courseid" value="' . $courseid . '" />';
-        echo '<input type="hidden" name="cataction" value="add" />';
-        echo '<input type="submit" name="Submit" value="' . get_string("new") . '" />';
-        echo '<input type="hidden" name="catconfirm" value="1" />';
-        echo '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
-        echo '</fieldset>';
-        echo '</form>';
+        // Only show add subcategory form if user is not a student
+        if (!block_exaport_user_is_student()) {
+            echo '<form method="post" action="' . $CFG->wwwroot . '/blocks/exaport/view_categories.php?courseid=' . $courseid . '&amp;edit=1">';
+            echo '<fieldset>';
+            echo '<input type="text" name="name" value ="Subkategorie von ' . $curcategory->name . '"/>';
+            echo '<input type="hidden" name="pid" value="' . $curcategory->id . '" />';
+            echo '<input type="hidden" name="courseid" value="' . $courseid . '" />';
+            echo '<input type="hidden" name="cataction" value="add" />';
+            echo '<input type="submit" name="Submit" value="' . get_string("new") . '" />';
+            echo '<input type="hidden" name="catconfirm" value="1" />';
+            echo '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
+            echo '</fieldset>';
+            echo '</form>';
+        }
         echo '</td>';
         echo '</tr>';
         echo '<tr>';

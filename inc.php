@@ -16,14 +16,39 @@
 // (c) 2016 GTN - Global Training Network GmbH <office@gtn-solutions.com>.
 
 require_once(__DIR__ . "/../../config.php");
+
+global $CFG, $PAGE, $USER, $COURSE, $OUTPUT, $DB, $PARSER;
+
+if (!$COURSE) {
+    require_once __DIR__ . '/../../config.php';
+}
+
+// TODO: check if this is needed
+// Authentication disabled for this block
+// if (empty($USER->id)) {
+//     require_login();
+// }
+
+// force clean theme - only if PAGE is available
+if (isset($PAGE) && $PAGE !== null) {
+    $PAGE->set_pagelayout('standard');
+    // jQuery will be loaded by the block when rendered, not during installation
+    // $PAGE->requires->jquery();
+    // $PAGE->requires->jquery_plugin('ui');
+}
+
 // Get rid 'warning' messages for ajax request (regardless moodle configuration)
 if (
     basename($_SERVER['SCRIPT_NAME']) == 'blocks.json.php' // ajax requests to work with blocks
-    || (basename($_SERVER['SCRIPT_NAME']) == 'views_mod.php' && optional_param('ajax', '0', PARAM_INT) === 1) // ajax requests in view editing
     || (basename($_SERVER['SCRIPT_NAME']) == 'item_thumb.php' && optional_param('item_id', '0', PARAM_INT) > 0) // item thumbnials
 ) {
     @$CFG->debug = 5;
     @error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
-    @ini_set('display_errors', '5');
+    // @ini_set('display_errors', '5'); // Commented to prevent headers already sent
 }
+require_once($CFG->libdir . '/filelib.php');
+
 require_once(__DIR__ . '/lib/lib.php');
+
+// CSS and JS will be loaded when the block is rendered, not when inc.php is included
+// This prevents "Cannot require a CSS file after <head> has been printed" errors

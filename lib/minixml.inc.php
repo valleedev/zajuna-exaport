@@ -159,5 +159,3 @@ function &_MiniXMLReturnNullByRef() {
     $emptyVar = NULL;
     return $emptyVar;
 }
-
-?>

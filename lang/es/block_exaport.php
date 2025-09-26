@@ -2,7 +2,7 @@
 // This file is part of Exabis Eportfolio (extension for Moodle)
 //
 // Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
@@ -22,7 +22,11 @@ $string['translation:organisation'] = 'TICAL';
 $string['translation:email'] = 'jfesanchez@gmail.com';
 
 // Main.
-$string['blocktitle'] = 'E-Portafolio';
+$string['pluginname'] = 'Portafolio Aprendiz';
+$string['blocktitle'] = 'Portafolio Aprendiz';
+// Zajuna custom keys - these will never be overridden by official language packs
+$string['zajuna_pluginname'] = 'Portafolio Aprendiz';
+$string['zajuna_blocktitle'] = 'Portafolio Aprendiz';
 $string['exaport:use'] = 'Uso permitido';
 $string['exaport:export'] = 'Exportar archivos SCORM';
 $string['exaport:import'] = 'Importar archivos SCORM';
@@ -31,11 +35,21 @@ $string['exaport:shareintern'] = 'Compartir internammente entradas de portafolio
 $string['exaport:shareextern'] = 'Compartir externammente entradas de portafolio';
 $string['exaport:allowposts'] = 'Permitir posteo';
 $string['exaport:competences'] = 'Allow competences';
-$string['modulename'] = 'Exabis ePortfolio';
-$string['blockname'] = 'Exabis ePortfolio';
+$string['modulename'] = 'Portafolio Aprendiz';
+$string['blockname'] = 'Portafolio Aprendiz';
 $string['new'] = 'Nuevo';
 $string['addbookmark'] = 'Agregar marcador';
 $string['addcategory'] = 'Agregar Categoria';
+$string['createcategory'] = 'Crear categoría';
+$string['upload_file_evidence'] = 'Subir archivo';
+$string['onlystudentscanupload'] = 'Solo los estudiantes pueden usar esta función de subida rápida';
+$string['cannotuploadhere'] = 'No tienes permisos para subir archivos en esta carpeta';
+$string['nocategorycreatepermission'] = 'Los estudiantes no pueden crear, editar o eliminar categorías';
+$string['noitemcreatepermission'] = 'Los estudiantes no pueden crear, editar o eliminar artefactos';
+$string['norootcategorycreate'] = 'No se pueden crear categorías en la carpeta raíz. Ingresa a una carpeta primero';
+$string['noevidenciascategorycreate'] = 'Los instructores solo pueden crear categorías dentro de las carpetas de Evidencias';
+$string['course_folders_not_editable'] = 'Las carpetas de curso no se pueden eliminar ni editar desde aquí. Estas carpetas se gestionan desde la sección de cursos. Por favor, vaya a la administración del curso para realizar cambios.';
+$string['norootitemcreate'] = 'No se pueden crear artefactos en la carpeta raíz. Ingresa a una carpeta primero';
 $string['attachment'] = 'Adjunto';
 $string['attachincluded'] = 'Adjuntar?';
 $string['awaiting'] = '(\\$a a la espera)';
@@ -61,6 +75,8 @@ $string['categoryhead'] = 'Nombre de Categoría ';
 $string['categorysaved'] = 'Categoría agregada.';
 $string['categoryedited'] = 'Categoría guardada.';
 $string['categorydeleted'] = 'Categoria borrada.';
+$string['course_folder'] = 'Carpeta de Curso';
+$string['course_section'] = 'Sección de Curso';
 $string['date'] = 'Fecha';
 $string['dontincludeurl'] = 'Marque esta casilla para disasociar el marcador con la URL';
 $string['duplicatedurl'] = 'Usted ya tiene la siguiente dirección marcada.';
@@ -81,7 +97,7 @@ $string['managecategories'] = 'Administrar categorías';
 $string['mandatoryfields'] = 'Los campos nombre, categoria e introducción son obligatorios. Por favor llénelos.';
 $string['mandatoryfieldsforcat'] = 'El campo nombre es obligatorio. Por favor rellénelo.';
 $string['myportfolio'] = 'Mi Portafolio';
-$string['myportfoliotitle'] = 'Módulo Exabis ePortfolio: Agrege sus vínculos y archivos aquí.';
+$string['myportfoliotitle'] = 'Módulo Portafolio Aprendiz: Agregue sus vínculos y archivos aquí.';
 $string['mydialogues'] = 'Mis Diálogos';
 $string['mymoodle'] = 'Mi Moodle';
 $string['newlink'] = 'Agregar nuevo link';
@@ -94,7 +110,6 @@ $string['nobookmarksfile'] = '(no hay archivos)';
 $string['nobookmarksnote'] = '(no hay notas )';
 $string['note'] = 'Nota';
 $string['notetitle'] = 'Nota';
-$string['shared_views'] = ' Portafolios compartidos';
 $string['showall'] = 'Mostrar también otros cursos ';
 $string['showcourse'] = 'Mostrar este curso solamente';
 $string['showsummary'] = '(mostrar resumen)';
@@ -130,9 +145,6 @@ $string['explainpersonal'] = 'Información Personal';
 $string['personal'] = 'Información';
 $string['descriptionsaved'] = 'Descripción guardada';
 $string['course'] = 'Curso';
-$string['importexport'] = 'Exportar/Importar';
-$string['explainimport'] = 'Aquí usted puede importar un archivo SCORM en al portaforlio. Si los marcadores de las exportaciones anteriores se encuentran la importación intenta importar los datos existentes en la estructura de archivos.';
-$string['makeimport'] = 'Importar';
 $string['add_this_file'] = 'agregar este archivo';
 $string['bookmarksall'] = 'Todos los  Items';
 $string['bookmarkslinks'] = 'Links';
@@ -166,7 +178,7 @@ $string['scormhastobezip'] = 'Archivo SCORM tiene que se de formato .zip';
 $string['uploadfailed'] = 'Carga fallida.';
 $string['couldntupdatedesc'] = ' No se pudo actualizar su descripción!';
 $string['couldntinsertdesc'] = 'No se pudo insertar su descripción!';
-$string['exportcomment'] = 'Este es un archivo exportado de Exabis E-portafolio. Por favor, no quite los comentarios, que son necesarios para la importación!';
+$string['exportcomment'] = 'Este es un archivo exportado de Portafolio Aprendiz. Por favor, no quite los comentarios, que son necesarios para la importación!';
 $string['comment'] = 'Comentario';
 $string['commentshouldnotbeempty'] = 'Tienes que introducir un comentario.';
 $string['title'] = 'Titulo';
@@ -254,12 +266,17 @@ $string['filecopiedtocourse'] = 'Archivo copiado al curso $a->coursename bajo el
 $string['copyitemtocourse'] = 'Copiar al curso';
 
 // Config.
-$string['config_version_3'] = 'Nuevo diseño de E-Portafolio : incluyendo vistas, etc.';
-$string['config_version_2'] = 'Antiguo  diseño de ePortfolio ';
-$string['config_feature_copy_to_course'] = 'Permitir a los estudiantes para copiar archivos de E-portafolio a sus cursos';
-$string['version_5.2.0_needed'] = 'Exabis E-portafolio REQUIERE al Menos la version 5.2.0 de PHP';
-$string['settings_interaktion_exacomp_head'] = 'interaction exabis ePortfolio - Exabis Competence Grid';
-$string['settings_interaktion_exacomp_body'] = 'interaction with block Exabis Competence Grid, if installed.';
+$string['config_version_3'] = 'Nuevo diseño de Portfolio : incluyendo vistas, etc.';
+$string['config_version_2'] = 'Antiguo  diseño de Portfolio';
+$string['config_feature_copy_to_course'] = 'Permitir a los estudiantes para copiar archivos de Portfolio a sus cursos';
+$string['version_5.2.0_needed'] = 'Zajuna Portfolio REQUIERE al menos la versión 5.2.0 de PHP';
+$string['settings_interaktion_exacomp_head'] = 'Interacción Portafolio Aprendiz - Rejilla de Competencias';
+$string['settings_interaktion_exacomp_body'] = 'Interacción con el bloque Rejilla de Competencias, si está instalado.';
+$string['notify'] = "notificar";
+$string['cofigureblock'] = "Configurar Bloque";
+$string['selectitems'] = "Seleccionar elementos";
+$string['exaport:addinstance'] = 'agregar Portafolio Aprendiz al curso';
+$string['exaport:myaddinstance'] = 'agregar Portafolio Aprendiz en Mi inicio';
 // Not Used Anymore.
 $stringnotused['nobookmarks'] = '(Sin marcas yet)';
 $string['steckbrief'] = 'Profile';
@@ -305,8 +322,8 @@ $string['aboutme'] = "About me";
 $string['notify'] = "notify";
 $string['cofigureblock'] = "Configure Block";
 $string['selectitems'] = "Select items";
-$string['exaport:addinstance'] = 'add Exabis ePortfolio to the course';
-$string['exaport:myaddinstance'] = 'add Exabis ePortfolio on My home';
+$string['exaport:addinstance'] = 'añadir Portafolio Aprendiz al curso';
+$string['exaport:myaddinstance'] = 'añadir Portafolio Aprendiz en Mi página principal';
 
 $string['sharejs'] = 'share';
 
@@ -317,3 +334,129 @@ $string['height'] = 'Height';
 $string['width'] = 'Width';
 $string['media_allowed_notes'] = 'URLs from the following sites are allowed:';
 $string['i_shared'] = 'I shared an eportfolio view with you';
+
+// Course files and sections
+$string['course_section'] = 'Sección del Curso';
+$string['course_folder'] = 'Curso';
+$string['course_file'] = 'Archivo del Curso';
+$string['section_files'] = 'Archivos de la Sección';
+
+// Configuration strings that appear during installation
+$string['block_exaport_maxbytes'] = 'Tamaño máximo de archivo a subir en Zajuna Portfolio';
+$string['block_exaport_maxbytes_body'] = 'Esto especifica un tamaño máximo para archivos subidos que pueden procesarse en Zajuna Portfolio.<br> El valor para el sitio completo es: {$a->sitemaxbytes}. Vea <a href="{$a->settingsurl}">configuraciones</a>';
+$string['block_exaport_userquota'] = 'Cuota del usuario para Zajuna Portfolio';
+$string['block_exaport_userquota_body'] = 'El máximo número de bytes que un usuario puede almacenar en su propio Zajuna Portfolio.<br> Valor para el sitio completo es: {$a->bytes}. Vea <a href="{$a->settingsurl}">configuraciones</a>';
+
+// Audit System Strings
+$string['audit'] = 'Auditoría';
+$string['audit_log'] = 'Registro de Auditoría';
+$string['audit_events'] = 'Eventos de Auditoría';
+$string['audit_dashboard'] = 'Panel de Auditoría';
+$string['audit_search'] = 'Buscar en Auditoría';
+$string['audit_filters'] = 'Filtros de Auditoría';
+$string['audit_export'] = 'Exportar CSV';
+$string['audit'] = 'Auditoría';
+$string['audit_statistics'] = 'Estadísticas de Auditoría';
+
+// Event Types
+$string['audit_event_folder_created'] = 'Carpeta creada';
+$string['audit_event_folder_deleted'] = 'Carpeta eliminada';
+$string['audit_event_folder_renamed'] = 'Carpeta renombrada';
+$string['audit_event_folder_moved'] = 'Carpeta movida';
+$string['audit_event_folder_blocked'] = 'Carpeta bloqueada';
+$string['audit_event_folder_unblocked'] = 'Carpeta desbloqueada';
+$string['audit_event_item_uploaded'] = 'Elemento subido';
+$string['audit_event_item_deleted'] = 'Elemento eliminado';
+$string['audit_event_item_updated'] = 'Elemento actualizado';
+$string['audit_event_item_shared'] = 'Elemento compartido';
+$string['audit_event_item_unshared'] = 'Elemento descompartido';
+$string['audit_event_item_viewed'] = 'Elemento visualizado';
+$string['audit_event_item_downloaded'] = 'Elemento descargado';
+$string['audit_event_category_created'] = 'Categoría creada';
+$string['audit_event_category_deleted'] = 'Categoría eliminada';
+$string['audit_event_category_updated'] = 'Categoría actualizada';
+$string['audit_event_view_created'] = 'Vista creada';
+$string['audit_event_view_deleted'] = 'Vista eliminada';
+$string['audit_event_view_shared'] = 'Vista compartida';
+$string['audit_event_view_accessed'] = 'Vista accedida';
+$string['audit_event_permission_granted'] = 'Permiso otorgado';
+$string['audit_event_permission_revoked'] = 'Permiso revocado';
+$string['audit_event_data_exported'] = 'Datos exportados';
+$string['audit_event_data_imported'] = 'Datos importados';
+
+// Risk Levels
+$string['audit_risk_low'] = 'Bajo';
+$string['audit_risk_medium'] = 'Medio';
+$string['audit_risk_high'] = 'Alto';
+$string['audit_risk_critical'] = 'Crítico';
+
+// Audit Form Fields
+$string['audit_date_from'] = 'Fecha desde';
+$string['audit_date_to'] = 'Fecha hasta';
+$string['audit_user'] = 'Usuario';
+$string['audit_event_type'] = 'Tipo de evento';
+$string['audit_risk_level'] = 'Nivel de riesgo';
+$string['audit_resource_type'] = 'Tipo de recurso';
+$string['audit_search_text'] = 'Buscar texto';
+$string['audit_apply_filters'] = 'Aplicar filtros';
+$string['audit_clear_filters'] = 'Limpiar filtros';
+$string['audit_results_per_page'] = 'Resultados por página';
+
+// Audit Table Headers
+$string['audit_timestamp'] = 'Fecha y Hora';
+$string['audit_user_name'] = 'Usuario';
+$string['audit_description'] = 'Descripción';
+$string['audit_resource'] = 'Recurso';
+$string['audit_details'] = 'Detalles';
+$string['audit_ip_address'] = 'Dirección IP';
+$string['audit_session'] = 'Sesión';
+
+// Audit Statistics
+$string['audit_total_events'] = 'Total de eventos';
+$string['audit_events_today'] = 'Eventos de hoy';
+$string['audit_events_this_week'] = 'Eventos de esta semana';
+$string['audit_events_this_month'] = 'Eventos de este mes';
+$string['audit_high_risk_events'] = 'Eventos de alto riesgo';
+$string['audit_high_risk_percentage'] = 'Porcentaje de alto riesgo';
+$string['audit_most_active_user'] = 'Usuario más activo';
+$string['audit_most_common_event'] = 'Evento más común';
+$string['audit_recent_activity'] = 'Actividad reciente';
+
+// Messages
+$string['audit_no_events'] = 'No se encontraron eventos de auditoría';
+$string['audit_access_denied'] = 'No tienes permisos para acceder a la auditoría';
+$string['audit_loading'] = 'Cargando datos de auditoría...';
+$string['audit_export_success'] = 'Auditoría exportada exitosamente';
+$string['audit_export_error'] = 'Error al exportar la auditoría';
+$string['audit_invalid_date_range'] = 'Rango de fechas inválido';
+$string['audit_filter_applied'] = 'Filtros aplicados correctamente';
+
+// Additional audit strings
+$string['audit_search_placeholder'] = 'Buscar en descripción, recurso o usuario...';
+$string['audit_pagination'] = 'Paginación de auditoría';
+$string['audit_previous'] = 'Anterior';
+$string['audit_next'] = 'Siguiente';
+$string['audit_showing'] = 'Mostrando {$a->from} a {$a->to} de {$a->total}';
+$string['audit_results'] = 'Resultados de Auditoría';
+$string['audit_date'] = 'Fecha';
+$string['audit_all_users'] = 'Todos los Usuarios';
+$string['audit_all_events'] = 'Todos los Eventos';
+$string['audit_all_risks'] = 'Todos los Niveles de Riesgo';
+$string['audit_all_resources'] = 'Todos los Tipos de Recurso';
+$string['audit_no_results'] = 'No se encontraron eventos de auditoría con los filtros seleccionados.';
+
+// Permissions
+$string['exaport:viewaudit'] = 'Ver registro de auditoría';
+$string['exaport:exportaudit'] = 'Exportar datos de auditoría';
+
+// Navigation
+$string['audit'] = 'Auditoría';
+
+// Course folder messages
+$string['coursefoldercannotbeedited'] = 'Las carpetas de curso no se pueden eliminar ni editar desde aquí. Estas carpetas se gestionan desde la sección de cursos. Por favor, vaya a la administración del curso para realizar cambios.';
+
+// File upload messages
+$string['fileuploaded'] = 'Archivo subido exitosamente';
+
+// Error messages
+$string['wrongid'] = 'ID de elemento incorrecto';

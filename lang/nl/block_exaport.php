@@ -94,7 +94,6 @@ $string['nobookmarksfile'] = '(nog geen bestanden)';
 $string['nobookmarksnote'] = '(nog geen aantekeningen)';
 $string['note'] = 'Aantekening';
 $string['notetitle'] = 'Aantekening';
-$string['shared_views'] = 'Gedeelde Portfolios';
 $string['showall'] = 'Toon Ook Andere Cursussen';
 $string['showcourse'] = 'Toon Alleen Deze Cursus';
 $string['showsummary'] = '(toon samenvatting)';

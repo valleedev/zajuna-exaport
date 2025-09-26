@@ -17,9 +17,10 @@
 
 require_once(__DIR__ . '/inc.php');
 
-require_login(0, false);
+// Authentication disabled for this block
+// require_login(0, false);
 $context = context_system::instance();
-require_capability('moodle/site:config', $context);
+// require_capability('moodle/site:config', $context);
 
 $url = '/blocks/exaport/admin.php';
 $PAGE->set_url($url);

@@ -20,6 +20,67 @@
     font-size: 10px;
 }
 
+/* ===== Exaport Aside Navigation Maintenance ===== */
+/* Smooth transitions for aside navigation */
+[data-region="drawer"] {
+    transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+#nav-drawer {
+    transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+#navwrap {
+    transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+/* Ensure aside is properly positioned during page loads */
+.exaport-loading [data-region="drawer"] {
+    opacity: 0.8;
+}
+
+/* Add visual feedback for exaport navigation links */
+.block_exaport a:hover,
+#exaport a:hover {
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* Maintain consistent spacing when aside is toggled */
+.content-container {
+    transition: margin-left 0.3s ease-in-out;
+}
+
+/* ===== Fix for Modal Dialogs Hiding Aside ===== */
+/* Force aside/sidebar to stay visible during modal confirmations */
+body.modal-open [data-region="drawer"],
+body.modal-open #nav-drawer,
+body.modal-open #navwrap {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* Ensure modal backdrop doesn't interfere with aside */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+/* Keep aside above modal backdrop */
+[data-region="drawer"],
+#nav-drawer,
+#navwrap {
+    z-index: 1050 !important;
+}
+
+/* Prevent aside from being hidden by Moodle's modal system */
+.path-blocks-exaport [data-region="drawer"],
+.path-blocks-exaport #nav-drawer,
+.path-blocks-exaport #navwrap {
+    display: block !important;
+}
+
+/* ===== Original Exaport Styles ===== */
 #exaport .block_eportfolio_center {
     text-align: center;
 }

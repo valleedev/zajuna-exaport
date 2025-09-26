@@ -124,7 +124,6 @@ class ExaportVievPdf {
     private $page_top_margin = 15;
     private $page_bottom_margin = 15;
     private $page_left_margin = 5;
-    private $page_bottom_margin = 5;
 
     private $main_font_size = 10;
     private $main_font_name = 'helvetica';
@@ -1261,7 +1260,4 @@ class ExaportVievPdf {
         $this->pdf->SetY($current_y, false);
     }
 
-?>
-
-
-
+}

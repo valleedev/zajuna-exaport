@@ -94,7 +94,6 @@ $string['nobookmarksfile'] = '(inga filer ännu)';
 $string['nobookmarksnote'] = '(inga anteckningar ännu)';
 $string['note'] = 'Anteckningar';
 $string['notetitle'] = 'Anteckning';
-$string['shared_views'] = 'Delade portfolios';
 $string['showall'] = 'Visa även andra kurser';
 $string['showcourse'] = 'Visa bara denna kurs';
 $string['showsummary'] = '(visa summering)';

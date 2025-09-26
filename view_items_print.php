@@ -45,6 +45,8 @@ echo $OUTPUT->header();
 echo block_exaport_wrapperdivstart();
 block_exaport_setup_default_categories();
 
+// Información explicativa del portafolio comentada - ocultar texto informativo
+/*
 echo "<div class='box generalbox'>";
 if (block_exaport_course_has_desp()) {
     $pref = "desp_";
@@ -53,6 +55,7 @@ if (block_exaport_course_has_desp()) {
 }
 echo $OUTPUT->box(text_to_html(get_string($pref . "explaining", "block_exaport")), "center");
 echo "</div>";
+*/
 
 $userpreferences = block_exaport_get_user_preferences();
 

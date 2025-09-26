@@ -18,7 +18,120 @@
 require_once(__DIR__ . '/inc.php');
 $courseid = optional_param('courseid', 0, PARAM_INT);
 
-require_login($courseid);
+/**
+ * Recursively delete a category and all its subcategories and items
+ */
+function block_exaport_recursive_delete_category($id) {
+    global $DB;
+
+    // Delete subcategories.
+    if ($entries = $DB->get_records('block_exaportcate', array("pid" => $id))) {
+        foreach ($entries as $entry) {
+            block_exaport_recursive_delete_category($entry->id);
+        }
+    }
+    $DB->delete_records('block_exaportcate', array('pid' => $id));
+
+    // Delete itemsharing.
+    if ($entries = $DB->get_records('block_exaportitem', array("categoryid" => $id))) {
+        foreach ($entries as $entry) {
+            $DB->delete_records('block_exaportitemshar', array('itemid' => $entry->id));
+        }
+    }
+
+    // Delete items.
+    $DB->delete_records('block_exaportitem', array('categoryid' => $id));
+}
+
+// Authentication disabled for this block
+// require_login($courseid);
+
+// Check if user can create/edit categories
+$action = optional_param('action', '', PARAM_ALPHA);
+$id = optional_param('id', 0, PARAM_RAW); // Changed to RAW to handle virtual folders like course_XX
+$pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123 format
+
+// Check if trying to edit/delete virtual course folders
+if (($action == 'edit' || $action == 'delete') && !empty($id)) {
+    if (is_string($id) && strpos($id, 'course_') === 0) {
+        // Trying to edit/delete a virtual course folder
+        $strbookmarks = get_string("myportfolio", "block_exaport");
+        block_exaport_print_header("myportfolio");
+        
+        echo '<div class="alert alert-info">';
+        echo '<h4>Información</h4>';
+        echo '<p>' . get_string('coursefoldercannotbeedited', 'block_exaport') . '</p>';
+        echo '<p><a href="view_items.php?courseid=' . $courseid . '" class="btn btn-primary">' . get_string('back') . '</a></p>';
+        echo '</div>';
+        
+        echo block_exaport_wrapperdivend();
+        echo $OUTPUT->footer();
+        exit;
+    }
+    
+    // Check for other virtual folders (sections, evidencias root, etc.)
+    if (is_string($id) && (strpos($id, 'section_') === 0 || strpos($id, 'evidencias_') === 0)) {
+        $strbookmarks = get_string("myportfolio", "block_exaport");
+        block_exaport_print_header("myportfolio");
+        
+        echo '<div class="alert alert-info">';
+        echo '<h4>Información</h4>';
+        echo '<p>Esta carpeta es generada automáticamente y no se puede editar ni eliminar desde aquí.</p>';
+        echo '<p><a href="view_items.php?courseid=' . $courseid . '" class="btn btn-primary">' . get_string('back') . '</a></p>';
+        echo '</div>';
+        
+        echo block_exaport_wrapperdivend();
+        echo $OUTPUT->footer();
+        exit;
+    }
+    
+    // Convert back to int for numeric IDs
+    if (is_numeric($id)) {
+        $id = intval($id);
+    }
+}
+
+// Administrators have full permissions, skip all checks
+if (!block_exaport_user_is_admin()) {
+    if (block_exaport_user_is_student()) {
+        // Students are limited in what they can do with categories
+        if (empty($action) || $action == 'userlist' || $action == 'grouplist') {
+            // These actions are for viewing/sharing, allow them
+        } else if ($action == 'add' || $action == 'addstdcat') {
+            // Students can create categories in evidencias if they are within instructor folders
+            $context_id = $pid;
+            error_log("DEBUG CATEGORY CREATE: Student trying to create in pid=$context_id, action=$action");
+            // Check if student can act within instructor-created folders
+            if (!block_exaport_student_can_act_in_instructor_folder($context_id)) {
+                error_log("DEBUG CATEGORY CREATE: Permission denied for student to create in pid=$context_id");
+                print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+            } else {
+                error_log("DEBUG CATEGORY CREATE: Permission granted for student to create in pid=$context_id");
+            }
+        } else if ($action == 'edit' || $action == 'delete') {
+            // Students can edit/delete categories within instructor folders
+            $context_id = $id; // Use the processed $id variable
+            if (!block_exaport_student_can_act_in_instructor_folder($context_id)) {
+                print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+            }
+        } else {
+            // All other actions are not allowed for students
+            print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+        }
+    } else if (!block_exaport_user_is_student()) {
+        // For instructors, check if they have permission for this action
+        $context_id = null;
+        if ($action == 'edit' || $action == 'delete') {
+            $context_id = $id; // Use the processed $id variable
+        } else if ($action == 'add' || $action == 'addstdcat') {
+            $context_id = $pid;
+        }
+        
+        if (!empty($action) && !block_exaport_instructor_has_permission($action, $context_id)) {
+            print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
+        }
+    }
+}
 
 block_exaport_setup_default_categories();
 
@@ -59,7 +172,26 @@ if (optional_param('action', '', PARAM_ALPHA) == 'grouplist') {
 
 if (optional_param('action', '', PARAM_ALPHA) == 'addstdcat') {
     block_exaport_import_categories('lang_categories');
-    redirect('view_items.php?courseid=' . $courseid);
+    
+    // Check if we should return to evidencias
+    $evidencias = optional_param('evidencias', 0, PARAM_INT);
+    $categoryid = optional_param('categoryid', 0, PARAM_RAW);
+    
+    // Handle negative categoryid (evidencias)
+    if (is_numeric($categoryid) && $categoryid < 0) {
+        $categoryid = 'evidencias_' . abs($categoryid);
+        error_log("DEBUG ADDSTDCAT: Converted negative categoryid to evidencias format: {$categoryid}");
+    }
+    
+    $redirect_url = 'view_items.php?courseid=' . $courseid;
+    if ($evidencias > 0) {
+        $redirect_url .= '&evidencias=' . $evidencias;
+        if (!empty($categoryid)) {
+            $redirect_url .= '&categoryid=' . $categoryid;
+        }
+    }
+    error_log("DEBUG ADDSTDCAT: Redirecting to: {$redirect_url}");
+    redirect($redirect_url);
 }
 if (optional_param('action', '', PARAM_ALPHA) == 'movetocategory') {
     confirm_sesskey();
@@ -86,39 +218,47 @@ if (optional_param('action', '', PARAM_ALPHA) == 'movetocategory') {
 }
 
 if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
-    $id = required_param('id', PARAM_INT);
+    // Use the already processed $id variable from above
+    if (!is_numeric($id)) {
+        throw new \block_exaport\moodle_exception('category_not_found');
+    }
 
-    $category = $DB->get_record("block_exaportcate", array(
-        'id' => $id,
-        'userid' => $USER->id,
-    ));
+    // First check if user has permission to delete this category
+    if (!block_exaport_instructor_has_permission('delete', $id)) {
+        throw new \block_exaport\moodle_exception('nopermissions');
+    }
+
+    // Get the category (don't filter by userid for instructors deleting evidencias categories)
+    $category = $DB->get_record("block_exaportcate", array('id' => $id));
     if (!$category) {
         throw new \block_exaport\moodle_exception('category_not_found');
+    }
+    
+    // Additional check: if it's not an evidencias category, must belong to current user
+    if (!isset($category->source) || $category->source <= 0) {
+        // Regular category - must belong to user
+        if ($category->userid != $USER->id) {
+            throw new \block_exaport\moodle_exception('nopermissions');
+        }
     }
 
     if (optional_param('confirm', 0, PARAM_INT)) {
         confirm_sesskey();
 
-        function block_exaport_recursive_delete_category($id) {
-            global $DB;
-
-            // Delete subcategories.
-            if ($entries = $DB->get_records('block_exaportcate', array("pid" => $id))) {
-                foreach ($entries as $entry) {
-                    block_exaport_recursive_delete_category($entry->id);
-                }
-            }
-            $DB->delete_records('block_exaportcate', array('pid' => $id));
-
-            // Delete itemsharing.
-            if ($entries = $DB->get_records('block_exaportitem', array("categoryid" => $id))) {
-                foreach ($entries as $entry) {
-                    $DB->delete_records('block_exaportitemshar', array('itemid' => $entry->id));
-                }
-            }
-
-            // Delete items.
-            $DB->delete_records('block_exaportitem', array('categoryid' => $id));
+        // Record audit event before deletion - using simple audit system
+        try {
+            require_once(__DIR__ . '/lib/audit_simple.php');
+            exaport_log_audit_event(
+                'folder_deleted',
+                $category->id,
+                'folder',
+                $category->name,
+                ['parent_id' => $category->pid, 'course_id' => $category->courseid],
+                'medium'
+            );
+        } catch (Exception $e) {
+            // Log audit error but don't prevent deletion
+            error_log("Audit error in category.php delete: " . $e->getMessage());
         }
 
         block_exaport_recursive_delete_category($category->id);
@@ -127,7 +267,38 @@ if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
             $message = "Could not delete your record";
         } else {
             block_exaport_add_to_log($courseid, "bookmark", "delete category", "", $category->id);
-            redirect('view_items.php?courseid=' . $courseid . '&categoryid=' . $category->pid);
+            
+            // Check if we're in evidencias context and preserve it
+            $evidencias = optional_param('evidencias', 0, PARAM_INT);
+            $redirect_categoryid = $category->pid;
+            
+            // Special handling for evidencias categories
+            if (!empty($category->source) && is_numeric($category->source)) {
+                // This was an evidencias category
+                if ($category->pid < 0) {
+                    // If pid is negative (-courseid), redirect to evidencias root
+                    $redirect_categoryid = 'evidencias_' . abs($category->pid);
+                }
+                $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid . '&evidencias=' . $category->source;
+                error_log("DEBUG DELETE: Evidencias category, redirecting to: {$redirect_url}");
+            } else if ($evidencias > 0) {
+                // Explicit evidencias parameter was passed
+                if ($category->pid < 0) {
+                    // If pid is negative (-courseid), redirect to evidencias root
+                    $redirect_categoryid = 'evidencias_' . abs($category->pid);
+                }
+                $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid . '&evidencias=' . $evidencias;
+                error_log("DEBUG DELETE: Using explicit evidencias parameter, redirecting to: {$redirect_url}");
+            } else {
+                // Regular category
+                $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid;
+                error_log("DEBUG DELETE: Regular category, redirecting to: {$redirect_url}");
+            }
+            
+            // Debug logging
+            error_log("DEBUG DELETE: category->id={$category->id}, category->pid={$category->pid}, category->source='{$category->source}', evidencias_param={$evidencias}");
+            error_log("DEBUG DELETE: Final redirect URL: {$redirect_url}");
+            redirect($redirect_url);
         }
     }
 
@@ -147,7 +318,39 @@ if (optional_param('action', '', PARAM_ALPHA) == 'delete') {
         new moodle_url('category.php', $optionsyes),
         new moodle_url('view_items.php', $optionsno));
     echo block_exaport_wrapperdivend();
-    $OUTPUT->footer();
+    echo $OUTPUT->footer();
+    
+    // JavaScript to restore drawer visibility after modal is shown
+    echo '<script type="text/javascript">
+    (function() {
+        function restoreDrawer() {
+            // Find drawer elements
+            var drawer = document.querySelector("[data-region=\"drawer\"]");
+            var navDrawer = document.querySelector("#nav-drawer");
+            var navWrap = document.querySelector("#navwrap");
+            
+            function showElement(element) {
+                if (element) {
+                    element.style.display = "block";
+                    element.style.visibility = "visible";
+                    element.style.opacity = "1";
+                    element.style.transform = "none";
+                    element.style.zIndex = "1050";
+                }
+            }
+            
+            showElement(drawer);
+            showElement(navDrawer);
+            showElement(navWrap);
+        }
+        
+        // Restore immediately
+        restoreDrawer();
+        
+        // And keep restoring periodically 
+        setInterval(restoreDrawer, 100);
+    })();
+    </script>';
 
     exit;
 }
@@ -162,16 +365,29 @@ class simplehtml_form extends block_exaport_moodleform {
         global $USER;
 
         $id = optional_param('id', 0, PARAM_INT);
+        
+        // First get the category without userid filter
         $category = $DB->get_record_sql('
-            SELECT c.id, c.name, c.pid, c.internshare, c.shareall, c.iconmerge
+            SELECT c.id, c.name, c.pid, c.internshare, c.shareall, c.iconmerge, c.source, c.userid
             FROM {block_exaportcate} c
-            WHERE c.userid = ? AND id = ?
-            ', array($USER->id, $id));
+            WHERE id = ?
+            ', array($id));
+            
+        // If category exists, check permissions
+        if ($category && $id > 0) {
+            // Check if user has permission to edit this category
+            if (!block_exaport_instructor_has_permission('edit', $id)) {
+                // User doesn't have permission - treat as if category doesn't exist
+                $category = false;
+            }
+        }
+        
         if (!$category) {
             $category = new stdClass;
             $category->shareall = 0;
             $category->id = 0;
             $category->iconmerge = 0;
+            $category->source = null;
         };
 
         // Don't forget the underscore!
@@ -179,7 +395,7 @@ class simplehtml_form extends block_exaport_moodleform {
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
         $mform->addElement('hidden', 'pid');
-        $mform->setType('pid', PARAM_INT);
+        $mform->setType('pid', PARAM_RAW); // Changed to RAW to support evidencias_123 format
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
         $mform->addElement('hidden', 'back');
@@ -190,79 +406,130 @@ class simplehtml_form extends block_exaport_moodleform {
         $mform->addRule('name', block_exaport_get_string('titlenotemtpy'), 'required', null, 'client');
         $mform->add_exaport_help_button('name', 'forms.category.name');
 
-        $mform->addElement('filemanager',
-            'iconfile',
-            get_string('iconfile', 'block_exaport'),
-            null,
-            array('subdirs' => false,
-                'maxfiles' => 1,
-                'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
-                'accepted_types' => array('image', 'web_image')));
-        $mform->add_exaport_help_button('iconfile', 'forms.category.iconfile');
-
-        //        if (extension_loaded('gd') && function_exists('gd_info')) {
-        // changed into Fontawesome and Javascript
-        $mform->addElement('advcheckbox',
-            'iconmerge',
-            get_string('iconfile_merge', 'block_exaport'),
-            get_string('iconfile_merge_description', 'block_exaport'),
-            array('group' => 1),
-            array(0, 1));
-        $mform->add_exaport_help_button('iconmerge', 'forms.category.iconmerge');
-
-
-        //        };
-
-        // Sharing.
-        if (has_capability('block/exaport:shareintern', context_system::instance())) {
-            $mform->addElement('checkbox', 'internshare', get_string('share', 'block_exaport'));
-            $mform->setType('internshare', PARAM_INT);
-            $mform->add_exaport_help_button('internshare', 'forms.category.internshare');
-            $mform->addElement('html', '<div id="internaccess-settings" class="fitem"">' .
-                '<div class="fitemtitle"></div><div class="felement">');
-
-            $mform->addElement('html', '<div style="padding: 4px 0;"><table width=100%>');
-            // Share to all.
-            if (block_exaport_shareall_enabled()) {
-                $mform->addElement('html', '<tr><td>');
-                $mform->addElement('html', '<input type="radio" name="shareall" value="1"' .
-                    ($category->shareall == 1 ? ' checked="checked"' : '') . '/>');
-                $mform->addElement('html', '</td><td>' . get_string('internalaccessall', 'block_exaport') . '</td></tr>');
-                $mform->setType('shareall', PARAM_INT);
-                $mform->addElement('html', '</td></tr>');
+        // Check if we're creating in evidencias folder or editing an evidencias category - simplify form
+        $pid = optional_param('pid', '', PARAM_RAW);
+        $is_evidencias = (strpos($pid, 'evidencias_') === 0);
+        
+        // Also check if the parent category (pid) belongs to evidencias
+        if (!$is_evidencias && is_numeric($pid) && $pid > 0) {
+            $parent_category = $DB->get_record('block_exaportcate', array('id' => $pid));
+            if ($parent_category && is_numeric($parent_category->source)) {
+                $is_evidencias = true;
+                error_log("DEBUG FORM: Parent category {$pid} belongs to evidencias (source={$parent_category->source})");
             }
-
-            // Share to users.
-            $mform->addElement('html', '<tr><td>');
-            $mform->addElement('html', '<input type="radio" name="shareall" value="0"' .
-                (!$category->shareall ? ' checked="checked"' : '') . '/>');
-            $mform->addElement('html', '</td><td>' . get_string('internalaccessusers', 'block_exaport') . '</td></tr>');
-            $mform->addElement('html', '</td></tr>');
-            if ($category->id > 0) {
-                $sharedusers = $DB->get_records_menu('block_exaportcatshar',
-                    array("catid" => $category->id),
+        }
+        
+        // Also check if we're editing a category that belongs to evidencias
+        if (!$is_evidencias && $category->id > 0) {
+            // Check if this category has a source field set (indicating it's from evidencias)
+            // The source field contains the course ID for evidencias categories
+            $is_evidencias = !empty($category->source) && is_numeric($category->source);
+            error_log("DEBUG FORM: Editing category ID {$category->id}, source='{$category->source}', is_evidencias=" . ($is_evidencias ? 'true' : 'false'));
+        }
+        
+        // Check if this is a student creating in evidencias - simplified form for students
+        $is_student_in_evidencias = $is_evidencias && block_exaport_user_is_student();
+        
+        // For administrators, treat all contexts as "evidencias" for form display purposes
+        // This ensures they always see the simplified form like instructors in evidencias
+        $is_admin_using_simplified_form = block_exaport_user_is_admin();
+        if ($is_admin_using_simplified_form) {
+            $is_evidencias = true; // Force evidencias context for form display
+            error_log("DEBUG FORM: Administrator detected, forcing simplified form (is_evidencias=true for display)");
+        }
+        
+        error_log("DEBUG FORM: pid='$pid', is_evidencias=" . ($is_evidencias ? 'true' : 'false') . ", is_student=" . (block_exaport_user_is_student() ? 'true' : 'false') . ", is_student_in_evidencias=" . ($is_student_in_evidencias ? 'true' : 'false') . ", is_admin=" . ($is_admin_using_simplified_form ? 'true' : 'false'));
+        
+        error_log("DEBUG FORM: Final is_evidencias=" . ($is_evidencias ? 'true' : 'false') . ", is_student_in_evidencias=" . ($is_student_in_evidencias ? 'true' : 'false'));
+        
+        if (!$is_evidencias || $is_student_in_evidencias) {
+            // For students in evidencias OR regular categories, don't show icon options
+            if (!$is_student_in_evidencias) {
+                // Show icon options only for regular categories (not for students in evidencias)
+                $mform->addElement('filemanager',
+                    'iconfile',
+                    get_string('iconfile', 'block_exaport'),
                     null,
-                    'userid, userid AS tmp');
-                $mform->addElement('html', '<script> var sharedusersarr = [];');
-                foreach ($sharedusers as $i => $user) {
-                    $mform->addElement('html', 'sharedusersarr[' . $i . '] = ' . $user . ';');
-                }
-                $mform->addElement('html', '</script>');
-            }
-            $mform->addElement('html', '<tr id="internaccess-users"><td></td>' .
-                '<td><div id="sharing-userlist">userlist</div></td></tr>');
+                    array('subdirs' => false,
+                        'maxfiles' => 1,
+                        'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
+                        'accepted_types' => array('image', 'web_image')));
+                $mform->add_exaport_help_button('iconfile', 'forms.category.iconfile');
 
-            // Share to groups.
-            $mform->addElement('html', '<tr><td>');
-            $mform->addElement('html', '<input type="radio" name="shareall" value="2"' .
-                ($category->shareall == 2 ? ' checked="checked"' : '') . '/>');
-            $mform->addElement('html', '</td><td>' . get_string('internalaccessgroups', 'block_exaport') . '</td></tr>');
-            $mform->addElement('html', '</td></tr>');
-            $mform->addElement('html', '<tr id="internaccess-groups"><td></td>' .
-                '<td><div id="sharing-grouplist">grouplist</div></td></tr>');
-            $mform->addElement('html', '</table></div>');
-            $mform->addElement('html', '</div></div>');
-        };
+                //        if (extension_loaded('gd') && function_exists('gd_info')) {
+                // changed into Fontawesome and Javascript
+                $mform->addElement('advcheckbox',
+                    'iconmerge',
+                    get_string('iconfile_merge', 'block_exaport'),
+                    get_string('iconfile_merge_description', 'block_exaport'),
+                    array('group' => 1),
+                    array(0, 1));
+                $mform->add_exaport_help_button('iconmerge', 'forms.category.iconmerge');
+            }
+        }
+
+        // Sharing - simplified for students in evidencias, full for instructors/regular categories
+        if (has_capability('block/exaport:shareintern', context_system::instance())) {
+            if ($is_evidencias && !$is_student_in_evidencias) {
+                // Simplified permissions for evidencias instructors - checkbox for write permissions to students
+                $mform->addElement('checkbox', 'allow_student_uploads', 'Permitir subir archivos a aprendices', 'Los aprendices podrán crear elementos y subir archivos en esta carpeta');
+                $mform->setType('allow_student_uploads', PARAM_INT);
+                $mform->setDefault('allow_student_uploads', 1); // Default checked
+            } else if (!$is_evidencias && !$is_student_in_evidencias) {
+                // Full sharing options for regular categories (not for students)
+                $mform->addElement('checkbox', 'internshare', get_string('share', 'block_exaport'));
+                $mform->setType('internshare', PARAM_INT);
+                $mform->add_exaport_help_button('internshare', 'forms.category.internshare');
+            }
+            // Students in evidencias get no sharing options (simplified form)
+            
+            if (!$is_evidencias && !$is_student_in_evidencias) {
+                $mform->addElement('html', '<div id="internaccess-settings" class="fitem"">' .
+                    '<div class="fitemtitle"></div><div class="felement">');
+
+                $mform->addElement('html', '<div style="padding: 4px 0;"><table width=100%>');
+                // Share to all.
+                if (block_exaport_shareall_enabled()) {
+                    $mform->addElement('html', '<tr><td>');
+                    $mform->addElement('html', '<input type="radio" name="shareall" value="1"' .
+                        ($category->shareall == 1 ? ' checked="checked"' : '') . '/>');
+                    $mform->addElement('html', '</td><td>' . get_string('internalaccessall', 'block_exaport') . '</td></tr>');
+                    $mform->setType('shareall', PARAM_INT);
+                    $mform->addElement('html', '</td></tr>');
+                }
+
+                // Share to users.
+                $mform->addElement('html', '<tr><td>');
+                $mform->addElement('html', '<input type="radio" name="shareall" value="0"' .
+                    (!$category->shareall ? ' checked="checked"' : '') . '/>');
+                $mform->addElement('html', '</td><td>' . get_string('internalaccessusers', 'block_exaport') . '</td></tr>');
+                $mform->addElement('html', '</td></tr>');
+                if ($category->id > 0) {
+                    $sharedusers = $DB->get_records_menu('block_exaportcatshar',
+                        array("catid" => $category->id),
+                        null,
+                        'userid, userid AS tmp');
+                    $mform->addElement('html', '<script> var sharedusersarr = [];');
+                    foreach ($sharedusers as $i => $user) {
+                        $mform->addElement('html', 'sharedusersarr[' . $i . '] = ' . $user . ';');
+                    }
+                    $mform->addElement('html', '</script>');
+                }
+                $mform->addElement('html', '<tr id="internaccess-users"><td></td>' .
+                    '<td><div id="sharing-userlist">userlist</div></td></tr>');
+
+                // Share to groups.
+                $mform->addElement('html', '<tr><td>');
+                $mform->addElement('html', '<input type="radio" name="shareall" value="2"' .
+                    ($category->shareall == 2 ? ' checked="checked"' : '') . '/>');
+                $mform->addElement('html', '</td><td>' . get_string('internalaccessgroups', 'block_exaport') . '</td></tr>');
+                $mform->addElement('html', '</td></tr>');
+                $mform->addElement('html', '<tr id="internaccess-groups"><td></td>' .
+                    '<td><div id="sharing-grouplist">grouplist</div></td></tr>');
+                $mform->addElement('html', '</table></div>');
+                $mform->addElement('html', '</div></div>');
+            }
+        }
 
         $this->add_action_buttons();
     }
@@ -280,28 +547,149 @@ $mform = new simplehtml_form(null, null, 'post', '', ['id' => 'categoryform']);
 if ($mform->is_cancelled()) {
     $same = optional_param('back', '', PARAM_TEXT);
     $id = optional_param('id', 0, PARAM_INT);
-    $pid = optional_param('pid', 0, PARAM_INT);
-    redirect('view_items.php?courseid=' . $courseid . '&categoryid=' . ($same == 'same' ? $id : $pid));
+    $pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123
+    $evidencias = optional_param('evidencias', 0, PARAM_INT);
+    
+    error_log("DEBUG CANCEL: id={$id}, pid={$pid}, evidencias_param={$evidencias}");
+    
+    // Check if we're in evidencias context and preserve it
+    $redirect_categoryid = ($same == 'same' ? $id : $pid);
+    
+    // Handle negative PIDs (evidencias categories)
+    if (is_numeric($redirect_categoryid) && $redirect_categoryid < 0) {
+        $redirect_categoryid = 'evidencias_' . abs($redirect_categoryid);
+        error_log("DEBUG CANCEL: Converted negative PID to evidencias format: {$redirect_categoryid}");
+    }
+    
+    $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid;
+    
+    // If we have an explicit evidencias parameter, use it
+    if ($evidencias > 0) {
+        $redirect_url .= '&evidencias=' . $evidencias;
+        error_log("DEBUG CANCEL: Using explicit evidencias parameter: {$evidencias}");
+    }
+    // If we have an ID, check if it's an evidencias category
+    else if ($id > 0) {
+        $cat = $DB->get_record('block_exaportcate', array('id' => $id));
+        if ($cat && !empty($cat->source) && is_numeric($cat->source)) {
+            $redirect_url .= '&evidencias=' . $cat->source;
+            error_log("DEBUG CANCEL: Using category source as evidencias: {$cat->source}");
+        }
+    }
+    // Or if pid starts with evidencias_
+    else if (strpos($pid, 'evidencias_') === 0) {
+        $evidencias_id = str_replace('evidencias_', '', $pid);
+        $redirect_url .= '&evidencias=' . $evidencias_id;
+        error_log("DEBUG CANCEL: Using pid evidencias: {$evidencias_id}");
+    }
+    
+    error_log("DEBUG CANCEL: Final redirect URL: {$redirect_url}");
+    redirect($redirect_url);
 } else if ($newentry = $mform->get_data()) {
     require_sesskey();
+    
+    // Permission check using the new unified function
+    $action = empty($newentry->id) ? 'add' : 'edit';
+    $context_id = empty($newentry->id) ? $newentry->pid : $newentry->id;
+    
+    if (!block_exaport_instructor_has_permission($action, $context_id)) {
+        if (block_exaport_user_is_student()) {
+            print_error('nopermissions', 'error', '', get_string('nocategorycreatepermission', 'block_exaport'));
+        } else {
+            print_error('nopermissions', 'error', '', get_string('noevidenciascategorycreate', 'block_exaport'));
+        }
+    }
+    
+    // Handle evidencias categories specially
+    $original_pid = $newentry->pid; // Save for redirect
+    $courseid_for_evidencias = null;
+    
+    if (strpos($newentry->pid, 'evidencias_') === 0) {
+        // Extract course ID from evidencias_XX format
+        $courseid_for_evidencias = intval(substr($newentry->pid, 11));
+        // Use negative course ID to represent evidencias folder as parent
+        $newentry->pid = -$courseid_for_evidencias;
+    } elseif (is_numeric($newentry->pid) && $newentry->pid > 0) {
+        // Check if the parent category is an evidencias category
+        $parent_category = $DB->get_record('block_exaportcate', array('id' => $newentry->pid));
+        if ($parent_category && !empty($parent_category->source) && is_numeric($parent_category->source)) {
+            // This is a subcategory of an evidencias category - maintain hierarchy but mark as evidencias
+            $courseid_for_evidencias = $parent_category->source;
+            // Keep the original pid to maintain hierarchy (don't set to 0)
+        }
+    }
+    
     $newentry->userid = $USER->id;
-    $newentry->shareall = optional_param('shareall', 0, PARAM_INT);
-    if (optional_param('internshare', 0, PARAM_INT) > 0) {
-        $newentry->internshare = optional_param('internshare', 0, PARAM_INT);
+    
+    // Handle sharing settings - simplified for evidencias
+    $is_evidencias_category = false;
+    
+    // Check if this is an evidencias category (new or existing)
+    if (strpos($original_pid, 'evidencias_') === 0) {
+        // New category in evidencias
+        $is_evidencias_category = true;
+        error_log("DEBUG CATEGORY SAVE: New evidencias category (pid = evidencias_X)");
+    } else if (!empty($newentry->id) && $newentry->id > 0) {
+        // Editing existing category - check if it's an evidencias category
+        $existing_category = $DB->get_record('block_exaportcate', array('id' => $newentry->id));
+        if ($existing_category && !empty($existing_category->source) && is_numeric($existing_category->source)) {
+            $is_evidencias_category = true;
+            error_log("DEBUG CATEGORY SAVE: Editing evidencias category (id = {$newentry->id}, source = {$existing_category->source})");
+        }
+    } else if (is_numeric($original_pid) && $original_pid < 0) {
+        // Parent PID is negative (evidencias root)
+        $is_evidencias_category = true;
+        error_log("DEBUG CATEGORY SAVE: New category with negative PID (evidencias root)");
+    }
+    
+    if ($is_evidencias_category) {
+        // For evidencias categories, use a special field to mark write permissions
+        $allow_uploads = optional_param('allow_student_uploads', 0, PARAM_INT);
+        error_log("DEBUG CATEGORY SAVE: allow_student_uploads = $allow_uploads");
+        // Store this permission in a special way - we'll use the internshare field
+        // but with a special value to indicate "student write permissions"
+        if ($allow_uploads) {
+            $newentry->internshare = 2; // Special value: 2 = student write permissions in evidencias
+            error_log("DEBUG CATEGORY SAVE: Setting internshare = 2 (write permissions enabled)");
+        } else {
+            $newentry->internshare = 0; // No special permissions
+            error_log("DEBUG CATEGORY SAVE: Setting internshare = 0 (no write permissions)");
+        }
+        $newentry->shareall = 0; // Not using the shareall system for evidencias
     } else {
-        $newentry->internshare = 0;
+        // For regular categories, use full sharing options
+        $newentry->shareall = optional_param('shareall', 0, PARAM_INT);
+        if (optional_param('internshare', 0, PARAM_INT) > 0) {
+            $newentry->internshare = optional_param('internshare', 0, PARAM_INT);
+        } else {
+            $newentry->internshare = 0;
+        }
+    }
+    
+    // Mark categories created in evidencias with the course ID as source
+    if ($courseid_for_evidencias !== null) {
+        $newentry->source = $courseid_for_evidencias;
     }
 
+    $isNewCategory = !$newentry->id;
+    
     if ($newentry->id) {
         $DB->update_record("block_exaportcate", $newentry);
     } else {
         $newentry->id = $DB->insert_record("block_exaportcate", $newentry);
     }
+    
+    // Record audit event for new categories
+    if ($isNewCategory) {
+        require_once(__DIR__ . '/lib/audit_simple.php');
+        exaport_log_folder_created($newentry->id, $newentry->name, $newentry->pid ?: null, $newentry->courseid);
+    }
 
     // Delete all shared users.
     $DB->delete_records("block_exaportcatshar", array('catid' => $newentry->id));
-    // Add new shared users.
-    if ($newentry->internshare && !$newentry->shareall) {
+    // Add new shared users - only for regular categories, not evidencias
+    if ($newentry->internshare == 1 && !$newentry->shareall) {
+        // Regular sharing for non-evidencias categories
         $shareusers = \block_exaport\param::optional_array('shareusers', PARAM_INT);
         foreach ($shareusers as $shareuser) {
             $shareuser = clean_param($shareuser, PARAM_INT);
@@ -309,8 +697,10 @@ if ($mform->is_cancelled()) {
             $shareitem->catid = $newentry->id;
             $shareitem->userid = $shareuser;
             $DB->insert_record("block_exaportcatshar", $shareitem);
-        };
-    };
+        }
+    }
+    // Note: For evidencias with internshare=2, we don't use the sharing table
+    // Instead, we check permissions dynamically based on course enrollment
 
     // Delete all shared groups.
     $DB->delete_records("block_exaportcatgroupshar", array('catid' => $newentry->id));
@@ -419,8 +809,40 @@ if ($mform->is_cancelled()) {
             array('maxbytes' => $CFG->block_exaport_max_uploadfile_size));
     };
 
-    redirect('view_items.php?courseid=' . $courseid . '&categoryid=' .
-        ($newentry->back == 'same' ? $newentry->id : $newentry->pid));
+    // Check if we're in evidencias context and preserve it
+    $redirect_categoryid = ($newentry->back == 'same' ? $newentry->id : $original_pid);
+    
+    // Handle negative PIDs (evidencias categories)
+    if (is_numeric($redirect_categoryid) && $redirect_categoryid < 0) {
+        $redirect_categoryid = 'evidencias_' . abs($redirect_categoryid);
+        error_log("DEBUG SAVE: Converted negative PID to evidencias format: {$redirect_categoryid}");
+    }
+    
+    $redirect_url = 'view_items.php?courseid=' . $courseid . '&categoryid=' . $redirect_categoryid;
+    
+    // Check if the category being created/edited belongs to evidencias
+    if ($newentry->id > 0) {
+        // Editing existing category - get fresh record to check source
+        $cat = $DB->get_record('block_exaportcate', array('id' => $newentry->id));
+        if ($cat && !empty($cat->source) && is_numeric($cat->source)) {
+            $redirect_url .= '&evidencias=' . $cat->source;
+        }
+    } else if (!empty($newentry->source) && is_numeric($newentry->source)) {
+        // New category with evidencias source
+        $redirect_url .= '&evidencias=' . $newentry->source;
+    } else if (strpos($original_pid, 'evidencias_') === 0) {
+        // Parent is evidencias root
+        $evidencias_id = str_replace('evidencias_', '', $original_pid);
+        $redirect_url .= '&evidencias=' . $evidencias_id;
+    } else if (is_numeric($original_pid) && $original_pid > 0) {
+        // Check if parent category belongs to evidencias
+        $parent_cat = $DB->get_record('block_exaportcate', array('id' => $original_pid));
+        if ($parent_cat && !empty($parent_cat->source) && is_numeric($parent_cat->source)) {
+            $redirect_url .= '&evidencias=' . $parent_cat->source;
+        }
+    }
+    
+    redirect($redirect_url);
 } else {
     block_exaport_print_header("myportfolio");
 
@@ -442,7 +864,8 @@ if ($mform->is_cancelled()) {
     }
     $category->back = optional_param('back', '', PARAM_TEXT);
     if (empty($category->pid)) {
-        $category->pid = optional_param('pid', 0, PARAM_INT);
+        $category->pid = optional_param('pid', 0, PARAM_RAW); // Changed to RAW to support evidencias_123
+        error_log("DEBUG CATEGORY: Set category->pid from URL param to: '" . $category->pid . "' (type: " . gettype($category->pid) . ")");
     }
 
     // Filemanager for editing icon picture.
@@ -455,6 +878,12 @@ if ($mform->is_cancelled()) {
         $category->id,
         array('subdirs' => false, 'maxfiles' => 1, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size));
     $category->iconfile = $draftitemid;
+
+    // For evidencias categories, set the allow_student_uploads field based on internshare value
+    if ($is_evidencias) {
+        $category->allow_student_uploads = ($category->internshare == 2) ? 1 : 0; // 1 if students allowed, 0 if not
+        error_log("DEBUG FORM: Setting allow_student_uploads = {$category->allow_student_uploads} based on internshare = {$category->internshare}");
+    }
 
     $mform->set_data($category);
     $mform->display();

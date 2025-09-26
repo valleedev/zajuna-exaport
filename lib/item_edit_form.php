@@ -1,4 +1,4 @@
-<?php
+    <?php
 // This file is part of Exabis Eportfolio (extension for Moodle)
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,6 +16,7 @@
 // (c) 2016 GTN - Global Training Network GmbH <office@gtn-solutions.com>.
 
 require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->dirroot . '/repository/lib.php');
 
 class block_exaport_comment_edit_form extends block_exaport_moodleform {
 
@@ -78,6 +79,17 @@ class block_exaport_item_edit_form extends block_exaport_moodleform {
         global $CFG, $USER, $DB;
 
         $type = $this->_customdata['type'];
+        
+        // Determine if we should show a simplified form
+        $is_simplified_form = false;
+        $is_editing = !empty($this->_customdata['current']->id);
+        
+        // Simplify the form for editing items (especially for students)
+        if ($is_editing) {
+            // Always use simplified form when editing existing items
+            $is_simplified_form = true;
+            error_log("ITEM EDIT FORM: Showing simplified form for editing existing item");
+        }
 
         $mform = &$this->_form;
 
@@ -103,25 +115,34 @@ class block_exaport_item_edit_form extends block_exaport_moodleform {
         $mform->addRule('name', get_string("titlenotemtpy", "block_exaport"), 'required', null, 'client');
         $mform->add_exaport_help_button('name', 'forms.item.title');
 
-        $mform->addElement('select', 'categoryid', get_string("category", "block_exaport"), array());
-        $mform->addRule('categoryid', get_string("categorynotempty", "block_exaport"), 'required', null, 'client');
-        $mform->setDefault('categoryid', 0);
-        $this->category_select_setup($this->_customdata['cattype'], $this->_customdata['catid']);
-        $mform->add_exaport_help_button('categoryid', 'forms.item.categoryid');
-
-
-        // 'link' input for all types:
-        $mform->addElement('text', 'url', get_string("url", "block_exaport"), 'maxlength="255" size="60"');
-        $mform->setType('url', PARAM_TEXT);
-        /*if ($type == 'link') {
-            $mform->addElement('text', 'url', get_string("url", "block_exaport"), 'maxlength="255" size="60" value="http://"');
-            $mform->setType('url', PARAM_TEXT);
-            $mform->addRule('url', get_string("urlnotempty", "block_exaport"), 'required', null, 'client');
+        // Only show category selection if not simplified form
+        if (!$is_simplified_form) {
+            $mform->addElement('select', 'categoryid', get_string("category", "block_exaport"), array());
+            $mform->addRule('categoryid', get_string("categorynotempty", "block_exaport"), 'required', null, 'client');
+            $mform->setDefault('categoryid', 0);
+            $this->category_select_setup($this->_customdata['cattype'], $this->_customdata['catid']);
+            $mform->add_exaport_help_button('categoryid', 'forms.item.categoryid');
         } else {
+            // For simplified form, keep current category as hidden field
+            $mform->addElement('hidden', 'categoryid');
+            $mform->setType('categoryid', PARAM_INT);
+        }
+
+
+        // 'link' input for all types - skip for simplified forms
+        if (!$is_simplified_form) {
             $mform->addElement('text', 'url', get_string("url", "block_exaport"), 'maxlength="255" size="60"');
             $mform->setType('url', PARAM_TEXT);
-        }*/
-        $mform->add_exaport_help_button('url', 'forms.item.url');
+            /*if ($type == 'link') {
+                $mform->addElement('text', 'url', get_string("url", "block_exaport"), 'maxlength="255" size="60" value="http://"');
+                $mform->setType('url', PARAM_TEXT);
+                $mform->addRule('url', get_string("urlnotempty", "block_exaport"), 'required', null, 'client');
+            } else {
+                $mform->addElement('text', 'url', get_string("url", "block_exaport"), 'maxlength="255" size="60"');
+                $mform->setType('url', PARAM_TEXT);
+            }*/
+            $mform->add_exaport_help_button('url', 'forms.item.url');
+        }
 
         // 'File' input is for ALL types
         if ($type == 'link' && 11 == 22) {
@@ -140,21 +161,26 @@ class block_exaport_item_edit_form extends block_exaport_moodleform {
                 $mform->setType('fileid', PARAM_TEXT);
             } else if ($this->_customdata['action'] == 'add') {
                 $mform->addElement('filemanager', 'file', get_string('file', 'block_exaport'), null,
-                    array('subdirs' => false, 'maxfiles' => $filelimits, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size));
+                    array('subdirs' => false, 'maxfiles' => $filelimits, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
+                          'return_types' => FILE_INTERNAL | FILE_EXTERNAL, 
+                          'accepted_types' => '*'));
                 // 'required' was disabled, because this input is for all types from now
                 //                $mform->addRule('file', null, 'required', null, 'client');
 
             } else {
                 // Filemanager for edit file.
                 $mform->addElement('filemanager', 'file', get_string('file', 'block_exaport'), null,
-                    array('subdirs' => false, 'maxfiles' => $filelimits, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size));
+                    array('subdirs' => false, 'maxfiles' => $filelimits, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
+                          'return_types' => FILE_INTERNAL | FILE_EXTERNAL,
+                          'accepted_types' => '*'));
                 // 'required' was disabled, because this input is for all types from now
                 //                $mform->addRule('file', null, 'required', null, 'client');
                 $mform->add_exaport_help_button('file', 'forms.item.file');
             }
         }
 
-        if (block_exaport_course_has_desp()) {
+        // Only show language selection for non-simplified forms
+        if (!$is_simplified_form && block_exaport_course_has_desp()) {
             $langcode = get_string("langcode", "block_desp");
 
             $sql = "SELECT lang.id,lang." . $langcode .
@@ -171,22 +197,77 @@ class block_exaport_item_edit_form extends block_exaport_moodleform {
             $mform->add_exaport_help_button('langid', 'forms.item.langid');
         }
 
-        $textareafields = [ // field name => string marker
-            'intro' => 'shortdescription',
-            'project_description' => 'project_description',
-            'project_process' => 'project_process',
-            'project_result' => 'project_result',
-        ];
+        // For simplified forms, add hidden fields and don't show description fields
+        $textareafields = [];
+        if ($is_simplified_form) {
+            // Add hidden fields to maintain data integrity
+            $mform->addElement('hidden', 'intro');
+            $mform->setType('intro', PARAM_RAW);
+            $mform->setDefault('intro', '');
+            
+            // Add hidden editor fields
+            $mform->addElement('hidden', 'intro_editor[text]');
+            $mform->setType('intro_editor[text]', PARAM_RAW);
+            $mform->setDefault('intro_editor[text]', '');
+            
+            $mform->addElement('hidden', 'intro_editor[format]');
+            $mform->setType('intro_editor[format]', PARAM_INT);
+            $mform->setDefault('intro_editor[format]', FORMAT_HTML);
+            
+            $mform->addElement('hidden', 'project_description');
+            $mform->setType('project_description', PARAM_RAW);
+            $mform->setDefault('project_description', '');
+            
+            $mform->addElement('hidden', 'project_description_editor[text]');
+            $mform->setType('project_description_editor[text]', PARAM_RAW);
+            $mform->setDefault('project_description_editor[text]', '');
+            
+            $mform->addElement('hidden', 'project_description_editor[format]');
+            $mform->setType('project_description_editor[format]', PARAM_INT);
+            $mform->setDefault('project_description_editor[format]', FORMAT_HTML);
+            
+            $mform->addElement('hidden', 'project_process');
+            $mform->setType('project_process', PARAM_RAW);
+            $mform->setDefault('project_process', '');
+            
+            $mform->addElement('hidden', 'project_process_editor[text]');
+            $mform->setType('project_process_editor[text]', PARAM_RAW);
+            $mform->setDefault('project_process_editor[text]', '');
+            
+            $mform->addElement('hidden', 'project_process_editor[format]');
+            $mform->setType('project_process_editor[format]', PARAM_INT);
+            $mform->setDefault('project_process_editor[format]', FORMAT_HTML);
+            
+            $mform->addElement('hidden', 'project_result');
+            $mform->setType('project_result', PARAM_RAW);
+            $mform->setDefault('project_result', '');
+            
+            $mform->addElement('hidden', 'project_result_editor[text]');
+            $mform->setType('project_result_editor[text]', PARAM_RAW);
+            $mform->setDefault('project_result_editor[text]', '');
+            
+            $mform->addElement('hidden', 'project_result_editor[format]');
+            $mform->setType('project_result_editor[format]', PARAM_INT);
+            $mform->setDefault('project_result_editor[format]', FORMAT_HTML);
+        } else {
+            $textareafields = [ // field name => string marker
+                'intro' => 'shortdescription',
+                'project_description' => 'project_description',
+                'project_process' => 'project_process',
+                'project_result' => 'project_result',
+            ];
+        }
+        
         $usetextareas = @$this->_customdata['useTextareas'] ?: [];
         foreach ($textareafields as $textareafield => $stringmarker) {
             if (isset($usetextareas[$textareafield]) && $usetextareas[$textareafield]) {
                 // It has iframe, show textfield, no editor.
                 $mform->addElement('textarea', $textareafield, get_string($stringmarker, 'block_exaport'), 'rows="20" cols="50" style="width: 95%"');
                 $mform->setType($textareafield, PARAM_RAW);
-                // Required for all item types
-                //                if ($type == 'note' && $textareafield == 'intro') {
-                $mform->addRule($textareafield, get_string('intronotempty', 'block_exaport'), 'required', null, 'client');
-                //                }
+                // Required for all item types, except in simplified forms
+                if (!$is_simplified_form) {
+                    $mform->addRule($textareafield, get_string('intronotempty', 'block_exaport'), 'required', null, 'client');
+                }
                 $mform->add_exaport_help_button($textareafield, 'forms.item.' . $textareafield);
             } else {
                 if (!isset($this->_customdata['textfieldoptions'])) {
@@ -196,20 +277,28 @@ class block_exaport_item_edit_form extends block_exaport_moodleform {
                 $mform->addElement('editor', $textareafield . '_editor', get_string($stringmarker, 'block_exaport'), null,
                     $this->_customdata['textfieldoptions']);
                 $mform->setType($textareafield . '_editor', PARAM_RAW);
-                if ($textareafield == 'intro') {
+                if ($textareafield == 'intro' && !$is_simplified_form) {
                     $mform->addRule($textareafield . '_editor', get_string('intronotempty', 'block_exaport'), 'required', null, 'client');
                 }
                 $mform->add_exaport_help_button($textareafield . '_editor', 'forms.item.' . $textareafield . '_editor');
             }
         }
 
-        $mform->addElement('filemanager', 'iconfile', get_string('iconfile', 'block_exaport'), null,
-            array('subdirs' => false, 'maxfiles' => 1, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
-                'accepted_types' => array('image', 'web_image')));
-        $mform->add_exaport_help_button('iconfile', 'forms.item.iconfile');
+        // Only show iconfile in non-simplified forms
+        if (!$is_simplified_form) {
+            $mform->addElement('filemanager', 'iconfile', get_string('iconfile', 'block_exaport'), null,
+                array('subdirs' => false, 'maxfiles' => 1, 'maxbytes' => $CFG->block_exaport_max_uploadfile_size,
+                    'accepted_types' => array('image', 'web_image')));
+            $mform->add_exaport_help_button('iconfile', 'forms.item.iconfile');
+        } else {
+            // Add hidden field for iconfile in simplified forms
+            $mform->addElement('hidden', 'iconfile');
+            $mform->setType('iconfile', PARAM_INT);
+            $mform->setDefault('iconfile', 0);
+        }
 
-        // Tags.
-        if (!empty($CFG->usetags) && $CFG->usetags) {
+        // Tags - only show in non-simplified forms.
+        if (!$is_simplified_form && !empty($CFG->usetags) && $CFG->usetags) {
             $tags = \core_tag_tag::get_tags_by_area_in_contexts('block_exaport', 'block_exaportitem', [context_user::instance($USER->id)]);
             $tagstrings = [];
             foreach ($tags as $tag) {
@@ -290,9 +379,35 @@ class block_exaport_item_edit_form extends block_exaport_moodleform {
                 $outercategories = null;
             }
         } else {
-            // only MY categories
+            // Get MY categories AND evidencias categories where I have write permissions
             $conditions = array("userid" => $USER->id, "pid" => 0);
             $outercategories = $DB->get_records_select("block_exaportcate", "userid = ? AND pid = ?", $conditions, "name asc");
+            
+            // Also include evidencias categories where student has write permissions
+            if (block_exaport_user_is_student()) {
+                $evidencias_sql = "
+                    SELECT c.* 
+                    FROM {block_exaportcate} c 
+                    WHERE c.source IS NOT NULL 
+                    AND c.internshare = 2
+                    AND EXISTS (
+                        SELECT 1 FROM {enrol} e 
+                        JOIN {user_enrolments} ue ON e.id = ue.enrolid 
+                        WHERE e.courseid = c.source 
+                        AND ue.userid = ?
+                        AND e.status = 0 
+                        AND ue.status = 0
+                    )
+                    ORDER BY c.name ASC
+                ";
+                $evidencias_categories = $DB->get_records_sql($evidencias_sql, array($USER->id));
+                
+                if ($evidencias_categories && $outercategories) {
+                    $outercategories = $outercategories + $evidencias_categories;
+                } else if ($evidencias_categories) {
+                    $outercategories = $evidencias_categories;
+                }
+            }
         }
         $categories = array(
             0 => block_exaport_get_root_category()->name,
@@ -311,8 +426,25 @@ function rek_category_select_setup($outercategories, $entryname, $categories) {
         $categories[$curcategory->id] = $entryname . format_string($curcategory->name);
         $name = $entryname . format_string($curcategory->name);
 
+        // Get subcategories - include both own categories and evidencias subcategories
         $conditions = array("userid" => $USER->id, "pid" => $curcategory->id);
         $innercategories = $DB->get_records_select("block_exaportcate", "userid = ? AND pid = ?", $conditions, "name asc");
+        
+        // If this is an evidencias category, also include subcategories that belong to evidencias
+        if (isset($curcategory->source) && $curcategory->source > 0) {
+            $evidencias_subcategories = $DB->get_records_select(
+                "block_exaportcate", 
+                "pid = ? AND source = ?", 
+                array($curcategory->id, $curcategory->source), 
+                "name asc"
+            );
+            if ($evidencias_subcategories && $innercategories) {
+                $innercategories = $innercategories + $evidencias_subcategories;
+            } else if ($evidencias_subcategories) {
+                $innercategories = $evidencias_subcategories;
+            }
+        }
+        
         if ($innercategories) {
             $categories = rek_category_select_setup($innercategories, $name . ' &rarr; ', $categories);
         }

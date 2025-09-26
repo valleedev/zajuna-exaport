@@ -22,7 +22,13 @@ require(__DIR__ . '/inc.php');
 class block_exaport extends block_list {
 
     public function init() {
-        $this->title = get_string('blocktitle', 'block_exaport');
+        // Use custom Zajuna key if available, fallback to standard key
+        $stringman = get_string_manager();
+        if ($stringman->string_exists('zajuna_blocktitle', 'block_exaport')) {
+            $this->title = get_string('zajuna_blocktitle', 'block_exaport');
+        } else {
+            $this->title = get_string('blocktitle', 'block_exaport');
+        }
     }
 
     public function instance_allow_multiple() {
@@ -35,6 +41,104 @@ class block_exaport extends block_list {
 
     public function has_config() {
         return true;
+    }
+
+    /**
+     * Load CSS and JavaScript resources for Exaport
+     * This method ensures resources are loaded only when the block is rendered
+     */
+    private function load_exaport_resources() {
+        global $PAGE;
+
+        if (isset($PAGE) && $PAGE !== null) {
+            // Load main CSS
+            $PAGE->requires->css('/blocks/exaport/styles.css');
+            
+            // Load the main JS/CSS initialization
+            block_exaport_init_js_css();
+            
+            // JavaScript to maintain aside navigation state across Exaport modules
+            $aside_js = <<<EOF
+(function() {
+    var ExaportAside = {
+        store: function() {
+            try {
+                var drawer = document.querySelector('[data-region="drawer"]');
+                if (drawer) {
+                    var isOpen = drawer.classList.contains('show') || drawer.getAttribute('aria-expanded') === 'true';
+                    sessionStorage.setItem('exaport_drawer_open', isOpen ? 'true' : 'false');
+                }
+                
+                var navDrawer = document.querySelector('#nav-drawer');
+                if (navDrawer) {
+                    var isOpen = navDrawer.classList.contains('show') || !navDrawer.classList.contains('closed');
+                    sessionStorage.setItem('exaport_nav_open', isOpen ? 'true' : 'false');
+                }
+            } catch(e) {
+                console.log('Exaport store error:', e);
+            }
+        },
+        
+        restore: function() {
+            try {
+                var self = this;
+                setTimeout(function() {
+                    if (sessionStorage.getItem('exaport_drawer_open') === 'true') {
+                        var drawer = document.querySelector('[data-region="drawer"]');
+                        var toggle = document.querySelector('[data-action="toggle-drawer"]');
+                        if (drawer && toggle && !drawer.classList.contains('show')) {
+                            toggle.click();
+                        }
+                    }
+                    
+                    if (sessionStorage.getItem('exaport_nav_open') === 'true') {
+                        var navDrawer = document.querySelector('#nav-drawer');
+                        var navToggle = document.querySelector('[data-action="toggle-nav-drawer"]');
+                        if (navDrawer && navToggle && !navDrawer.classList.contains('show')) {
+                            navToggle.click();
+                        }
+                    }
+                }, 500);
+            } catch(e) {
+                console.log('Exaport restore error:', e);
+            }
+        },
+        
+        init: function() {
+            var self = this;
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    self.restore();
+                });
+            } else {
+                self.restore();
+            }
+            
+            document.addEventListener('click', function(e) {
+                var target = e.target.closest('a');
+                if (target && target.href && 
+                    (target.href.indexOf('/blocks/exaport/') !== -1 || 
+                     target.classList.contains('exaport-nav') ||
+                     target.closest('.block_exaport'))) {
+                    self.store();
+                }
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[data-action*="toggle"]')) {
+                    setTimeout(function() { self.store(); }, 100);
+                }
+            });
+        }
+    };
+    
+    ExaportAside.init();
+})();
+EOF;
+
+            $PAGE->requires->js_init_code($aside_js);
+        }
     }
 
     public function get_content() {
@@ -55,6 +159,9 @@ class block_exaport extends block_list {
             return $this->content;
         }
 
+        // Load CSS and JS only when block is being rendered
+        $this->load_exaport_resources();
+
         $this->content = new stdClass;
         $this->content->items = array();
         $this->content->icons = array();
@@ -62,40 +169,10 @@ class block_exaport extends block_list {
 
         $output = block_exaport_get_renderer();
 
-        $icon = '<img src="' . $output->image_url('whyeportfolio', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('whyEportfolio') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/whyeportfolio.php?courseid=' . $COURSE->id . '">' .
-            $icon . block_exaport_get_string('whyEportfolio') . '</a>';
-
-        $icon = '<img src="' . $output->image_url('resume', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('resume_my') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/resume.php?courseid=' . $COURSE->id . '">' .
-            $icon . block_exaport_get_string('resume_my') . '</a>';
-
         $icon = '<img src="' . $output->image_url('my_portfolio', 'block_exaport') . '" class="icon" alt="" />';
         $this->content->items[] = '<a title="' . block_exaport_get_string('myportfoliotitle') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id . '">' .
+            ' href="' . $CFG->wwwroot . '/blocks/exaport/view_items.php?courseid=' . $COURSE->id . '" class="exaport-nav">' .
             $icon . block_exaport_get_string('myportfolio') . '</a>';
-
-        $icon = '<img src="' . $output->image_url('myviews', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('views') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/views_list.php?courseid=' . $COURSE->id . '">' .
-            $icon . block_exaport_get_string('views') . '</a>';
-
-        $icon = '<img src="' . $output->image_url('shared_views', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('shared_views') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/shared_views.php?courseid=' . $COURSE->id . '">' .
-            $icon . block_exaport_get_string('shared_views') . '</a>';
-
-        $icon = '<img src="' . $output->image_url('shared_categories', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('shared_categories') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/shared_categories.php?courseid=' . $COURSE->id . '">' .
-            $icon . block_exaport_get_string('shared_categories') . '</a>';
-
-        $icon = '<img src="' . $output->image_url('importexport', 'block_exaport') . '" class="icon" alt="" />';
-        $this->content->items[] = '<a title="' . block_exaport_get_string('importexport') . '" ' .
-            ' href="' . $CFG->wwwroot . '/blocks/exaport/importexport.php?courseid=' . $COURSE->id . '">' .
-            $icon . block_exaport_get_string('importexport') . '</a>';
 
         return $this->content;
     }

@@ -22,23 +22,34 @@ $string['translation:email'] = 'ariepl.work@gmail.com';
 
 // === Main ===
 // Shown in admin plugin list.
-$string['pluginname'] = 'Exabis ePortfolio';
+$string['pluginname'] = 'Portafolio Aprendiz';
 // === Shown in block title and all headers.
-$string['blocktitle'] = 'Exabis ePortfolio';
+$string['blocktitle'] = 'Portafolio Aprendiz';
+// Zajuna custom keys - these will never be overridden by official language packs
+$string['zajuna_pluginname'] = 'Portafolio Aprendiz';
+$string['zajuna_blocktitle'] = 'Portafolio Aprendiz';
 $string['exaport:use'] = 'Use allowed';
-$string['exaport:addinstance'] = 'add Exabis ePortfolio to the course';
-$string['exaport:myaddinstance'] = 'add Exabis ePortfolio on My home';
+$string['exaport:addinstance'] = 'add Portafolio Aprendiz to the course';
+$string['exaport:myaddinstance'] = 'add Portafolio Aprendiz on My home';
 $string['exaport:export'] = 'Export of SCORM-Files';
 $string['exaport:import'] = 'Import of SCORM-Files';
 $string['exaport:importfrommoodle'] = 'Import from Moodle';
-$string['exaport:shareintern'] = 'Internal sharing of views';
-$string['exaport:shareextern'] = 'External sharing of views';
 $string['exaport:allowposts'] = 'Allow posting';
 $string['exaport:competences'] = 'Allow competences';
 $string['exaport:viewartifactsfromstudents'] = 'Can see portfolio artefacts of own students';
 $string['new'] = 'New';
 $string['addbookmark'] = 'Add bookmark';
 $string['addcategory'] = 'Add category';
+$string['createcategory'] = 'Create category';
+$string['upload_file_evidence'] = 'Upload file';
+$string['onlystudentscanupload'] = 'Only students can use this quick upload feature';
+$string['cannotuploadhere'] = 'You do not have permission to upload files in this folder';
+$string['nocategorycreatepermission'] = 'Students are not allowed to create, edit or delete categories';
+$string['noitemcreatepermission'] = 'Students are not allowed to create, edit or delete artefacts';
+$string['norootcategorycreate'] = 'Cannot create categories in root folder. Please enter a folder first';
+$string['noevidenciascategorycreate'] = 'Instructors can only create categories within Evidencias folders';
+$string['course_folders_not_editable'] = 'Course folders cannot be deleted or edited from here. These folders are managed from the courses section. Please go to course administration to make changes.';
+$string['norootitemcreate'] = 'Cannot create artefacts in root folder. Please enter a folder first';
 $string['attachment'] = 'attachment';
 $string['attachincluded'] = 'attachment?';
 $string['awaiting'] = '($a awaiting)';
@@ -52,6 +63,8 @@ $string['categoryhead'] = 'Category name';
 $string['categorysaved'] = 'Category added.';
 $string['categoryedited'] = 'Category saved.';
 $string['categorydeleted'] = 'Category deleted.';
+$string['course_folder'] = 'Course Folder';
+$string['course_section'] = 'Course Section';
 $string['date'] = 'Date';
 $string['dontincludeurl'] = 'Check this box to unassociate the bookmark with the URL';
 $string['duplicatedurl'] = 'You already have this URL bookmarked.';
@@ -93,7 +106,6 @@ $string['nobookmarksnote'] = '(no notes yet)';
 $string['noentry'] = 'No entry';
 $string['note'] = 'Note';
 $string['notetitle'] = 'Note';
-$string['shared_views'] = 'Shared Views';
 $string['showall'] = 'Show Other Courses Too';
 $string['showcourse'] = 'Show This Course Only';
 $string['showsummary'] = '(show summary)';
@@ -111,10 +123,7 @@ $string['internalaccessusers'] = 'Access only for the following users';
 $string['internalaccessgroups'] = 'Access only for the following groups';
 $string['externaccess'] = 'external ePortfolio-Link';
 $string['emailaccess'] = 'Share by Email';
-$string['emailaccessdescription'] = 'Input an email address per line<br />Each email will receive a unique link with access to this view. Deleting the email will remove access to this view.';
 $string['emailaccessmessagesubject'] = 'New shared View for you';
-$string['emailaccessmessage'] = 'Hello! {$a->sendername} has shared the view "{$a->viewname}" for you. You can view it here: {$a->url}';
-$string['emailaccessmessageHTML'] = 'Hello!<br />{$a->sendername} has shared the view "{$a->viewname}" for you.<br />You can view it <a href="{$a->url}">here</a>.';
 $string['showallusers'] = 'Show users of all my courses';
 $string['showcourseusers'] = 'Show only users of the course';
 $string['sharedpersons'] = 'Persons with shared Portfolios';
@@ -148,9 +157,6 @@ $string['explainpersonal'] = 'Personal information';
 $string['personal'] = 'Information';
 $string['descriptionsaved'] = 'description saved';
 $string['course'] = 'Course';
-$string['importexport'] = 'Import/Export';
-$string['explainimport'] = 'Here you can import a SCORM-File into the portfolio. If markers from previous exports are found the import tries to import the data in the existing filestructure.';
-$string['makeimport'] = 'Import';
 $string['add_this_file'] = 'add this file';
 $string['bookmarksall'] = 'All Items';
 $string['bookmarkslinks'] = 'Links';
@@ -246,7 +252,6 @@ $string['export'] = 'Export SCORM-File';
 $string['export_short'] = 'Export';
 $string['exportepx'] = 'Export EPX-File';
 $string['createepxexport'] = 'Create EPX-File';
-$string['exportviewselect'] = 'To export all items of a specific view, please select it here';
 $string['export_directory'] = 'Export Directory-structure';
 $string['createexport_directory'] = 'Create Directory-structure';
 
@@ -264,10 +269,6 @@ $string['movetop'] = 'Move top';
 $string['movebottom'] = 'Move bottom';
 
 // === Views.
-$string['view'] = 'View';
-$string['views'] = 'My Views';
-$string['explainingviews'] = 'Manage your views.';
-$string['noviews'] = 'Please create a new View';
 $string['viewnotfound'] = 'View not found';
 $string['newview'] = 'Add View';
 $string['viewinformation'] = 'View Information';
@@ -290,14 +291,12 @@ $string['view_sharing_noaccess'] = 'No Access';
 $string['show'] = 'Show';
 $string['thiscourse'] = 'This course';
 $string['othercourses'] = 'other courses';
-$string['autofillview'] = 'Automatically add all available artefacts to this view';
 $string['sharetoteacher'] = 'Share to all teachers in this course';
 $string['createpage'] = 'Drag and drop content blocks from the tabs below to create your page.';
 $string['chooselayout'] = 'Select how you would like the columns in your page to be laid out.';
 $string['viewtitle'] = 'Title and description';
 $string['viewcontent'] = 'Content';
 $string['viewlayout'] = 'Layout';
-$string['viewshare'] = 'Share';
 $string['viewlayoutgroup1'] = '1 column';
 $string['viewlayoutgroup2'] = '2 columns';
 $string['viewlayoutgroup3'] = '3 columns';
@@ -393,7 +392,6 @@ $string['steckbrief'] = 'Profile';
 $string['desp_categories'] = '
     stories, roleplays, essays, collagen
     curriculum vitae
-    reviews of theatre productions, exhibitions
     project reports and reflections
     audio- and videoclips
     encounters with other nationalities
@@ -443,23 +441,19 @@ $string['settings_create_desp_categories_head'] = 'Create Desp Categories';
 $string['settings_create_desp_categories_body'] = '';
 $string['settings_disable_shareall_head'] = 'Disable sharing with all users';
 $string['settings_disable_shareall_body'] = 'Click <a href="{$a}">here</a>, to remove all global shares';
-$string['settings_disable_externaccess_head'] = 'Disable Sharing-Option "External Access" for views';
 $string['settings_disable_externaccess_body'] = '';
-$string['settings_disable_shareemails_head'] = 'Disable Sharing-Option "Share by Email" for views';
 $string['settings_disable_shareemails_body'] = '';
-$string['settings_disable_external_comments_head'] = 'Disable sharing of comments in external view';
 $string['settings_disable_external_comments_body'] = '';
 $string['block_exaport_app_externaleportfolio_head'] = 'Save files to mahara if checked, save to exaport if not checked';
 $string['block_exaport_app_externaleportfolio_body'] = 'For App';
-$string['block_exaport_maxbytes'] = 'Maximum uploaded file size in Exabis ePortfolio';
-$string['block_exaport_maxbytes_body'] = 'This specifies a maximum size that uploaded files can be throughout the Exabis ePortfolio.<br> Value for whole site is: {$a->sitemaxbytes}. See <a href="{$a->settingsurl}">settings</a>';
+$string['block_exaport_maxbytes'] = 'Maximum uploaded file size in Portafolio Aprendiz';
+$string['block_exaport_maxbytes_body'] = 'This specifies a maximum size that uploaded files can be throughout the Portafolio Aprendiz.<br> Value for whole site is: {$a->sitemaxbytes}. See <a href="{$a->settingsurl}">settings</a>';
 $string['block_exaport_userquota'] = 'User quota for Exabis ePortfolio';
 $string['block_exaport_userquota_body'] = 'The maximum number of bytes that a user can store in their own Exabis ePortfolio.<br> Value for whole site is: {$a->bytes}. See <a href="{$a->settingsurl}">settings</a>';
 $string['block_exaport_multiplefilesinitem'] = 'Multiple files in "File" artefact';
 $string['block_exaport_multiplefilesinitem_body'] = 'limit: 10 files';
 $string['block_exaport_copytomyportfolio'] = 'Enable "Copy to my portfolio"';
 $string['block_exaport_copytomyportfolio_body'] = 'User will be able copy artefacts from shared category into own portfolio';
-$string['block_exaport_app_alloweditdelete_head'] = 'Students are allowed to edit and delete items after teacher reviews';
 $string['block_exaport_app_alloweditdelete_body'] = 'Only useful in combination with Exabis Competence Grid and dakora';
 $string['delete_all_shareall'] = 'Delete all shareall?';
 $string['block_exaport_teachercanseeartifactsofstudents_head'] = 'Teacher can see ALL artefacts of own students';
@@ -592,17 +586,13 @@ $string['lang_categories'] = '';
 $string['messageprovider:sharing'] = 'Sharing notifications';
 
 // === Not Used Anymore.
-$string['i_shared'] = 'I shared an eportfolio view with you';
 $string['addstdcat'] = 'import standard categories';
-$string['incompatible_video'] = 'To view this video please use the direct link: {$a->link}';
 $string['download_pdf'] = 'Download as Pdf';
 $string['pdf_settings'] = 'Pdf settings';
 $string['pdf_settings_description'] = 'If you use some special or uncommon language characters the generated pdf can have problems. So, you can try to use different font settings<br>
-            Your PDF settings will be saved for this view.<br>So, if your view is shared with other users - they will see the pdf with your settings.<br>
             Non-standard fonts can have some lost options like bold, italic, e.t.c.';
 $string['pdf_settings_fontfamily'] = 'Font family';
 $string['pdf_settings_fontsize'] = 'Basic font size';
-$string['pdf_settings_showmetadata'] = 'Add view meta data';
 $string['pdf_settings_showusername'] = 'user name';
 $string['pdf_settings_showuserpicture'] = 'user picture';
 $string['pdf_settings_showuseremail'] = 'user email';
@@ -617,17 +607,11 @@ $string['pdf_customfont_help'] = 'Your can upload own .ttf file. We will try to 
 $string['pdf_settings_fontfamily_fixedgroup'] = 'Predefined fonts';
 $string['pdf_settings_fontfamily_customgroup'] = 'Custom uploaded fonts';
 $string['settings_layout_settings_heading'] = 'Layout settings';
-$string['block_exaport_allowcustomlayout_head'] = 'Custom options for the view layout for view owners';
-$string['block_exaport_allowcustomlayout_body'] = 'Allows to use custom view layout settings (similar to options below) for regular owners of the views';
-$string['settings_layout_settings_description'] = 'Here you can change some view layout options or use own custom CSS rules to have the view as you want<br>These settings will be used as default settings <strong>for all views</strong>';
 $string['layout_settings'] = 'Layout settings';
-$string['layout_settings_description'] = 'Here you can change some view layout options or use own custom CSS rules to have the view as you want';
 $string['layout_settings_font_size'] = 'Font size';
 $string['layout_settings_border_width'] = 'Border width';
 $string['layout_settings_font_weight'] = 'Bold';
 $string['layout_settings_border_width_only_bottom'] = 'Only bottom border';
-$string['layout_settings_view_headers'] = 'Headers of view blocks';
-$string['layout_settings_view_content'] = 'Content of view blocks';
 $string['layout_settings_custom_css'] = 'Custom CSS';
 $string['layout_settings_custom_css_description'] = 'You can use own custom CSS rules here';
 $string['selected_competencies'] = 'Achieved Competency';
@@ -764,7 +748,6 @@ $string['privacy:metadata:block_exaportitemcomm:userid'] = 'author of comment';
 $string['privacy:metadata:block_exaportitemcomm:entry'] = 'comment';
 $string['privacy:metadata:block_exaportitemcomm:timemodified'] = 'last modified';
 $string['privacy:metadata:block_exaportview'] = 'comments for artefacts';
-$string['privacy:metadata:block_exaportview:userid'] = 'owner of view';
 $string['privacy:metadata:block_exaportview:name'] = 'name';
 $string['privacy:metadata:block_exaportview:description'] = 'description';
 $string['privacy:metadata:block_exaportview:timemodified'] = 'last modified';
@@ -772,7 +755,6 @@ $string['privacy:metadata:block_exaportview:shareall'] = 'shared for all?';
 $string['privacy:metadata:block_exaportview:externaccess'] = 'external access?';
 $string['privacy:metadata:block_exaportview:externcomment'] = 'comment from external?';
 $string['privacy:metadata:block_exaportview:langid'] = 'language id';
-$string['privacy:metadata:block_exaportview:layout'] = 'layout of the view';
 $string['privacy:metadata:block_exaportview:sharedemails'] = 'shared emails list';
 $string['privacy:metadata:block_exaportview:autofill_artefacts'] = 'enabled autofill by artefacts';
 $string['privacy:metadata:block_exaportresume'] = 'resume data';
@@ -787,35 +769,6 @@ $string['privacy:metadata:block_exaportresume:skillspersonal'] = 'personal skill
 $string['privacy:metadata:block_exaportresume:skillsacademic'] = 'academic skills';
 $string['privacy:metadata:block_exaportresume:skillscareers'] = 'careers skills';
 $string['privacy:metadata:core_files'] = 'Exabis ePortfolio stores files which have been uploaded by the user to form part of artefacts, resume entries and comments.';
-$string['whyEportfolio'] = 'Why ePortfolio';
-$string['whyEportfolio_description'] = '   <h4>Don\'t Let Your Hard Work Disappear: Build Your Digital Portfolio</h4>
-                <br>
-                <p>Imagine all the effort you put into assignments, presentations, and projects. Do you ever feel like it just gets buried in a drawer after it\'s submitted?</p>
-                <p>But here\'s the good news: those projects are <strong>proof of your skills and knowledge</strong>, and you can use them to impress potential employers or clients!</p>
-                <p><strong>Build your digital portfolio</strong> and showcase your best work, from presentations, assignments, and projects to videos. It\'s easier than you think!</p>
-                <br>
-                <h4>What is an ePortfolio?</h4>
-                <br>
-                <p>An <strong>ePortfolio</strong> (electronic portfolio) is a <strong>digital collection</strong> that showcases your <strong>skills, knowledge, and experiences</strong>.
-                    While your CV focuses on your education and work history, your ePortfolio goes beyond that, providing <strong>proof and context</strong> for your skills.
-                    It lets you showcase your work samples and <strong>demonstrate your talent</strong> quickly and effectively.
-                    Ultimately, your ePortfolio is a powerful tool to <strong>highlight your qualifications</strong> and set you apart.
-                </p>
-                <p><strong>Remember, different roles may require different types of ePortfolios.</strong>
-                    However, some key elements remain constant.
-                    <strong>Exabis ePortfolio</strong> allows you to <strong>create multiple views</strong> tailored to specific positions, job opportunities, or other purposes.
-                </p>
-                <br>
-                <h4>How to Build Your ePortfolio</h4>
-                <br>
-                <ol>
-                    <li><strong>Gather your work</strong>: Start by reviewing all your projects, presentations, and assignments.</li>
-                    <li><strong>Choose your best work</strong>: Select the pieces that showcase your strongest skills and those that have received positive feedback.</li>
-                    <li><strong>Reflect and describe</strong>: Think about the skills and competencies each piece demonstrates. Write a brief description to provide context.</li>
-                    <li><strong>Build and iterate</strong>: Don\'t be afraid to experiment and refine your ePortfolio as you learn and grow.</li>
-                </ol>
-                <p><strong>Exabis ePortfolio</strong> can guide you through each step, making the process of building your ePortfolio smooth and efficient.</p>
-';
 $string['cofigureblock_cvinfo_help'] = 'You will see the current status of the selected items in your CV. The block content will be updated if you make changes to any items in your CV later.';
 $string['cofigureblock_cvinfo_cover'] = 'About me';
 $string['cofigureblock_cvinfo_cover_actual'] = 'add actual CV "About me" content';
@@ -830,8 +783,129 @@ $string['create_view_content_help_text'] = '<ul>
 $string['moreinfolink'] = 'Show more info ...';
 $string['badges_help'] = 'The block with badges granted to you<br><a href=\'{$a}\' target=\'_blank\' class=\'external-link\'>View your badges</a>';
 $string['view_preview_help_title'] = 'Preview';
-$string['view_preview_help'] = 'Preview of your view';
 $string['block_exaport_used_layout'] = 'Used layout';
 $string['block_exaport_used_layout_body'] = 'Change the layout if you have some appearance problems. Right now it is used only for artefact list.';
 $string['block_exaport_used_layout_moodle_bootstrap'] = 'Cards layout';
 $string['block_exaport_used_layout_clean_old'] = 'Tiles layout (Old - ended of support from v4.6.7)';
+
+// Course files and sections
+$string['course_section'] = 'Course Section';
+$string['course_folder'] = 'Course';
+$string['course_file'] = 'Course File';
+$string['section_files'] = 'Section Files';
+
+// Audit System Strings
+$string['audit'] = 'Audit';
+$string['audit_log'] = 'Audit Log';
+$string['audit_events'] = 'Audit Events';
+$string['audit_dashboard'] = 'Audit Dashboard';
+$string['audit_search'] = 'Audit Search';
+$string['audit_filters'] = 'Audit Filters';
+$string['audit_export'] = 'Export Audit';
+$string['audit_statistics'] = 'Audit Statistics';
+
+// Event Types
+$string['audit_event_folder_created'] = 'Folder created';
+$string['audit_event_folder_deleted'] = 'Folder deleted';
+$string['audit_event_folder_renamed'] = 'Folder renamed';
+$string['audit_event_folder_moved'] = 'Folder moved';
+$string['audit_event_folder_blocked'] = 'Folder blocked';
+$string['audit_event_folder_unblocked'] = 'Folder unblocked';
+$string['audit_event_item_uploaded'] = 'Item uploaded';
+$string['audit_event_item_deleted'] = 'Item deleted';
+$string['audit_event_item_updated'] = 'Item updated';
+$string['audit_event_item_shared'] = 'Item shared';
+$string['audit_event_item_unshared'] = 'Item unshared';
+$string['audit_event_item_viewed'] = 'Item viewed';
+$string['audit_event_item_downloaded'] = 'Item downloaded';
+$string['audit_event_category_created'] = 'Category created';
+$string['audit_event_category_deleted'] = 'Category deleted';
+$string['audit_event_category_updated'] = 'Category updated';
+$string['audit_event_view_created'] = 'View created';
+$string['audit_event_view_deleted'] = 'View deleted';
+$string['audit_event_view_shared'] = 'View shared';
+$string['audit_event_view_accessed'] = 'View accessed';
+$string['audit_event_permission_granted'] = 'Permission granted';
+$string['audit_event_permission_revoked'] = 'Permission revoked';
+$string['audit_event_data_exported'] = 'Data exported';
+$string['audit_event_data_imported'] = 'Data imported';
+
+// Risk Levels
+$string['audit_risk_low'] = 'Low';
+$string['audit_risk_medium'] = 'Medium';
+$string['audit_risk_high'] = 'High';
+$string['audit_risk_critical'] = 'Critical';
+
+// Audit Form Fields
+$string['audit_date_from'] = 'Date from';
+$string['audit_date_to'] = 'Date to';
+$string['audit_user'] = 'User';
+$string['audit_event_type'] = 'Event type';
+$string['audit_risk_level'] = 'Risk level';
+$string['audit_resource_type'] = 'Resource type';
+$string['audit_search_text'] = 'Search text';
+$string['audit_apply_filters'] = 'Apply filters';
+$string['audit_clear_filters'] = 'Clear filters';
+$string['audit_results_per_page'] = 'Results per page';
+
+// Audit Table Headers
+$string['audit_timestamp'] = 'Date & Time';
+$string['audit_user_name'] = 'User';
+$string['audit_description'] = 'Description';
+$string['audit_resource'] = 'Resource';
+$string['audit_details'] = 'Details';
+$string['audit_ip_address'] = 'IP Address';
+$string['audit_session'] = 'Session';
+
+// Audit Statistics
+$string['audit_total_events'] = 'Total events';
+$string['audit_events_today'] = 'Events today';
+$string['audit_events_this_week'] = 'Events this week';
+$string['audit_events_this_month'] = 'Events this month';
+$string['audit_high_risk_events'] = 'High risk events';
+$string['audit_high_risk_percentage'] = 'High risk percentage';
+$string['audit_most_active_user'] = 'Most active user';
+$string['audit_most_common_event'] = 'Most common event';
+$string['audit_recent_activity'] = 'Recent activity';
+
+// Messages
+$string['audit_no_events'] = 'No audit events found';
+$string['audit_access_denied'] = 'You do not have permission to access audit functionality';
+$string['audit_loading'] = 'Loading audit data...';
+$string['audit_export_success'] = 'Audit exported successfully';
+$string['audit_export_error'] = 'Error exporting audit data';
+$string['audit_invalid_date_range'] = 'Invalid date range';
+$string['audit_filter_applied'] = 'Filters applied successfully';
+
+// Additional audit strings
+$string['audit_search_placeholder'] = 'Search in description, resource or user...';
+$string['audit_pagination'] = 'Audit pagination';
+$string['audit_previous'] = 'Previous';
+$string['audit_next'] = 'Next';
+$string['audit_showing'] = 'Showing {$a->from} to {$a->to} of {$a->total}';
+$string['audit_results'] = 'Audit Results';
+$string['audit_date'] = 'Date';
+$string['audit_all_users'] = 'All Users';
+$string['audit_all_events'] = 'All Events';
+$string['audit_all_risks'] = 'All Risk Levels';
+$string['audit_all_resources'] = 'All Resource Types';
+$string['audit_no_results'] = 'No audit events found with the selected filters.';
+
+// Permissions
+$string['exaport:viewaudit'] = 'View audit log';
+$string['exaport:exportaudit'] = 'Export audit data';
+
+// Navigation
+$string['audit'] = 'Audit';
+
+// Course Folder Management
+$string['course_folder_edit_warning'] = 'This action can only be performed from Personal Area / My Courses';
+
+// Course folder messages
+$string['coursefoldercannotbeedited'] = 'Course folders cannot be deleted or edited from here. These folders are managed from the courses section. Please go to course administration to make changes.';
+
+// File upload messages
+$string['fileuploaded'] = 'File uploaded successfully';
+
+// Error messages
+$string['wrongid'] = 'Wrong item ID';

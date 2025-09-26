@@ -94,7 +94,6 @@ $string['nobookmarksfile'] = '(zatím žádné soubory)';
 $string['nobookmarksnote'] = '(zatím žádné poznámky)';
 $string['note'] = 'Poznámka';
 $string['notetitle'] = 'Poznámka';
-$string['shared_views'] = 'Sdílená Portfolia';
 $string['showall'] = 'Ukázat také další kurzy';
 $string['showcourse'] = 'Ukaž pouze tento kurz';
 $string['showsummary'] = '(ukaž shrnutí)';

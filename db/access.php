@@ -25,28 +25,6 @@ $capabilities = array(
             'user' => CAP_ALLOW,
         ),
     ),
-    'block/exaport:export' => array(
-        'captype' => 'read',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'legacy' => array(
-            'user' => CAP_ALLOW,
-        ),
-    ),
-    'block/exaport:import' => array(
-        'riskbitmask' => RISK_SPAM | RISK_XSS,
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'legacy' => array(
-            'user' => CAP_ALLOW,
-        ),
-    ),
-    'block/exaport:importfrommoodle' => array(
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'legacy' => array(
-            'user' => CAP_ALLOW,
-        ),
-    ),
     'block/exaport:shareintern' => array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
@@ -96,5 +74,31 @@ $capabilities = array(
             'manager' => CAP_ALLOW,
         ),
         'clonepermissionsfrom' => 'moodle/site:manageblocks',
+    ),
+    'block/exaport:viewaudit' => array(
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'editingteacher' => CAP_ALLOW,
+            'teacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ),
+    ),
+        'block/exaport:auditview' => array(
+        'riskbitmask' => RISK_PERSONAL | RISK_CONFIG,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+        ),
+    ),
+    'block/exaport:exportaudit' => array(
+        'riskbitmask' => RISK_PERSONAL | RISK_CONFIG,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+        ),
     ),
 );

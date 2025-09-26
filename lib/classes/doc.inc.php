@@ -919,6 +919,3 @@ class MiniXML extends MiniXMLDoc {
 		//$this->MiniXMLDoc();
 	}
 }
-
-
-?>

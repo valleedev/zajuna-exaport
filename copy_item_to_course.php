@@ -27,7 +27,8 @@ $backtype = block_exaport_check_item_type($backtype, true);
 
 $context = context_system::instance();
 
-require_login($courseid);
+// Authentication disabled for this block
+// require_login($courseid);
 require_capability('block/exaport:use', $context);
 require_capability('block/exaport:shareintern', $context);
 

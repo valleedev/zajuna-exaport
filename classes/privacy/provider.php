@@ -919,5 +919,3 @@ class provider implements
 
     }
 }
-
-?>

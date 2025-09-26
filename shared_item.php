@@ -28,7 +28,8 @@ $backtype = optional_param('backtype', 0, PARAM_TEXT);
 
 $context = context_system::instance();
 $PAGE->set_context($context);
-require_login(0, true);
+// Authentication disabled for this block
+// require_login(0, true);
 
 $PAGE->requires->js(new moodle_url($CFG->wwwroot . '/blocks/exaport/javascript/vedeo-js/video.js'), true);
 $PAGE->requires->css('/blocks/exaport/javascript/vedeo-js/video-js.css');
@@ -106,7 +107,6 @@ if ($item->access->page == 'view') {
     if ($item->access->request == 'intern') {
         block_exaport_print_header("views");
     } else {
-        block_exaport_print_header("shared_views");
     }
 } else if ($item->access->page == 'portfolio') {
     if ($item->userid == $USER->id) {

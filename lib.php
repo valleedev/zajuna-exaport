@@ -49,7 +49,8 @@ function block_exaport_pluginfile($course, $cm, $context, $filearea, $args, $for
 
     if (!$is_for_pdf && $filearea != 'pdf_fontfamily') {
         // Always require login, at least guest.
-        require_login();
+        // Authentication disabled for this block
+        // require_login();
     } else {
         // Login is not required if it is for PDF generation (accessible only from php).
         // Also if it is for getting custom .ttf font file
@@ -186,76 +187,6 @@ function block_exaport_pluginfile($course, $cm, $context, $filearea, $args, $for
             $file = $fs->get_file(context_user::instance($USER->id)->id, 'block_exaport', 'category_icon', $categoryid, '/',
                 $filename);
 
-            // Serve file.
-            if ($file) {
-                send_stored_file($file);
-            } else {
-                return false;
-            }
-            break;
-        case 'resume_editor_cover':
-        case 'resume_editor_goalspersonal':
-        case 'resume_editor_goalsacademic':
-        case 'resume_editor_goalscareers':
-        case 'resume_editor_skillspersonal':
-        case 'resume_editor_skillsacademic':
-        case 'resume_editor_skillscareers':
-        case 'resume_editor_interests':
-            $resumeitemtypes = ['cover', 'interests', 'goalspersonal', 'goalsacademic', 'goalscareers', 'skillspersonal', 'skillsacademic', 'killscareers'];
-            if ($is_for_pdf) {
-                // $view is already defined
-                // Simple checking: the view has a block with 'cover/goals.../skills...' CV?
-                $sql = "SELECT b.* FROM {block_exaportviewblock} b" .
-                    " WHERE b.viewid=? AND" .
-                    " b.type IN ('cv_information', 'cv_group') AND b.resume_itemtype IN ('" . implode("', '", $resumeitemtypes) . "')";
-                if (!$DB->record_exists_sql($sql, array($view->id))) {
-                    print_error("viewnotfound", "block_exaport");
-                }
-                $viewuser = $view->userid;
-            } else {
-                $access = required_param('access', PARAM_RAW);
-                if (strpos($access, 'resume') !== false) {
-                    $resumeattrs = explode('/', $access);
-                    $resumeid = $resumeattrs[1];
-                    $resume = $DB->get_record('block_exaportresume', array("id" => $resumeid));
-                    $viewuser = $resume->user_id;
-                } else {
-                    $view = block_exaport_get_view_from_access($access);
-                    if (!$view) {
-                        print_error("viewnotfound", "block_exaport");
-                    }
-                    // Simple checking: the view has a block with 'cover/goals.../skills...' CV?
-                    $sql = "SELECT b.* FROM {block_exaportviewblock} b" .
-                        " WHERE b.viewid=? AND" .
-                        " b.type IN ('cv_information', 'cv_group') AND b.resume_itemtype IN ('" . implode("', '", $resumeitemtypes) . "')";
-                    if (!$DB->record_exists_sql($sql, array($view->id))) {
-                        print_error("viewnotfound", "block_exaport");
-                    }
-                    $viewuser = $view->userid;
-                }
-            }
-        case 'resume_cover':
-        case 'resume_interests':
-        case 'resume_edu':
-        case 'resume_employ':
-        case 'resume_certif':
-        case 'resume_public':
-        case 'resume_mbrship':
-        case 'resume_goalspersonal':
-        case 'resume_goalsacademic':
-        case 'resume_goalscareers':
-        case 'resume_skillspersonal':
-        case 'resume_skillsacademic':
-        case 'resume_skillscareers':
-            if (!$viewuser) {
-                $viewuser = $USER->id;
-            }
-            $filename = array_pop($args);
-            $id = array_pop($args);
-
-            // Get file.
-            $fs = get_file_storage();
-            $file = $fs->get_file(context_user::instance($viewuser)->id, 'block_exaport', $filearea, $id, '/', $filename);
             // Serve file.
             if ($file) {
                 send_stored_file($file);

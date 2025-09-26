@@ -817,7 +817,8 @@ if ($type == 'mine') {
 
 // Add Audit link for users with permission
 use block_exaport\audit\application\AuditService;
-if (AuditService::canUserAccessAudit()) {
+// Mostrar enlace de auditoría solo a administradores
+if (block_exaport_user_is_admin()) {
     echo '<span><a href="' . $CFG->wwwroot . '/blocks/exaport/audit.php?courseid=' . $courseid . '">'
         . '<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">'
         . '<g>'

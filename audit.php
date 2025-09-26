@@ -52,6 +52,8 @@ $PAGE->set_context($context);
 // Add iconpack like view_items.php
 block_exaport_add_iconpack();
 
+// Breadcrumbs se gestionan desde block_exaport_print_header para mantener orden deseado
+
 // Export CSV if requested
 if ($action === 'export') {
     // Build WHERE conditions for export
@@ -168,7 +170,7 @@ if ($action === 'export') {
     exit;
 }
 
-// Use exaport header with navigation
+// Usar header del bloque con navegación: Portafolio Aprendiz > Auditoría
 block_exaport_print_header("audit");
 
 // Get users for filter dropdown
